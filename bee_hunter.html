@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雀蜂ハンターひとし - 高所切断対応版</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body { background: #000; overflow: hidden; font-family: 'Segoe UI', 'Meiryo', sans-serif; color: #fff; }
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        #hud-canvas { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 2; pointer-events: none; }
+        
+        #ui-overlay {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10;
+            pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px;
+        }
+        .hud-panel {
+            background: rgba(10, 15, 20, 0.85); border: 1px solid rgba(0, 255, 200, 0.35);
+            border-radius: 8px; padding: 10px 16px; box-shadow: 0 0 15px rgba(0, 255, 200, 0.15);
+            pointer-events: auto; backdrop-filter: blur(4px);
+        }
+        .header-hud { display: flex; justify-content: space-between; align-items: center; gap: 15px; }
+        .gauge-container { display: flex; flex-direction: column; gap: 4px; min-width: 160px; }
+        .gauge-label { font-size: 11px; font-weight: bold; color: #8ec5d6; text-transform: uppercase; }
+        .gauge-bar { width: 100%; height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden; }
+        .gauge-fill { height: 100%; width: 0%; transition: width 0.1s ease; }
+        
+        #anger-fill { background: linear-gradient(90deg, #00d2ff, #ffe600, #ff2200); }
+        #hp-fill { background: linear-gradient(90deg, #ff2a2a, #00ff88); width: 100%; }
+        #temp-fill { background: linear-gradient(90deg, #00aaff, #ffaa00, #ff0000); width: 20%; }
+        #step-fill { background: linear-gradient(90deg, #ffaa00, #00ffcc); width: 0%; }
+        
+        .footer-hud { display: flex; justify-content: space-between; align-items: flex-end; }
+        .tool-bar { display: flex; gap: 8px; }
+        .tool-slot {
+            width: 65px; height: 65px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px;
+            background: rgba(0,0,0,0.65); display: flex; flex-direction: column; align-items: center;
+            justify-content: center; font-size: 10px; color: #aaa; transition: all 0.2s;
+        }
+        .tool-slot.active {
+            border-color: #00ffcc; color: #fff; background: rgba(0, 255, 200, 0.25);
+            box-shadow: 0 0 12px rgba(0, 255, 200, 0.5); transform: translateY(-4px);
+        }
+        .tool-key { font-size: 14px; font-weight: bold; color: #00ffcc; }
+        
+        .crosshair {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 24px; height: 24px; pointer-events: none; z-index: 5;
+        }
+        .crosshair::before, .crosshair::after { content: ''; position: absolute; background: rgba(0, 255, 200, 0.8); }
+        .crosshair::before { top: 11px; left: 0; width: 24px; height: 2px; }
+        .crosshair::after { top: 0; left: 11px; width: 2px; height: 24px; }
+        
+        #target-lock {
+            position: absolute; top: calc(50% + 20px); left: 50%; transform: translateX(-50%);
+            font-size: 11px; font-weight: bold; color: #00ffcc; text-shadow: 0 0 6px rgba(0,255,200,0.8);
+            display: none; pointer-events: none; z-index: 5;
+        }
+
+        #step-banner {
+            position: absolute; top: 85px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); border: 2px solid #ffcc00; padding: 10px 24px; border-radius: 12px;
+            font-size: 14px; font-weight: bold; color: #ffcc00; pointer-events: none; z-index: 5; text-align: center;
+            min-width: 420px; box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        .full-screen-modal {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(5, 7, 12, 0.95); z-index: 100; display: flex;
+            flex-direction: column; justify-content: center; align-items: center; padding: 30px; text-align: center;
+        }
+        .btn-action {
+            background: linear-gradient(135deg, #ffcc00, #ff8800); color: #000; font-size: 18px; font-weight: bold;
+            padding: 14px 40px; border: none; border-radius: 25px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 20px rgba(255, 180, 0, 0.5); margin-top: 15px;
+        }
+        .btn-action:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(255, 200, 0, 0.8); }
+        
+        .shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 700px; margin: 20px 0; text-align: left; }
+        .shop-item {
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(0,255,200,0.2); border-radius: 8px;
+            padding: 15px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .shop-btn {
+            background: #00ffcc; color: #000; font-weight: bold; padding: 8px 16px; border: none;
+            border-radius: 6px; cursor: pointer;
+        }
+        .shop-btn:disabled { background: #555; color: #888; cursor: not-allowed; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <canvas id="hud-canvas"></canvas>
+    <div class="crosshair"></div>
+    <div id="target-lock">[LOCK ON] 伸縮ロッド切断可能</div>
+    
+    <div id="step-banner">
+        <div id="step-guide-text">STEP 1: [1] 燻煙ガンで巣に煙を噴射せよ！</div>
+        <div class="gauge-bar" style="margin-top: 6px; height: 6px;"><div id="step-fill" class="gauge-fill"></div></div>
+    </div>
+
+    <div id="ui-overlay">
+        <div class="header-hud">
+            <div class="hud-panel gauge-container">
+                <div class="gauge-label">蜂の警戒・怒り度</div>
+                <div class="gauge-bar"><div id="anger-fill" class="gauge-fill"></div></div>
+            </div>
+            <div class="hud-panel" style="text-align: center;">
+                <div class="gauge-label">飛翔中の蜂 / 吸引数 / 所持金</div>
+                <div style="font-size: 18px; font-weight: bold; color: #00ffcc;">
+                    飛翔 <span id="alive-count">0</span> 匹 | 吸 <span id="sucked-count">0</span> | <span style="color:#ffcc00;" id="money-display">¥0</span>
+                </div>
+            </div>
+            <div class="hud-panel gauge-container" style="text-align: right;">
+                <div class="gauge-label">戻り蜂接近タイマー</div>
+                <div id="return-timer" style="font-size: 18px; font-weight: bold; color: #ffaa00;">00:35</div>
+            </div>
+        </div>
+
+        <div class="footer-hud">
+            <div class="hud-panel gauge-container" style="min-width: 200px;">
+                <div class="gauge-label">防護服耐久値 (HP)</div>
+                <div class="gauge-bar"><div id="hp-fill" class="gauge-fill"></div></div>
+                <div style="margin-top: 6px;" class="gauge-label">スーツ内: <span id="temp-val">36.5</span>℃ (Space: ジャンプ)</div>
+                <div class="gauge-bar"><div id="temp-fill" class="gauge-fill"></div></div>
+                <div style="font-size: 10px; color: #888; margin-top: 2px;">[右クリック] ワイパー</div>
+            </div>
+
+            <div class="tool-bar">
+                <div class="tool-slot active" id="slot-1"><span class="tool-key">1</span><span>燻煙ガン</span></div>
+                <div class="tool-slot" id="slot-2"><span class="tool-key">2</span><span>吸引機</span></div>
+                <div class="tool-slot" id="slot-3"><span class="tool-key">3</span><span>伸縮スライサー</span></div>
+                <div class="tool-slot" id="slot-4"><span class="tool-key">4</span><span>粘着スプレー</span></div>
+                <div class="tool-slot" id="slot-5"><span class="tool-key">5</span><span>おとり罠 (<span id="trap-count">1</span>)</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- スタート画面 -->
+    <div id="title-modal" class="full-screen-modal">
+        <div style="border: 2px solid #ff4444; background: rgba(255, 50, 50, 0.1); padding: 12px 20px; border-radius: 6px; max-width: 600px; font-size: 12px; color: #ffbbbb; margin-bottom: 20px; line-height: 1.5;">
+            【起動時警告】※スズメバチ駆除は命に関わる危険を伴います。絶対に素人が真似をしないでください。
+        </div>
+        <h1 style="font-size: 38px; color: #ffcc00; text-shadow: 0 0 20px rgba(255,200,0,0.6);">雀蜂ハンターひとし</h1>
+        <p style="color: #00ffcc; margin-bottom: 20px;">本格蜂駆除シミュレーター (高所伸縮ロッド対応版)</p>
+        
+        <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+            <label><input type="radio" name="diff" value="casual"> カジュアル</label>
+            <label><input type="radio" name="diff" value="pro" checked> プロ仕様</label>
+            <label><input type="radio" name="diff" value="nightmare"> ナイトメア(即死)</label>
+        </div>
+
+        <button class="btn-action" id="start-stage1-btn">第1ステージ：民家の軒下へ出撃</button>
+    </div>
+
+    <!-- ショップ画面 -->
+    <div id="shop-modal" class="full-screen-modal" style="display: none;">
+        <h2 style="font-size: 32px; color: #ffcc00;">軽トラ機材ガレージ (Shop)</h2>
+        <p style="color: #aaa;">駆除成功！報酬金で装備を強化し、暗黒の屋根裏部屋へ挑め！</p>
+        <div style="font-size: 22px; color: #00ffcc; margin-top: 10px;">所持金: <span id="shop-money">¥0</span></div>
+
+        <div class="shop-grid">
+            <div class="shop-item">
+                <div><b>白銀の防護服 Mk-II</b><br><small style="color:#aaa;">HP+50 & 送風ファン(冷却2倍)</small><br><span style="color:#ffcc00;">¥40,000</span></div>
+                <button class="shop-btn" id="buy-suit">購入</button>
+            </div>
+            <div class="shop-item">
+                <div><b>業務用サイクロン吸引機</b><br><small style="color:#aaa;">吸引範囲1.5倍 & 吸入速度2倍</small><br><span style="color:#ffcc00;">¥30,000</span></div>
+                <button class="shop-btn" id="buy-vac">購入</button>
+            </div>
+            <div class="shop-item">
+                <div><b>超音波ハススライサー</b><br><small style="color:#aaa;">伸縮ロッド切断速度が2.5倍</small><br><span style="color:#ffcc00;">¥25,000</span></div>
+                <button class="shop-btn" id="buy-slicer">購入</button>
+            </div>
+            <div class="shop-item">
+                <div><b>高濃度ペロモントラップ(+3)</b><br><small style="color:#aaa;">蜂を15秒間釘付けにする罠</small><br><span style="color:#ffcc00;">¥15,000</span></div>
+                <button class="shop-btn" id="buy-trap">購入</button>
+            </div>
+        </div>
+
+        <button class="btn-action" id="start-stage2-btn" style="background: linear-gradient(135deg, #ff4400, #aa0000); color:#fff;">
+            第2ステージ：暗黒の屋根裏部屋へ出撃
+        </button>
+    </div>
+
+    <script>
+        /* --- 音響システム --- */
+        class SoundSystem {
+            constructor() { this.ctx = null; }
+            init() {
+                if (this.ctx) return;
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.buzzOsc = this.ctx.createOscillator();
+                this.buzzOsc.type = 'sawtooth';
+                this.buzzOsc.frequency.setValueAtTime(130, this.ctx.currentTime);
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass'; filter.frequency.value = 350; filter.Q.value = 3.0;
+                this.buzzGain = this.ctx.createGain();
+                this.buzzGain.gain.setValueAtTime(0.02, this.ctx.currentTime);
+                this.buzzOsc.connect(filter); filter.connect(this.buzzGain); this.buzzGain.connect(this.ctx.destination);
+                this.buzzOsc.start();
+            }
+            updateBuzz(angerRate, count, hasGiant) {
+                if (!this.ctx) return;
+                const baseFreq = hasGiant ? 90 : 130;
+                this.buzzOsc.frequency.setTargetAtTime(baseFreq + angerRate * 80 + count * 2, this.ctx.currentTime, 0.1);
+                this.buzzGain.gain.setTargetAtTime(count === 0 ? 0.005 : Math.min(0.02 + count * 0.003 + angerRate * 0.06, 0.25), this.ctx.currentTime, 0.1);
+            }
+            playNoise(duration, gainVal) {
+                if (!this.ctx) return;
+                const bufferSize = this.ctx.sampleRate * duration;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                noise.connect(gain); gain.connect(this.ctx.destination);
+                noise.start();
+            }
+            playWiper() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.frequency.setValueAtTime(500, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.18);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.18);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.18);
+            }
+            playHit() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'square'; osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.25);
+            }
+        }
+
+        /* --- ゲーム状態 --- */
+        const Game = {
+            state: 'TITLE', stage: 1, step: 1, difficulty: 'pro',
+            hp: 100, maxHp: 100, temp: 36.5, fog: 0, anger: 0,
+            money: 0, suckedCount: 0, returnTimer: 35,
+            currentTool: 1, isUsingTool: false,
+            stepProgress: 0,
+            traps: 1, activeTrapPos: null, trapTimer: 0,
+            step2TargetQuota: 8,
+            playerVy: 0, isGrounded: true,
+            upgrades: { suitMk2: false, cycloneVac: false, sonicSlicer: false },
+            sounds: new SoundSystem()
+        };
+
+        /* --- 3D Scene --- */
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const flashLight = new THREE.SpotLight(0xffffff, 0, 25, Math.PI / 5, 0.3, 1);
+        flashLight.castShadow = true;
+        scene.add(flashLight);
+        scene.add(flashLight.target);
+
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444455, 0.6);
+        scene.add(hemiLight);
+        const dirLight = new THREE.DirectionalLight(0xfffaed, 0.8);
+        dirLight.position.set(15, 30, 15);
+        scene.add(dirLight);
+
+        const stageGroup = new THREE.Group();
+        scene.add(stageGroup);
+        let hiveMesh, hiveHoleMesh;
+        const beams = [];
+
+        function buildStage(stageNum) {
+            while(stageGroup.children.length > 0) stageGroup.remove(stageGroup.children[0]);
+            beams.length = 0;
+
+            if (stageNum === 1) {
+                scene.fog = new THREE.FogExp2(0xd0e8ff, 0.02);
+                renderer.setClearColor(0xd0e8ff);
+                hemiLight.intensity = 0.6; dirLight.intensity = 0.8; flashLight.intensity = 0;
+
+                const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshLambertMaterial({ color: 0x557a46 }));
+                ground.rotation.x = -Math.PI/2; stageGroup.add(ground);
+
+                const house = new THREE.Mesh(new THREE.BoxGeometry(16, 8, 1), new THREE.MeshLambertMaterial({ color: 0xd9c4a8 }));
+                house.position.set(0, 4, -4); stageGroup.add(house);
+
+                const roof = new THREE.Mesh(new THREE.BoxGeometry(18, 0.4, 6), new THREE.MeshLambertMaterial({ color: 0x3a3532 }));
+                roof.position.set(0, 7.8, -2); stageGroup.add(roof);
+
+                camera.position.set(0, 1.7, 5);
+                createHive(0, 6.2, -3.2, 0.8, false);
+            } else {
+                scene.fog = new THREE.FogExp2(0x050508, 0.06);
+                renderer.setClearColor(0x050508);
+                hemiLight.intensity = 0.05; dirLight.intensity = 0.05; flashLight.intensity = 2.5;
+
+                const ceilingFloor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.MeshLambertMaterial({ color: 0x221810 }));
+                ceilingFloor.rotation.x = -Math.PI/2; stageGroup.add(ceilingFloor);
+
+                const beamMat = new THREE.MeshStandardMaterial({ color: 0x4a3219, roughness: 0.8 });
+                for (let z = -12; z <= 12; z += 3) {
+                    const beam = new THREE.Mesh(new THREE.BoxGeometry(26, 0.3, 0.9), beamMat);
+                    beam.position.set(0, 0.15, z);
+                    stageGroup.add(beam);
+                    beams.push(beam);
+                }
+                for (let x = -10; x <= 10; x += 4) {
+                    const beam = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.3, 26), beamMat);
+                    beam.position.set(x, 0.15, 0);
+                    stageGroup.add(beam);
+                    beams.push(beam);
+                }
+
+                camera.position.set(0, 1.7, 6);
+                createHive(0, 3.5, -6, 1.2, true);
+            }
+        }
+
+        function createHive(x, y, z, scale, isGiant) {
+            const hiveGeo = new THREE.SphereGeometry(scale, 16, 16);
+            hiveGeo.scale(1, 1.3, 1);
+            hiveMesh = new THREE.Mesh(hiveGeo, new THREE.MeshStandardMaterial({ color: isGiant ? 0x5a2d10 : 0x8a633a, roughness: 0.9 }));
+            hiveMesh.position.set(x, y, z);
+            stageGroup.add(hiveMesh);
+
+            hiveHoleMesh = new THREE.Mesh(new THREE.SphereGeometry(scale*0.2, 8, 8), new THREE.MeshBasicMaterial({ color: 0x050505 }));
+            hiveHoleMesh.position.set(x, y - scale*0.4, z + scale*0.85);
+            stageGroup.add(hiveHoleMesh);
+        }
+
+        /* --- 蜂クラス --- */
+        class Wasp {
+            constructor(isGiant = false) {
+                this.isGiant = isGiant;
+                this.mesh = this.createMesh();
+                this.reset();
+                scene.add(this.mesh);
+            }
+            createMesh() {
+                const group = new THREE.Group();
+                const scale = this.isGiant ? 1.8 : 1.0;
+                const body = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.06 * scale, 6, 6),
+                    new THREE.MeshLambertMaterial({ color: this.isGiant ? 0xff5500 : 0xffaa00 })
+                );
+                body.scale.set(1, 1, 2.2);
+                group.add(body);
+
+                const wingMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+                this.wingL = new THREE.Mesh(new THREE.PlaneGeometry(0.08*scale, 0.16*scale), wingMat);
+                this.wingL.position.set(0.06*scale, 0.04*scale, 0);
+                this.wingR = this.wingL.clone();
+                this.wingR.position.set(-0.06*scale, 0.04*scale, 0);
+                group.add(this.wingL); group.add(this.wingR);
+                return group;
+            }
+            reset() {
+                this.pos = new THREE.Vector3(0, -100, 0);
+                this.vel = new THREE.Vector3();
+                this.mesh.position.copy(this.pos);
+                this.mesh.visible = false;
+                this.state = 'DEAD';
+                this.groundTimer = 0;
+            }
+            spawn(origin, initialVel) {
+                this.mesh.visible = true;
+                this.state = 'FLYING';
+                this.pos.copy(origin);
+                this.vel.copy(initialVel || new THREE.Vector3((Math.random()-0.5)*0.1, -0.05, 0.1 + Math.random()*0.1));
+                this.groundTimer = 0;
+            }
+            update(allWasps, playerPos, angerRate, delta) {
+                if (!this.mesh.visible || this.state === 'DEAD') return;
+
+                const flap = Math.sin(Date.now() * 0.08) * 0.8;
+                this.wingL.rotation.y = flap; this.wingR.rotation.y = -flap;
+
+                if (this.state === 'SUCKED') {
+                    this.pos.add(playerPos.clone().sub(this.pos).multiplyScalar(Game.upgrades.cycloneVac ? 0.35 : 0.2));
+                    if (this.pos.distanceTo(playerPos) < 1.0) {
+                        this.mesh.visible = false; this.state = 'DEAD';
+                        Game.suckedCount++;
+                        document.getElementById('sucked-count').innerText = Game.suckedCount;
+                    }
+                    this.mesh.position.copy(this.pos);
+                    return;
+                }
+
+                if (this.state === 'SMOKED') {
+                    this.vel.y -= 0.005; this.pos.add(this.vel);
+                    if (this.pos.y <= 0.1) {
+                        this.pos.y = 0.1; this.vel.set(0,0,0);
+                        this.groundTimer += delta;
+                        if (this.groundTimer > 3.0) {
+                            this.state = 'DEAD';
+                            this.mesh.visible = false;
+                        }
+                    }
+                    this.mesh.position.copy(this.pos);
+                    return;
+                }
+
+                const force = new THREE.Vector3();
+                if (Game.activeTrapPos && Game.trapTimer > 0) {
+                    force.add(Game.activeTrapPos.clone().sub(this.pos).normalize().multiplyScalar(0.06));
+                } else if (angerRate > (this.isGiant ? 0.25 : 0.4) || Game.step === 4) {
+                    const dmgMultiplier = (Game.difficulty === 'nightmare' ? 999 : (this.isGiant ? 30 : 15));
+                    force.add(playerPos.clone().sub(this.pos).normalize().multiplyScalar(0.04 * (1 + angerRate)));
+                    if (this.pos.distanceTo(playerPos) < 0.6) {
+                        Game.hp = Math.max(0, Game.hp - dmgMultiplier);
+                        Game.fog = Math.min(1.0, Game.fog + 0.35);
+                        Game.sounds.playHit();
+                        this.vel.negate().multiplyScalar(1.5);
+                    }
+                } else {
+                    force.add(hiveMesh.position.clone().sub(this.pos).multiplyScalar(0.004));
+                    force.add(new THREE.Vector3((Math.random()-0.5)*0.02, (Math.random()-0.5)*0.02, (Math.random()-0.5)*0.02));
+                }
+
+                this.vel.add(force);
+                this.vel.clampLength(0, (this.isGiant ? 0.12 : 0.08) + angerRate * 0.05);
+                this.pos.add(this.vel);
+                this.mesh.position.copy(this.pos);
+                this.mesh.lookAt(this.pos.clone().add(this.vel));
+            }
+        }
+
+        const wasps = [];
+        for (let i = 0; i < 40; i++) wasps.push(new Wasp(false));
+        for (let i = 0; i < 15; i++) wasps.push(new Wasp(true));
+
+        function getDormantWasp(preferGiant = false) {
+            let w = wasps.find(wasp => !wasp.mesh.visible && wasp.isGiant === preferGiant);
+            if (!w) w = wasps.find(wasp => !wasp.mesh.visible);
+            return w;
+        }
+
+        /* --- 煙幕 --- */
+        const smokeParticles = [];
+        const sGeo = new THREE.SphereGeometry(0.15, 6, 6);
+        const sMat = new THREE.MeshBasicMaterial({ color: 0xddeeff, transparent: true, opacity: 0.35 });
+        for (let i = 0; i < 50; i++) {
+            const p = new THREE.Mesh(sGeo, sMat); p.visible = false; scene.add(p);
+            smokeParticles.push({ mesh: p, vel: new THREE.Vector3() });
+        }
+        function emitSmoke(origin, dir) {
+            Game.sounds.playNoise(0.08, 0.12);
+            for (let sp of smokeParticles) {
+                if (!sp.mesh.visible) {
+                    sp.mesh.visible = true; sp.mesh.position.copy(origin);
+                    sp.vel.copy(dir).multiplyScalar(0.28).add(new THREE.Vector3((Math.random()-0.5)*0.06, (Math.random()-0.5)*0.06, (Math.random()-0.5)*0.06));
+                    setTimeout(() => sp.mesh.visible = false, 1200);
+                    break;
+                }
+            }
+        }
+
+        /* --- 入力 --- */
+        const keys = {};
+        let isLocked = false, pitch = 0, yaw = 0;
+
+        document.addEventListener('keydown', e => {
+            keys[e.code] = true;
+            if (['Digit1','Digit2','Digit3','Digit4','Digit5'].includes(e.code)) {
+                Game.currentTool = parseInt(e.code.replace('Digit',''));
+                document.querySelectorAll('.tool-slot').forEach(el => el.classList.remove('active'));
+                document.getElementById(`slot-${Game.currentTool}`).classList.add('active');
+            }
+            if (e.code === 'Space' && Game.isGrounded) {
+                Game.playerVy = 6.0; // ジャンプ
+                Game.isGrounded = false;
+            }
+        });
+        document.addEventListener('keyup', e => keys[e.code] = false);
+
+        document.addEventListener('mousedown', e => {
+            if (!isLocked) return;
+            if (e.button === 0) Game.isUsingTool = true;
+            if (e.button === 2) { Game.fog = 0; Game.sounds.playWiper(); }
+        });
+        document.addEventListener('mouseup', e => { if (e.button === 0) Game.isUsingTool = false; });
+        document.addEventListener('contextmenu', e => e.preventDefault());
+
+        document.addEventListener('mousemove', e => {
+            if (!isLocked) return;
+            yaw -= e.movementX * 0.0024;
+            pitch -= e.movementY * 0.0024;
+            pitch = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, pitch));
+            camera.rotation.set(0, 0, 0);
+            camera.rotation.y = yaw; camera.rotation.x = pitch;
+
+            flashLight.position.copy(camera.position);
+            const targetPos = camera.position.clone().add(new THREE.Vector3(0, 0, -1).applyEuler(camera.rotation));
+            flashLight.target.position.copy(targetPos);
+        });
+
+        /* --- ボタン・ショップイベント --- */
+        document.getElementById('start-stage1-btn').addEventListener('click', () => {
+            const diffEls = document.getElementsByName('diff');
+            for (let el of diffEls) if (el.checked) Game.difficulty = el.value;
+            document.getElementById('title-modal').style.display = 'none';
+            document.body.requestPointerLock();
+            Game.sounds.init();
+            startStage(1);
+        });
+
+        document.getElementById('start-stage2-btn').addEventListener('click', () => {
+            document.getElementById('shop-modal').style.display = 'none';
+            document.body.requestPointerLock();
+            startStage(2);
+        });
+
+        function updateShopUI() {
+            document.getElementById('shop-money').innerText = `¥${Game.money.toLocaleString()}`;
+            document.getElementById('money-display').innerText = `¥${Game.money.toLocaleString()}`;
+            document.getElementById('trap-count').innerText = Game.traps;
+            document.getElementById('buy-suit').disabled = Game.money < 40000 || Game.upgrades.suitMk2;
+            document.getElementById('buy-vac').disabled = Game.money < 30000 || Game.upgrades.cycloneVac;
+            document.getElementById('buy-slicer').disabled = Game.money < 25000 || Game.upgrades.sonicSlicer;
+            document.getElementById('buy-trap').disabled = Game.money < 15000;
+        }
+
+        document.getElementById('buy-suit').addEventListener('click', () => {
+            if (Game.money >= 40000) { Game.money -= 40000; Game.upgrades.suitMk2 = true; Game.maxHp = 150; Game.hp = 150; updateShopUI(); }
+        });
+        document.getElementById('buy-vac').addEventListener('click', () => {
+            if (Game.money >= 30000) { Game.money -= 30000; Game.upgrades.cycloneVac = true; updateShopUI(); }
+        });
+        document.getElementById('buy-slicer').addEventListener('click', () => {
+            if (Game.money >= 25000) { Game.money -= 25000; Game.upgrades.sonicSlicer = true; updateShopUI(); }
+        });
+        document.getElementById('buy-trap').addEventListener('click', () => {
+            if (Game.money >= 15000) { Game.money -= 15000; Game.traps += 3; updateShopUI(); }
+        });
+
+        function startStage(stageNum) {
+            Game.stage = stageNum; Game.state = 'PLAYING'; Game.step = 1;
+            Game.hp = Game.maxHp; Game.temp = 36.5; Game.fog = 0; Game.anger = 0;
+            Game.suckedCount = 0; Game.returnTimer = 35; Game.stepProgress = 0;
+            Game.playerVy = 0; Game.isGrounded = true;
+            Game.step2TargetQuota = (stageNum === 1 ? 8 : 14);
+            wasps.forEach(w => w.reset());
+            buildStage(stageNum);
+
+            const initialCount = stageNum === 1 ? 5 : 8;
+            for (let i = 0; i < initialCount; i++) {
+                const w = getDormantWasp(stageNum === 2 && i % 2 === 0);
+                if (w) w.spawn(hiveHoleMesh.position);
+            }
+
+            updateStepGuide();
+        }
+
+        function updateStepGuide() {
+            const texts = [
+                "",
+                "STEP 1: [1] 燻煙ガンで高所の巣に煙を噴射せよ！(煙充填100%で完了)",
+                `STEP 2: [2] 吸引機を構え、飛び出す蜂を吸い込め！(${Game.suckedCount}/${Game.step2TargetQuota})`,
+                "STEP 3: [3] 見上げて伸縮スライサーで高所の巣を切断せよ！(切断100%で完了)",
+                "STEP 4: [4] 戻り蜂が帰還した！粘着スプレーで全滅させろ！"
+            ];
+            document.getElementById('step-guide-text').innerText = texts[Game.step];
+        }
+
+        document.addEventListener('pointerlockchange', () => {
+            isLocked = (document.pointerLockElement === document.body);
+        });
+
+        /* --- 2D HUD --- */
+        const hudCanvas = document.getElementById('hud-canvas');
+        const hudCtx = hudCanvas.getContext('2d');
+        function resize() {
+            hudCanvas.width = window.innerWidth; hudCanvas.height = window.innerHeight;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        window.addEventListener('resize', resize); resize();
+
+        function drawHUD() {
+            hudCtx.clearRect(0, 0, hudCanvas.width, hudCanvas.height);
+            const w = hudCanvas.width, h = hudCanvas.height;
+            if (Game.fog > 0.02) {
+                hudCtx.fillStyle = `rgba(230, 245, 255, ${Game.fog * 0.85})`;
+                hudCtx.fillRect(0, 0, w, h);
+            }
+            const grad = hudCtx.createRadialGradient(w/2, h/2, w*0.4, w/2, h/2, w*0.75);
+            grad.addColorStop(0, 'rgba(0, 20, 30, 0)');
+            grad.addColorStop(1, 'rgba(0, 5, 10, 0.95)');
+            hudCtx.fillStyle = grad; hudCtx.fillRect(0, 0, w, h);
+
+            if (Game.step >= 3) {
+                wasps.forEach(wasp => {
+                    if (wasp.mesh.visible && wasp.state !== 'DEAD') {
+                        const waspPos = wasp.pos.clone().project(camera);
+                        if (waspPos.z < 1) {
+                            const screenX = (waspPos.x * 0.5 + 0.5) * w;
+                            const screenY = (-waspPos.y * 0.5 + 0.5) * h;
+                            hudCtx.fillStyle = wasp.isGiant ? 'rgba(255, 50, 0, 0.9)' : 'rgba(255, 200, 0, 0.8)';
+                            hudCtx.beginPath();
+                            hudCtx.arc(Math.max(30, Math.min(w-30, screenX)), Math.max(30, Math.min(h-30, screenY)), wasp.isGiant ? 8 : 5, 0, Math.PI*2);
+                            hudCtx.fill();
+                        }
+                    }
+                });
+            }
+        }
+
+        /* --- メインループ --- */
+        let lastTime = performance.now();
+        let step2SpawnTimer = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const now = performance.now();
+            const delta = Math.min((now - lastTime) / 1000, 0.1);
+            lastTime = now;
+
+            if (Game.state === 'PLAYING') {
+                // ジャンプ・重力物理 (Y軸移動)
+                if (!Game.isGrounded) {
+                    Game.playerVy -= 18.0 * delta; // 重力
+                    camera.position.y += Game.playerVy * delta;
+                    const floorY = (Game.stage === 1 ? 1.7 : 1.7);
+                    if (camera.position.y <= floorY) {
+                        camera.position.y = floorY;
+                        Game.playerVy = 0;
+                        Game.isGrounded = true;
+                    }
+                }
+
+                // 水平移動
+                const speed = (Game.temp > 39.5 ? 2.0 : 4.0) * delta;
+                let isMoving = false;
+                const fwd = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+                const rgt = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+
+                if (keys['KeyW']) { camera.position.add(fwd.clone().multiplyScalar(speed)); isMoving = true; }
+                if (keys['KeyS']) { camera.position.add(fwd.clone().multiplyScalar(-speed)); isMoving = true; }
+                if (keys['KeyA']) { camera.position.add(rgt.clone().multiplyScalar(-speed)); isMoving = true; }
+                if (keys['KeyD']) { camera.position.add(rgt.clone().multiplyScalar(speed)); isMoving = true; }
+
+                // ステージ2: 梁の足場判定
+                if (Game.stage === 2) {
+                    let onBeam = false;
+                    for (let b of beams) {
+                        if (Math.abs(camera.position.x - b.position.x) < 13 && Math.abs(camera.position.z - b.position.z) < 0.6) onBeam = true;
+                        if (Math.abs(camera.position.z - b.position.z) < 13 && Math.abs(camera.position.x - b.position.x) < 0.6) onBeam = true;
+                    }
+                    if (!onBeam) Game.hp = 0;
+                }
+
+                // 温度
+                const coolRate = Game.upgrades.suitMk2 ? 0.3 : 0.1;
+                if (isMoving) Game.temp += delta * 0.25; else Game.temp = Math.max(36.5, Game.temp - delta * coolRate);
+                Game.fog = Math.min(0.95, Game.fog + delta * (Game.temp - 36.0) * 0.015);
+
+                // タイマー
+                if (Game.returnTimer > 0) {
+                    Game.returnTimer -= delta;
+                    const m = Math.floor(Game.returnTimer / 60), s = Math.floor(Game.returnTimer % 60);
+                    document.getElementById('return-timer').innerText = `0${m}:${s < 10 ? '0' : ''}${s}`;
+                } else if (Game.step < 4) {
+                    Game.step = 4;
+                    updateStepGuide();
+                    spawnReturnWasps();
+                }
+
+                if (Game.trapTimer > 0) Game.trapTimer -= delta; else Game.activeTrapPos = null;
+
+                // Step 2 蜂脱出
+                if (Game.step === 2) {
+                    step2SpawnTimer += delta;
+                    if (step2SpawnTimer > 0.9 && Game.suckedCount < Game.step2TargetQuota) {
+                        step2SpawnTimer = 0;
+                        const w = getDormantWasp(Game.stage === 2 && Math.random() < 0.3);
+                        if (w) {
+                            const exitDir = new THREE.Vector3((Math.random()-0.5)*0.08, -0.02, 0.12 + Math.random()*0.06);
+                            w.spawn(hiveHoleMesh.position, exitDir);
+                        }
+                    }
+                }
+
+                // 照準レイキャスト判定
+                const rayDir = new THREE.Vector3(0, 0, -1).applyEuler(camera.rotation);
+                const camPos = camera.position;
+                const toHive = hiveMesh.position.clone().sub(camPos);
+                const distToHive = toHive.length();
+                const isAimingAtHive = distToHive < 8.5 && toHive.clone().normalize().dot(rayDir) > 0.88;
+
+                // ロックオンUI
+                const lockEl = document.getElementById('target-lock');
+                if (Game.step === 3 && isAimingAtHive && hiveMesh.visible) {
+                    lockEl.style.display = 'block';
+                    lockEl.innerText = `[LOCK ON] 伸縮ロッド切断可能 (${Game.stepProgress.toFixed(0)}%)`;
+                } else {
+                    lockEl.style.display = 'none';
+                }
+
+                // ガジェット使用
+                if (Game.isUsingTool) {
+                    if (Game.currentTool === 1) {
+                        emitSmoke(camPos.clone().add(rayDir.clone().multiplyScalar(0.5)), rayDir);
+                        Game.anger = Math.max(0, Game.anger - delta * 15);
+                        wasps.forEach(w => {
+                            if (w.mesh.visible && w.pos.distanceTo(camPos) < 7.0 && w.pos.clone().sub(camPos).normalize().dot(rayDir) > 0.85) {
+                                w.state = 'SMOKED';
+                            }
+                        });
+                        if (isAimingAtHive && Game.step === 1) {
+                            Game.stepProgress += delta * 35;
+                            if (Math.random() < 0.08) {
+                                const w = getDormantWasp(Game.stage === 2 && Math.random() < 0.3);
+                                if (w) w.spawn(hiveHoleMesh.position);
+                            }
+                            if (Game.stepProgress >= 100) {
+                                Game.step = 2; Game.stepProgress = 0; updateStepGuide();
+                                for(let k=0; k<3; k++) {
+                                    const w = getDormantWasp(Game.stage === 2 && k===0);
+                                    if (w) w.spawn(hiveHoleMesh.position);
+                                }
+                            }
+                        }
+                    } else if (Game.currentTool === 2) {
+                        Game.sounds.playNoise(0.05, 0.1);
+                        const vacRange = Game.upgrades.cycloneVac ? 7.5 : 5.5;
+                        wasps.forEach(w => {
+                            if (w.mesh.visible && w.state !== 'DEAD' && w.pos.distanceTo(camPos) < vacRange && w.pos.clone().sub(camPos).normalize().dot(rayDir) > 0.85) {
+                                w.state = 'SUCKED';
+                            }
+                        });
+                        if (Game.step === 2) {
+                            Game.stepProgress = Math.min(100, (Game.suckedCount / Game.step2TargetQuota) * 100);
+                            updateStepGuide();
+                            if (Game.suckedCount >= Game.step2TargetQuota) {
+                                Game.step = 3; Game.stepProgress = 0; updateStepGuide();
+                            }
+                        }
+                    } else if (Game.currentTool === 3) {
+                        // 伸縮スライサー切断 (地上から見上げて射程8.5m以内で切断可能！)
+                        if (Game.step === 3 && isAimingAtHive && hiveMesh.visible) {
+                            const cutSpeed = Game.upgrades.sonicSlicer ? 80 : 35;
+                            Game.stepProgress += delta * cutSpeed;
+                            if (Math.random() < 0.05) {
+                                const w = getDormantWasp(Game.stage === 2);
+                                if (w) { w.spawn(hiveHoleMesh.position); w.state = 'ATTACK'; }
+                            }
+                            if (Game.stepProgress >= 100) {
+                                hiveMesh.visible = false; hiveHoleMesh.visible = false;
+                                Game.step = 4; Game.stepProgress = 0; updateStepGuide();
+                                spawnReturnWasps();
+                            }
+                        }
+                    } else if (Game.currentTool === 4) {
+                        wasps.forEach(w => {
+                            if (w.mesh.visible && w.state !== 'DEAD' && w.pos.distanceTo(camPos) < 6.0 && w.pos.clone().sub(camPos).normalize().dot(rayDir) > 0.85) {
+                                w.state = 'DEAD'; w.mesh.visible = false;
+                            }
+                        });
+                    } else if (Game.currentTool === 5 && Game.traps > 0 && !Game.activeTrapPos) {
+                        Game.traps--;
+                        Game.activeTrapPos = camPos.clone().add(rayDir.clone().multiplyScalar(2.0));
+                        Game.trapTimer = 15.0;
+                        document.getElementById('trap-count').innerText = Game.traps;
+                    }
+                }
+
+                function spawnReturnWasps() {
+                    const count = (Game.stage === 1 ? 6 : 9);
+                    for (let i = 0; i < count; i++) {
+                        const isGiant = (Game.stage === 2 && i % 2 === 0);
+                        const w = getDormantWasp(isGiant);
+                        if (w) {
+                            const spawnPos = camPos.clone().add(new THREE.Vector3((Math.random()-0.5)*12, 4 + Math.random()*2, 8 + Math.random()*4));
+                            w.spawn(spawnPos);
+                            w.state = 'ATTACK';
+                        }
+                    }
+                }
+
+                let aliveCount = 0, hasGiant = false;
+                const angerRate = Game.anger / 100;
+                wasps.forEach(w => {
+                    if (w.mesh.visible && w.state !== 'DEAD') {
+                        aliveCount++;
+                        if (w.isGiant) hasGiant = true;
+                    }
+                    w.update(wasps, camPos, angerRate, delta);
+                });
+                Game.sounds.updateBuzz(angerRate, aliveCount, hasGiant);
+                document.getElementById('alive-count').innerText = aliveCount;
+
+                if (Game.hp <= 0 || Game.temp >= 42.0) {
+                    Game.state = 'GAMEOVER';
+                    document.exitPointerLock();
+                    alert(Game.hp <= 0 ? '【駆除失敗】防護服貫通または足場から転落した…' : '【駆除失敗】猛烈な熱中症で倒れた…');
+                    location.reload();
+                } else if (Game.step === 4 && aliveCount === 0) {
+                    Game.state = 'CLEAR';
+                    document.exitPointerLock();
+                    if (Game.stage === 1) {
+                        Game.money += 85000;
+                        updateShopUI();
+                        document.getElementById('shop-modal').style.display = 'flex';
+                    } else {
+                        alert('【全任務制圧完了！】オオスズメバチの巣と戻り蜂を完全駆除した！真の雀蜂ハンターの誕生だ！');
+                        location.reload();
+                    }
+                }
+
+                document.getElementById('step-fill').style.width = `${Game.stepProgress}%`;
+                document.getElementById('anger-fill').style.width = `${Game.anger}%`;
+                document.getElementById('hp-fill').style.width = `${(Game.hp / Game.maxHp) * 100}%`;
+                document.getElementById('temp-fill').style.width = `${Math.min(100, (Game.temp - 36.0) * 16.6)}%`;
+                document.getElementById('temp-val').innerText = Game.temp.toFixed(1);
+            }
+
+            drawHUD();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>

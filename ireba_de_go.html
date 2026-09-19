@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>入れ歯でGO！ 〜峠の入歯屋 爆走伝説〜</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap');
+
+:root{
+  --bg-deep:#0C1B20;
+  --bg-panel:#123138;
+  --bg-panel2:#1C3F47;
+  --bg-panel3:#26525C;
+  --gum:#FF5C82;
+  --gum-deep:#D93F68;
+  --tooth:#FFFBF2;
+  --tooth-dim:#CFC9BC;
+  --mint:#4DE8B0;
+  --mint-deep:#1FAE81;
+  --gold:#FFC94D;
+  --danger:#FF5A4D;
+  --ink:#07141A;
+  --font-display:'DotGothic16','Hiragino Sans','Yu Gothic Medium',sans-serif;
+  --font-body:'Zen Maru Gothic','Hiragino Maru Gothic ProN','Hiragino Sans','Yu Gothic Medium','Meiryo',sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{
+  margin:0;height:100%;background:var(--ink);
+  overflow:hidden;overscroll-behavior:none;
+  font-family:var(--font-body);color:var(--tooth);
+  -webkit-user-select:none;user-select:none;
+}
+#voidWrap{
+  width:100vw;height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  background:
+    radial-gradient(ellipse at 50% 20%, #1a2e33 0%, var(--ink) 70%);
+}
+#frame{
+  position:relative;
+  width:min(100vw, calc(100vh * 480 / 800));
+  height:min(100vh, calc(100vw * 800 / 480));
+  background:var(--bg-deep);
+  overflow:hidden;
+  box-shadow:0 0 0 2px #05363c, 0 0 60px rgba(0,0,0,0.6);
+  border-radius:10px;
+}
+canvas#cv{position:absolute;inset:0;width:100%;height:100%;display:block;}
+
+#ui{position:absolute;inset:0;pointer-events:none;font-size:16px;}
+.screen{
+  position:absolute;inset:0;display:none;flex-direction:column;
+  pointer-events:none;
+}
+.screen.active{display:flex;pointer-events:auto;}
+
+/* ---------- generic bits ---------- */
+.scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.pad{padding:22px 20px;}
+.stack{display:flex;flex-direction:column;gap:12px;}
+.center{align-items:center;text-align:center;}
+.spacer{flex:1;}
+
+h1,h2,h3{margin:0;font-family:var(--font-display);letter-spacing:0.02em;}
+p{margin:0;line-height:1.6;}
+
+.btn{
+  font-family:var(--font-body);font-weight:700;font-size:16px;
+  color:var(--ink);background:var(--tooth);
+  border:none;border-radius:999px;padding:13px 22px;
+  box-shadow:0 4px 0 #cfc9bc, 0 6px 10px rgba(0,0,0,0.35);
+  cursor:pointer;transition:transform .08s ease;
+}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #cfc9bc,0 2px 6px rgba(0,0,0,0.3);}
+.btn.primary{background:var(--gum);color:var(--tooth);box-shadow:0 4px 0 var(--gum-deep),0 6px 14px rgba(255,92,130,0.35);}
+.btn.mint{background:var(--mint);color:#04352a;box-shadow:0 4px 0 var(--mint-deep),0 6px 14px rgba(77,232,176,0.3);}
+.btn.ghost{background:transparent;color:var(--tooth);box-shadow:inset 0 0 0 2px rgba(255,251,242,0.5);}
+.btn.small{padding:9px 14px;font-size:13px;}
+.btn:disabled{opacity:0.35;cursor:default;box-shadow:none;transform:none;}
+.btn.wide{width:100%;}
+
+.topbar{
+  display:flex;align-items:center;gap:10px;padding:16px 18px 6px;
+}
+.topbar .ttl{font-family:var(--font-display);font-size:15px;color:var(--tooth-dim);}
+.coin{
+  margin-left:auto;display:flex;align-items:center;gap:6px;
+  background:rgba(0,0,0,0.28);border-radius:999px;padding:6px 12px;
+  font-family:var(--font-display);font-size:14px;color:var(--gold);
+}
+
+/* ---------- title ---------- */
+#scr-title{justify-content:center;align-items:center;text-align:center;padding:0 26px;}
+.titleWrap{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.logoGo{
+  position:relative;display:inline-block;
+  font-family:var(--font-display);font-size:15px;color:var(--gold);
+  background:var(--ink);border:2px solid var(--gold);border-radius:999px;
+  padding:4px 16px;transform:rotate(-4deg);margin-bottom:6px;
+  animation:none;
+}
+.titleMain{
+  font-family:var(--font-display);
+  font-size:40px;line-height:1.18;color:var(--tooth);
+  text-shadow:3px 3px 0 var(--gum-deep), 6px 6px 0 rgba(0,0,0,0.35);
+  animation:biteIn .55s cubic-bezier(.2,1.6,.4,1) both;
+}
+.titleSub{
+  font-family:var(--font-display);
+  font-size:16px;color:var(--mint);margin-top:6px;
+}
+.catch{
+  margin-top:18px;font-size:13.5px;color:var(--tooth-dim);
+  max-width:320px;line-height:1.9;
+}
+.titleBtns{margin-top:34px;display:flex;flex-direction:column;gap:12px;width:230px;}
+.titleFoot{position:absolute;bottom:14px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,251,242,0.35);}
+@keyframes biteIn{
+  0%{transform:scaleY(0.35) scaleX(1.12);opacity:0;}
+  60%{transform:scaleY(1.12) scaleX(0.94);opacity:1;}
+  100%{transform:scaleY(1) scaleX(1);}
+}
+@media (prefers-reduced-motion:reduce){
+  .titleMain{animation:none;}
+}
+
+/* ---------- howto ---------- */
+.howList{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+.howRow{
+  display:flex;align-items:center;gap:12px;
+  background:var(--bg-panel);border-radius:14px;padding:12px 14px;
+}
+.keycap{
+  font-family:var(--font-display);font-size:12px;color:var(--ink);
+  background:var(--tooth);border-radius:8px;padding:6px 9px;min-width:58px;text-align:center;
+  box-shadow:0 3px 0 #cfc9bc;
+}
+.howTxt b{color:var(--gum);}
+.howTxt{font-size:13px;color:var(--tooth-dim);line-height:1.5;}
+.howTxt .nm{color:var(--tooth);font-weight:700;display:block;font-size:14px;margin-bottom:2px;}
+
+/* ---------- select ---------- */
+#stageList{display:flex;flex-direction:column;gap:12px;padding:6px 18px 22px;}
+.stageCard{
+  background:linear-gradient(180deg,var(--bg-panel2),var(--bg-panel));
+  border-radius:16px;padding:14px 16px;
+  box-shadow:0 3px 0 rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,251,242,0.06);
+}
+.stageCardHead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+.stageDiff{font-size:12px;letter-spacing:1px;}
+.stageName{font-family:var(--font-display);font-size:16px;color:var(--tooth);}
+.stageSub{font-size:12px;color:var(--tooth-dim);margin-top:3px;}
+.stageBest{font-size:11.5px;color:var(--mint);margin-top:6px;}
+.stageBtns{display:flex;gap:8px;margin-top:11px;}
+
+/* ---------- garage ---------- */
+#garageList{display:flex;flex-direction:column;gap:12px;padding:4px 18px 22px;}
+.gRow{
+  display:flex;align-items:center;gap:12px;
+  background:var(--bg-panel);border-radius:16px;padding:12px 14px;
+}
+.gIcon{font-size:26px;width:38px;text-align:center;}
+.gInfo{flex:1;min-width:0;}
+.gName{font-size:14px;font-weight:700;color:var(--tooth);}
+.gLv{font-size:11px;color:var(--gold);margin-left:6px;font-weight:400;}
+.gDesc{font-size:11.5px;color:var(--tooth-dim);margin-top:3px;line-height:1.5;}
+.gDots{display:flex;gap:4px;margin-top:6px;}
+.dot{width:8px;height:8px;border-radius:50%;background:rgba(255,251,242,0.18);}
+.dot.on{background:var(--mint);}
+
+/* ---------- board ---------- */
+#boardList{display:flex;flex-direction:column;gap:8px;padding:4px 18px 22px;}
+.boardRow{
+  background:var(--bg-panel);border-radius:12px;padding:10px 12px;font-size:13px;
+}
+.boardRow:nth-child(1) .bRank{color:var(--gold);}
+.brTop{display:flex;align-items:center;gap:8px;}
+.bRank{font-family:var(--font-display);width:18px;color:var(--tooth-dim);}
+.bName{font-family:var(--font-display);letter-spacing:1px;color:var(--tooth);flex:1;}
+.bTime{color:var(--mint);font-family:var(--font-display);}
+.brBottom{display:flex;align-items:center;justify-content:space-between;margin-top:7px;}
+.bGrade{color:var(--tooth-dim);font-size:11px;}
+.battleBtn{padding:6px 12px;font-size:11px;}
+.boardEmpty{padding:30px 10px;text-align:center;color:var(--tooth-dim);font-size:13px;}
+
+/* ---------- play HUD ---------- */
+#scr-play{pointer-events:none;}
+.hudTop{padding:14px 16px 0;pointer-events:none;}
+.gaugeWrap{
+  height:14px;border-radius:999px;background:rgba(0,0,0,0.35);
+  overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,251,242,0.15);
+}
+#progressBar{height:100%;width:0%;background:linear-gradient(90deg,var(--gum),var(--gold));transition:width .1s linear;}
+.timingBanner{
+  margin-top:8px;text-align:center;font-family:var(--font-display);
+  font-size:13px;color:var(--tooth-dim);
+  background:rgba(0,0,0,0.32);border-radius:999px;padding:7px 10px;
+}
+.timingBanner.open{color:var(--ink);background:var(--mint);animation:pulseGo .5s ease infinite alternate;}
+@keyframes pulseGo{from{transform:scale(1);}to{transform:scale(1.035);}}
+@media (prefers-reduced-motion:reduce){.timingBanner.open{animation:none;}}
+
+.rivalTag{
+  display:none;margin-top:7px;align-items:center;justify-content:space-between;
+  background:rgba(0,0,0,0.3);border-radius:999px;padding:6px 12px;
+  font-family:var(--font-display);font-size:11px;color:var(--tooth-dim);
+}
+.rivalTag.show{display:flex;}
+.rivalTag .lead{color:var(--mint);}
+.rivalTag .behind{color:var(--danger);}
+
+.duelBanner{
+  text-align:center;font-family:var(--font-display);font-size:12.5px;
+  border-radius:12px;padding:9px 10px;margin-bottom:14px;color:var(--tooth);
+  background:rgba(255,251,242,0.08);
+}
+.duelBanner.duel-win{background:rgba(77,232,176,0.18);color:var(--mint);}
+.duelBanner.duel-lose{background:rgba(255,90,77,0.16);color:var(--danger);}
+.duelBanner.duel-draw{background:rgba(255,201,77,0.16);color:var(--gold);}
+
+#btnQuit{
+  position:absolute;top:14px;right:14px;pointer-events:auto;
+  width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,0.4);
+  color:var(--tooth);border:none;font-size:14px;line-height:30px;text-align:center;padding:0;
+}
+
+.hudBottom{position:absolute;left:0;right:0;bottom:0;padding:0 16px 14px;pointer-events:none;}
+.boostRow{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.boostLbl{font-family:var(--font-display);font-size:10px;color:var(--gold);white-space:nowrap;}
+#boostGauge{height:100%;width:100%;background:linear-gradient(90deg,var(--mint),var(--gold));}
+#boostGauge.sticky{background:repeating-linear-gradient(45deg,var(--danger),var(--danger) 6px,#a83a33 6px,#a83a33 12px);}
+.speedTag{font-family:var(--font-display);font-size:10px;color:var(--tooth-dim);white-space:nowrap;}
+
+.controls{display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none;}
+.padWrap{display:flex;gap:10px;pointer-events:auto;}
+.actWrap{display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:auto;}
+.ctrlBtn{
+  width:56px;height:56px;border-radius:16px;border:none;
+  background:rgba(255,251,242,0.14);color:var(--tooth);
+  font-size:20px;display:flex;align-items:center;justify-content:center;
+  box-shadow:inset 0 0 0 1px rgba(255,251,242,0.2);
+}
+.ctrlBtn:active{background:rgba(255,251,242,0.32);}
+.ctrlBtn.act{width:auto;padding:0 14px;height:44px;border-radius:999px;font-family:var(--font-display);font-size:11px;gap:6px;}
+#btnBoost{background:rgba(255,201,77,0.25);color:var(--gold);}
+#btnBoost:active{background:rgba(255,201,77,0.5);}
+#btnDrift{background:rgba(77,232,176,0.2);color:var(--mint);}
+#btnDrift:active{background:rgba(77,232,176,0.4);}
+#btnBrake{background:rgba(255,90,77,0.2);color:var(--danger);}
+
+/* ---------- result ---------- */
+#scr-result{justify-content:center;padding:22px 22px;}
+.resultCard{
+  background:linear-gradient(180deg,var(--bg-panel2),var(--bg-panel));
+  border-radius:20px;padding:22px 20px;box-shadow:0 6px 0 rgba(0,0,0,0.3);
+}
+.resultStageName{text-align:center;font-size:12px;color:var(--tooth-dim);}
+.resultGrade{
+  text-align:center;font-family:var(--font-display);font-size:30px;margin:8px 0 2px;
+}
+.g-s{color:var(--gold);text-shadow:0 0 18px rgba(255,201,77,0.6);}
+.g-a{color:var(--mint);}
+.g-b{color:var(--tooth);}
+.g-c{color:var(--tooth-dim);}
+.g-d{color:var(--danger);}
+.resultNote{text-align:center;font-size:12px;color:var(--tooth-dim);min-height:16px;margin-bottom:14px;}
+.resultTimeRow{text-align:center;font-family:var(--font-display);font-size:13px;color:var(--tooth-dim);margin-bottom:16px;}
+.resultTimeRow b{color:var(--tooth);font-size:16px;}
+.scoreRow{margin-bottom:10px;}
+.scoreLbl{display:flex;justify-content:space-between;font-size:11.5px;color:var(--tooth-dim);margin-bottom:4px;}
+.scoreBar{height:9px;border-radius:999px;background:rgba(0,0,0,0.35);overflow:hidden;}
+.scoreBar > div{height:100%;border-radius:999px;}
+#barTime{background:var(--gum);}
+#barPos{background:var(--mint);}
+#barSafe{background:var(--gold);}
+.coinRow{text-align:center;margin:16px 0 4px;font-family:var(--font-display);color:var(--gold);font-size:15px;}
+.resultBtns{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px;}
+.resultBtns .btn{flex:1;min-width:120px;}
+
+/* ---------- modal ---------- */
+.modal{
+  position:absolute;inset:0;background:rgba(5,10,12,0.72);
+  display:flex;align-items:center;justify-content:center;pointer-events:auto;z-index:20;
+}
+.modal.hidden{display:none;}
+.modalCard{
+  background:var(--bg-panel2);border-radius:18px;padding:22px;width:80%;max-width:280px;
+  text-align:center;box-shadow:0 8px 0 rgba(0,0,0,0.3);
+}
+.modalCard h3{font-size:14px;color:var(--tooth);margin-bottom:12px;}
+#nameInput{
+  width:100%;text-align:center;font-family:var(--font-display);font-size:22px;letter-spacing:6px;
+  background:rgba(0,0,0,0.3);border:2px solid var(--mint);border-radius:10px;color:var(--tooth);
+  padding:10px 0;text-transform:uppercase;margin-bottom:14px;
+}
+.modalBtns{display:flex;gap:8px;}
+.modalBtns .btn{flex:1;}
+
+::-webkit-scrollbar{width:0;height:0;}
+</style>
+</head>
+<body>
+<div id="voidWrap">
+  <div id="frame">
+    <canvas id="cv"></canvas>
+    <div id="ui">
+
+      <!-- TITLE -->
+      <section id="scr-title" class="screen active">
+        <div class="titleWrap">
+          <div class="logoGo">JUST IN MOUTH</div>
+          <h1 class="titleMain">入れ歯でGO！</h1>
+          <div class="titleSub">〜峠の入歯屋 爆走伝説〜</div>
+          <p class="catch">噛みしめろ、勝利の味を。<br>目指すは定刻・定位置（ジャスト・イン・マウス）！</p>
+        </div>
+        <div class="titleBtns">
+          <button class="btn primary wide" id="btnTitleStart">スタート</button>
+          <button class="btn ghost wide" id="btnHowto">遊びかた</button>
+        </div>
+        <div class="titleFoot">妖精さんになって、じいちゃんの口へピタッと届けろ</div>
+      </section>
+
+      <!-- HOWTO -->
+      <section id="scr-howto" class="screen">
+        <div class="topbar"><span class="ttl">遊びかた</span></div>
+        <div class="pad scroll" style="flex:1;">
+          <div class="howList">
+            <div class="howRow"><span class="keycap">←→ / A D</span><span class="howTxt"><span class="nm">ハンドリング</span>体重移動で左右に動く。総義歯は重いので慣性に注意。</span></div>
+            <div class="howRow"><span class="keycap">↑ / W</span><span class="howTxt"><span class="nm">アクセル</span>前進する。離すと自然に減速。</span></div>
+            <div class="howRow"><span class="keycap">↓ / S</span><span class="howTxt"><span class="nm">噛み合わせブレーキ</span>カチカチッと強めに減速。ゴール前の停止に必須。</span></div>
+            <div class="howRow"><span class="keycap">Shift / K</span><span class="howTxt"><span class="nm">ポリデント・ニトロ</span>加速+グリップUP。使いすぎるとベタついて最高速ダウン。</span></div>
+            <div class="howRow"><span class="keycap">Space / J</span><span class="howTxt"><span class="nm">ガタツキ・スライド</span>安定剤を使わず滑るように曲がる。鋭く曲がれるが不安定。</span></div>
+          </div>
+          <p style="margin-top:18px;font-size:12.5px;color:var(--tooth-dim);line-height:1.8;">
+            じいちゃんの「腹減ったな…」の後、口が開いている間にゴールへ。<br>
+            さらに歯茎ライン（ジャスト・フィット地点）へ誤差なく停止できればEXCELLENT！<br>
+            障害物にぶつかると衛生スコアが下がるので気をつけよう。<br><br>
+            👻<b style="color:var(--tooth);">ゴースト対戦（非同期マルチ）</b>：自己ベストを更新すると自分のゴーストが出現し、次回から自動で並走。ランキング画面の「🆚対戦する」から他プレイヤーのゴーストにも挑戦できる。勝つとお小遣いボーナス！
+          </p>
+        </div>
+        <div class="pad"><button class="btn wide" id="btnHowtoClose">もどる</button></div>
+      </section>
+
+      <!-- STAGE SELECT -->
+      <section id="scr-select" class="screen">
+        <div class="topbar">
+          <span class="ttl">ステージ選択</span>
+          <span class="coin">💰 <span id="currencyVal">0</span></span>
+        </div>
+        <div id="stageList" class="scroll" style="flex:1;"></div>
+        <div class="pad" style="display:flex;gap:9px;padding-top:0;">
+          <button class="btn ghost" id="btnSelectBack">タイトルへ</button>
+          <button class="btn mint" style="flex:1;" id="btnGarage">🔧 ガレージ</button>
+        </div>
+      </section>
+
+      <!-- GARAGE -->
+      <section id="scr-garage" class="screen">
+        <div class="topbar">
+          <span class="ttl">ガレージ（チューニング）</span>
+          <span class="coin">💰 <span id="currencyVal2">0</span></span>
+        </div>
+        <div id="garageList" class="scroll" style="flex:1;"></div>
+        <div class="pad"><button class="btn wide" id="btnGarageBack">もどる</button></div>
+      </section>
+
+      <!-- LEADERBOARD -->
+      <section id="scr-board" class="screen">
+        <div class="topbar"><span class="ttl" id="boardTitle">ランキング</span></div>
+        <div id="boardList" class="scroll" style="flex:1;"></div>
+        <div class="pad"><button class="btn wide" id="btnBoardBack">もどる</button></div>
+      </section>
+
+      <!-- PLAY (HUD over canvas) -->
+      <div id="scr-play" class="screen">
+        <button id="btnQuit">✕</button>
+        <div class="hudTop">
+          <div class="gaugeWrap"><div id="progressBar"></div></div>
+          <div class="rivalTag" id="rivalTag"><span id="rivalName">VS ???</span><span id="rivalGap"></span></div>
+          <div class="timingBanner" id="timingBanner">…</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="hudBottom">
+          <div class="boostRow">
+            <span class="boostLbl">NITRO</span>
+            <div class="gaugeWrap" style="flex:1;"><div id="boostGauge"></div></div>
+            <span class="speedTag"><span id="speedVal">0</span> km/h</span>
+          </div>
+          <div class="controls">
+            <div class="padWrap">
+              <button class="ctrlBtn" id="padLeft">◀</button>
+              <button class="ctrlBtn" id="padRight">▶</button>
+            </div>
+            <div class="actWrap">
+              <div style="display:flex;gap:8px;">
+                <button class="ctrlBtn act" id="btnBoost">🔥NITRO</button>
+                <button class="ctrlBtn act" id="btnDrift">💫DRIFT</button>
+              </div>
+              <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button class="ctrlBtn" id="btnBrake">▼</button>
+                <button class="ctrlBtn" id="btnAccel">▲</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULT -->
+      <section id="scr-result" class="screen">
+        <div class="resultCard">
+          <div class="resultStageName" id="resultStageName">STAGE</div>
+          <div class="resultGrade" id="resultGrade">EXCELLENT FIT!!</div>
+          <div class="resultNote" id="resultNote"></div>
+          <div class="resultTimeRow">到着タイム <b id="resultTime">0.00秒</b></div>
+          <div class="duelBanner" id="duelBanner" style="display:none;"></div>
+
+          <div class="scoreRow">
+            <div class="scoreLbl"><span>到着時刻</span></div>
+            <div class="scoreBar"><div id="barTime" style="width:0%"></div></div>
+          </div>
+          <div class="scoreRow">
+            <div class="scoreLbl"><span>停止位置（ジャスト・フィット）</span></div>
+            <div class="scoreBar"><div id="barPos" style="width:0%"></div></div>
+          </div>
+          <div class="scoreRow">
+            <div class="scoreLbl"><span>安全性（衛生・耐久）</span></div>
+            <div class="scoreBar"><div id="barSafe" style="width:0%"></div></div>
+          </div>
+
+          <div class="coinRow">お小遣い <span id="resultCoin">+0</span></div>
+          <div class="resultBtns">
+            <button class="btn primary" id="btnRetry">もう一度</button>
+            <button class="btn" id="btnResultSelect">ステージ選択</button>
+            <button class="btn mint" id="btnResultGarage">ガレージ</button>
+            <button class="btn ghost" id="btnResultBoard">🏆ランキング登録</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- NAME ENTRY MODAL -->
+      <div class="modal hidden" id="nameModal">
+        <div class="modalCard">
+          <h3>ランキングに登録（3文字・全員に公開されます）</h3>
+          <input id="nameInput" maxlength="3" placeholder="AAA" />
+          <div class="modalBtns">
+            <button class="btn ghost" id="btnNameCancel">やめる</button>
+            <button class="btn primary" id="btnNameSubmit">登録する</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* =========================================================
+   定数
+========================================================= */
+const LOGICAL_W = 480, LOGICAL_H = 800;
+const PLAYER_Y = 640;
+const NEAR_ZERO = 10;
+
+/* =========================================================
+   ユーティリティ
+========================================================= */
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* =========================================================
+   ステージ設定
+========================================================= */
+const STAGES = [
+  {
+    id:0, key:'sink', name:'洗面台サーキット', sub:'朝のみだしなみタイム／チュートリアル', diff:1,
+    length:2350, baseHalfWidth:132, obstacleDensity:0.5,
+    obstacleTypes:['🪥','🧼','🫧'],
+    maxSpeed:255, accel:250, passiveAccel:0,
+    timing:{open:8.2, close:13.0},
+    seed:19810, themeBg:['#123640','#0a1e24'], trackColor:'#e7f5f2', edgeColor:'#7fcdbd',
+    steam:false, wind:false, dark:false,
+    flavorWait:'じいちゃん「腹減ったな…」', flavorGo:'今だ！じいちゃんの口が開いた！'
+  },
+  {
+    id:1, key:'dining', name:'恐怖のダイニング・ダウンヒル', sub:'夕食前の激下りバトル', diff:3,
+    length:2600, baseHalfWidth:126, obstacleDensity:0.75,
+    obstacleTypes:['🍲','🥢','🍚'],
+    maxSpeed:278, accel:232, passiveAccel:92,
+    timing:{open:6.6, close:9.8},
+    seed:20231, themeBg:['#3a1c15','#190b08'], trackColor:'#ffe9cf', edgeColor:'#e0a15a',
+    steam:false, wind:false, dark:false,
+    flavorWait:'じいちゃん「今日は腹の減りが早いぞ…」', flavorGo:'口が開いた！味噌汁に気をつけろ！'
+  },
+  {
+    id:2, key:'sento', name:'湯煙！銭湯アップヒル', sub:'湯船前の耐久のぼり坂', diff:4,
+    length:2750, baseHalfWidth:130, obstacleDensity:0.62,
+    obstacleTypes:['🦆','🪣','🧴'],
+    maxSpeed:248, accel:214, passiveAccel:-72,
+    timing:{open:9.6, close:13.2},
+    seed:20560, themeBg:['#402340','#180a1c'], trackColor:'#ffe0f2', edgeColor:'#e79ad0',
+    steam:true, wind:false, dark:false,
+    flavorWait:'じいちゃん「湯船、はよ入りたい…」', flavorGo:'口が開いた！湯気に負けるな！'
+  },
+  {
+    id:3, key:'yofuke', name:'就寝・ミッドナイトマウス', sub:'いびき吹き荒れる暗闇TA専用', diff:5,
+    length:2450, baseHalfWidth:124, obstacleDensity:0.55,
+    obstacleTypes:['🧦','🧶','🍬'],
+    maxSpeed:262, accel:238, passiveAccel:0,
+    timing:{open:7.8, close:10.0},
+    seed:20990, themeBg:['#0a1130','#04071a'], trackColor:'#cfe0ff', edgeColor:'#7d93e0',
+    steam:false, wind:true, dark:true,
+    flavorWait:'じいちゃん「グゴー…（いびき）」', flavorGo:'口が開いた！いびき突風に注意！'
+  },
+];
+
+const UPGRADES = [
+  {key:'gold', name:'金歯', icon:'🥇', desc:'重量が増して直線が安定。ただし小回りはやや苦手に。'},
+  {key:'gum',  name:'スポーツ人工歯肉', icon:'🩷', desc:'グリップ向上でコーナーが安定。最高速は少し控えめに。'},
+  {key:'mint', name:'ミントフレーバー', icon:'🌿', desc:'じいちゃんの機嫌が良くなり、タイミングと停止の判定が甘くなる。'},
+];
+function upgradeCost(lv){ return Math.round(40*Math.pow(lv+1,1.5)); }
+
+/* =========================================================
+   トラック生成（ステージごとにシード固定＝周回コース公平）
+========================================================= */
+function makeCurveParams(rng){
+  return {
+    amp1: 24+rng()*18, freq1: 0.0018+rng()*0.0011, ph1: rng()*Math.PI*2,
+    amp2: 9+rng()*13,  freq2: 0.0040+rng()*0.0028, ph2: rng()*Math.PI*2,
+  };
+}
+function centerXAt(progress, cp){
+  return LOGICAL_W/2 + cp.amp1*Math.sin(progress*cp.freq1+cp.ph1) + cp.amp2*Math.sin(progress*cp.freq2+cp.ph2);
+}
+function halfWidthAt(progress, stage, narrowZones){
+  let w = stage.baseHalfWidth;
+  for(const z of narrowZones){
+    if(progress>=z.start && progress<=z.end){
+      const mid=(z.start+z.end)/2, half=(z.end-z.start)/2;
+      const t = 1-Math.abs(progress-mid)/half;
+      const eased = t*t*(3-2*t);
+      w = lerp(w, w*z.factor, eased);
+    }
+  }
+  return w;
+}
+function genNarrowZones(stage, rng){
+  const zones=[];
+  const n = 2+Math.floor(rng()*2);
+  for(let i=0;i<n;i++){
+    const start = stage.length*(0.22+i*(0.56/n)) + (rng()-0.5)*130;
+    const len = 130+rng()*95;
+    zones.push({start, end:start+len, factor:0.6+rng()*0.14});
+  }
+  return zones;
+}
+function genObstacles(stage, rng){
+  const count = Math.max(6, Math.round(stage.length/150*stage.obstacleDensity));
+  const list=[];
+  const gap = (stage.length-320)/(count+1);
+  for(let i=1;i<=count;i++){
+    const prog = 160 + gap*i + (rng()-0.5)*gap*0.5;
+    const side = rng()<0.5?-1:1;
+    const offsetFrac = 0.22+rng()*0.32;
+    const type = stage.obstacleTypes[Math.floor(rng()*stage.obstacleTypes.length)];
+    const r = 15+rng()*9;
+    list.push({progress:clamp(prog,160,stage.length-160), side, offsetFrac, type, r, hit:false});
+  }
+  return list;
+}
+function genSteamZones(stage, rng){
+  if(!stage.steam) return [];
+  const zones=[];
+  for(let i=0;i<3;i++){
+    const start = stage.length*(0.2+i*0.26) + (rng()-0.5)*110;
+    const len = 170+rng()*90;
+    zones.push({start, end:start+len});
+  }
+  return zones;
+}
+function genWindEvents(stage, rng){
+  if(!stage.wind) return [];
+  const events=[];
+  let t = 2.1+rng()*1.1;
+  for(let i=0;i<5;i++){
+    const dur = 0.8+rng()*0.6;
+    events.push({start:t, end:t+dur, dir: rng()<0.5?-1:1, mag: 520+rng()*220});
+    t += dur + 1.1+rng()*1.3;
+  }
+  return events;
+}
+function buildTrack(stage){
+  const rng = mulberry32(stage.seed);
+  const cp = makeCurveParams(rng);
+  const narrowZones = genNarrowZones(stage, rng);
+  const obstacles = genObstacles(stage, rng);
+  const steamZones = genSteamZones(stage, rng);
+  const windEvents = genWindEvents(stage, rng);
+  return {cp, narrowZones, obstacles, steamZones, windEvents};
+}
+
+/* =========================================================
+   永続データ（window.storage／使えなければメモリのみ）
+========================================================= */
+const DEFAULT_DATA = {currency:0, upgrades:{gold:0,gum:0,mint:0}, bestTimes:{}, bestGhosts:{}, duelRecords:{}};
+let Data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+const hasStorage = (typeof window!=='undefined' && !!window.storage);
+
+async function loadData(){
+  if(!hasStorage) return;
+  try{
+    const res = await window.storage.get('savedata', false);
+    if(res && res.value){
+      const loaded = JSON.parse(res.value);
+      Data = Object.assign(JSON.parse(JSON.stringify(DEFAULT_DATA)), loaded);
+      if(!Data.upgrades) Data.upgrades = {gold:0,gum:0,mint:0};
+      if(!Data.bestTimes) Data.bestTimes = {};
+      if(!Data.bestGhosts) Data.bestGhosts = {};
+      if(!Data.duelRecords) Data.duelRecords = {};
+    }
+  }catch(e){ /* 初回はキー無し＝デフォルトのまま */ }
+}
+async function saveData(){
+  if(!hasStorage) return;
+  try{ await window.storage.set('savedata', JSON.stringify(Data), false); }
+  catch(e){ console.warn('save failed', e); }
+}
+async function loadLeaderboard(stageKey){
+  if(!hasStorage) return [];
+  try{
+    const res = await window.storage.get('board:'+stageKey, true);
+    return (res && res.value) ? JSON.parse(res.value) : [];
+  }catch(e){ return []; }
+}
+async function submitScore(stageKey, name, time, grade, ghostTrail){
+  let list = await loadLeaderboard(stageKey);
+  list.push({name:(name||'???').toUpperCase().slice(0,3), time, grade, ghost:downsampleGhost(ghostTrail)});
+  list.sort((a,b)=>a.time-b.time);
+  list = list.slice(0,10);
+  if(hasStorage){
+    try{ await window.storage.set('board:'+stageKey, JSON.stringify(list), true); }catch(e){}
+  }
+  return list;
+}
+function downsampleGhost(trail, maxPoints){
+  if(!trail || !trail.length) return [];
+  maxPoints = maxPoints || 90;
+  if(trail.length<=maxPoints) return trail;
+  const out=[];
+  const step=(trail.length-1)/(maxPoints-1);
+  for(let i=0;i<maxPoints;i++) out.push(trail[Math.round(i*step)]);
+  return out;
+}
+function getGhostXP(ghost, t){
+  if(!ghost || !ghost.length) return null;
+  if(t<=ghost[0][0]) return {x:ghost[0][1], p:ghost[0][2]};
+  const last=ghost[ghost.length-1];
+  if(t>=last[0]) return {x:last[1], p:last[2]};
+  for(let i=0;i<ghost.length-1;i++){
+    const a=ghost[i], b=ghost[i+1];
+    if(t>=a[0] && t<=b[0]){
+      const f=(t-a[0])/Math.max(0.0001,(b[0]-a[0]));
+      return {x:lerp(a[1],b[1],f), p:lerp(a[2],b[2],f)};
+    }
+  }
+  return {x:last[1], p:last[2]};
+}
+
+/* =========================================================
+   サウンド（WebAudio・簡易効果音）
+========================================================= */
+const SFX = {
+  ctx:null,
+  ensure(){
+    if(!this.ctx){
+      try{ this.ctx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ this.ctx=null; }
+    }
+    if(this.ctx && this.ctx.state==='suspended'){ this.ctx.resume(); }
+  },
+  tone(freq,dur,type,vol,delay){
+    this.ensure(); if(!this.ctx) return;
+    type = type||'square'; vol = vol==null?0.15:vol; delay = delay||0;
+    const t0=this.ctx.currentTime+delay;
+    const osc=this.ctx.createOscillator(), gain=this.ctx.createGain();
+    osc.type=type; osc.frequency.setValueAtTime(freq,t0);
+    gain.gain.setValueAtTime(0.0001,t0);
+    gain.gain.linearRampToValueAtTime(vol,t0+0.012);
+    gain.gain.exponentialRampToValueAtTime(0.001,t0+dur);
+    osc.connect(gain).connect(this.ctx.destination);
+    osc.start(t0); osc.stop(t0+dur+0.03);
+  },
+  click(){ this.tone(720,0.06,'square',0.12); },
+  go(){ this.tone(440,0.09,'square',0.14); this.tone(660,0.12,'square',0.14,0.09); },
+  bonk(){ this.tone(120,0.12,'sawtooth',0.2); },
+  tick(){ this.tone(500,0.04,'square',0.07); },
+  buy(){ this.tone(880,0.07,'square',0.13); this.tone(1180,0.09,'square',0.11,0.06); },
+  stopBell(){ this.tone(760,0.35,'sine',0.16); },
+  fanfare(gradeKey){
+    const seqs={
+      s:[[880,0.12,'square'],[1180,0.12,'square'],[1480,0.3,'square']],
+      a:[[760,0.12,'square'],[1020,0.26,'square']],
+      b:[[600,0.16,'square'],[760,0.2,'square']],
+      c:[[420,0.22,'square']],
+      d:[[300,0.3,'sawtooth']],
+    };
+    const seq=seqs[gradeKey]||seqs.b;
+    let dl=0;
+    for(const n of seq){ this.tone(n[0],n[1],n[2],0.15,dl); dl+=n[1]*0.85; }
+  },
+  duelWin(){ this.tone(700,0.1,'square',0.16); this.tone(950,0.1,'square',0.16,0.1); this.tone(1300,0.22,'square',0.18,0.2); },
+  duelLose(){ this.tone(340,0.16,'sawtooth',0.14); this.tone(260,0.28,'sawtooth',0.14,0.15); }
+};
+
+/* =========================================================
+   状態
+========================================================= */
+const UI = { screen:'title' };
+let Run = null;
+
+const Input = {left:false,right:false,accel:false,brake:false,boost:false,drift:false};
+const KEYMAP = {
+  ArrowLeft:'left', KeyA:'left',
+  ArrowRight:'right', KeyD:'right',
+  ArrowUp:'accel', KeyW:'accel',
+  ArrowDown:'brake', KeyS:'brake',
+  ShiftLeft:'boost', ShiftRight:'boost', KeyK:'boost',
+  Space:'drift', KeyJ:'drift',
+};
+
+/* =========================================================
+   アップグレード効果
+========================================================= */
+function computeEffectiveParams(){
+  const g=Data.upgrades.gold, gu=Data.upgrades.gum, mi=Data.upgrades.mint;
+  return {
+    steerMul: Math.pow(0.91,g),
+    gripMul: Math.pow(1.14,gu),
+    windMul: Math.pow(0.8,g),
+    speedMul: Math.pow(1.02,g)*Math.pow(0.99,gu),
+    timingBonus: mi*0.55,
+    posBonus: mi*4.5,
+  };
+}
+
+/* =========================================================
+   ラン開始／物理更新
+========================================================= */
+function startRun(stageIndex, rivalOverride){
+  const stage = STAGES[stageIndex];
+  const track = buildTrack(stage);
+  const eff = computeEffectiveParams();
+  let rival = rivalOverride || null;
+  if(!rival && Data.bestGhosts[stage.key] && Data.bestGhosts[stage.key].length && Data.bestTimes[stage.key]){
+    rival = {name:'自己ベスト', time:Data.bestTimes[stage.key].time, ghost:Data.bestGhosts[stage.key], self:true};
+  }
+  Run = {
+    stage, track, eff,
+    progress:0, x:centerXAt(0, track.cp), lateralVel:0, speed:0,
+    boost:100, sticky:0, stickyDebuff:false,
+    drifting:false, braking:false, boosting:false,
+    elapsedRace:0, collisions:0, edgeHits:0, safetyPenalty:0,
+    particles:[], finished:false, postTimer:0,
+    finalStopProgress:null, finalStopTime:null,
+    goalZoneStart: stage.length-150, wallProgress: stage.length+65,
+    shake:0, mouthOpenVisual:0, edgeCd:0,
+    result:null,
+    rival, ghostTrail:[[0, centerXAt(0,track.cp), 0]], ghostAcc:0,
+  };
+  showScreen('play');
+  SFX.go();
+}
+
+function edgeHit(){
+  Run.edgeHits++;
+  if(Run.edgeCd<=0){ Run.safetyPenalty+=5; Run.edgeCd=0.3; SFX.tick(); }
+}
+function spawnParticle(type){
+  const r=Run;
+  r.particles.push({
+    type, x:r.x+(Math.random()-0.5)*14, progress:r.progress-6,
+    vx:(Math.random()-0.5)*(type==='hit'?170:40),
+    life: type==='boost'?0.5:0.4, maxLife: type==='boost'?0.5:0.4,
+  });
+  if(r.particles.length>70) r.particles.shift();
+}
+function updateParticles(dt){
+  for(const p of Run.particles){ p.x+=p.vx*dt; p.life-=dt; }
+  Run.particles = Run.particles.filter(p=>p.life>0);
+}
+
+function updateRun(dt){
+  const r=Run, st=r.stage, eff=r.eff;
+  if(r.edgeCd>0) r.edgeCd-=dt;
+
+  if(r.finished){
+    r.postTimer += dt;
+    updateParticles(dt);
+    r.shake = Math.max(0, r.shake-dt*3);
+    if(r.postTimer>0.9) finishToResult();
+    return;
+  }
+  r.elapsedRace += dt;
+  r.ghostAcc += dt;
+  if(r.ghostAcc>=0.08){
+    r.ghostAcc=0;
+    r.ghostTrail.push([+r.elapsedRace.toFixed(2), Math.round(r.x), Math.round(r.progress)]);
+  }
+
+  let steerDir=0;
+  if(Input.left) steerDir-=1;
+  if(Input.right) steerDir+=1;
+  r.drifting = Input.drift;
+  r.braking = Input.brake;
+  r.boosting = Input.boost && r.boost>1;
+
+  const steerAccel = 620*eff.steerMul*(r.drifting?1.55:1)*(r.boosting?1.08:1);
+  r.lateralVel += steerDir*steerAccel*dt;
+
+  let grip = 5.0*eff.gripMul;
+  if(r.drifting) grip*=0.42;
+  if(r.boosting) grip*=1.5;
+  const inSteam = st.steam && r.track.steamZones.some(z=>r.progress>=z.start && r.progress<=z.end);
+  if(inSteam) grip*=0.46;
+  grip = Math.min(grip,9);
+  r.lateralVel *= Math.max(0, 1-grip*dt);
+
+  if(st.wind){
+    for(const ev of r.track.windEvents){
+      if(r.elapsedRace>=ev.start && r.elapsedRace<=ev.end){
+        r.lateralVel += ev.dir*ev.mag*eff.windMul*dt;
+      }
+    }
+  }
+
+  r.x += r.lateralVel*dt;
+
+  const cx = centerXAt(r.progress, r.track.cp);
+  const hw = halfWidthAt(r.progress, st, r.track.narrowZones) - 14;
+  if(r.x < cx-hw){ r.x=cx-hw; if(r.lateralVel<0) r.lateralVel*=-0.35; edgeHit(); }
+  if(r.x > cx+hw){ r.x=cx+hw; if(r.lateralVel>0) r.lateralVel*=-0.35; edgeHit(); }
+
+  let maxSpeed = st.maxSpeed*eff.speedMul*(r.stickyDebuff?0.72:1)*(r.boosting?1.32:1);
+  if(r.braking){
+    r.speed -= 480*dt;
+  } else if(Input.accel || r.boosting){
+    r.speed += st.accel*(r.boosting?1.55:1)*dt;
+  } else {
+    r.speed -= 95*dt;
+  }
+  r.speed += (st.passiveAccel||0)*dt;
+  r.speed = clamp(r.speed,0,maxSpeed);
+
+  if(r.boosting){
+    r.boost = clamp(r.boost-34*dt,0,100);
+    r.sticky = clamp(r.sticky+22*dt,0,100);
+    if(Math.random() < dt*14) spawnParticle('boost');
+  } else {
+    r.boost = clamp(r.boost+13*dt,0,100);
+    r.sticky = clamp(r.sticky-28*dt,0,100);
+  }
+  if(r.sticky>=86) r.stickyDebuff=true;
+  if(r.sticky<=38) r.stickyDebuff=false;
+
+  r.progress += r.speed*dt;
+
+  for(const o of r.track.obstacles){
+    if(o.hit) continue;
+    if(Math.abs(o.progress-r.progress) < 26){
+      const ohw = halfWidthAt(o.progress, st, r.track.narrowZones);
+      const ocx = centerXAt(o.progress, r.track.cp) + o.side*o.offsetFrac*ohw;
+      if(Math.abs(r.x-ocx) < o.r+15){
+        o.hit=true; r.collisions++; r.safetyPenalty+=14;
+        r.speed*=0.55; r.lateralVel += (r.x<ocx?-1:1)*140;
+        r.shake=1; SFX.bonk(); spawnParticle('hit');
+      }
+    }
+  }
+
+  const wantOpen = (r.elapsedRace>=st.timing.open && r.elapsedRace<=st.timing.close+1.2) ? 1 : 0;
+  r.mouthOpenVisual = lerp(r.mouthOpenVisual, wantOpen, Math.min(1,dt*6));
+
+  if(r.progress >= r.goalZoneStart){
+    if(r.speed<=NEAR_ZERO || r.progress>=r.wallProgress){
+      const stopAt = Math.min(r.progress, r.wallProgress);
+      r.progress = stopAt; r.speed=0;
+      finalizeRun(stopAt);
+    }
+  }
+
+  r.shake = Math.max(0, r.shake-dt*3);
+  updateParticles(dt);
+}
+
+function finalizeRun(stopProgress){
+  const r=Run, st=r.stage, eff=r.eff;
+  r.finished=true;
+  r.finalStopProgress=stopProgress;
+  r.finalStopTime=r.elapsedRace;
+  SFX.stopBell();
+
+  const target = st.length;
+  const posErr = Math.abs(stopProgress-target);
+  const tolE=9+eff.posBonus*0.5, tolG=26+eff.posBonus, tolO=62+eff.posBonus*1.4;
+  let posScore;
+  if(posErr<=tolE) posScore = 100-(posErr/Math.max(1,tolE))*8;
+  else if(posErr<=tolG) posScore = 92-((posErr-tolE)/(tolG-tolE))*22;
+  else if(posErr<=tolO) posScore = 70-((posErr-tolG)/(tolO-tolG))*30;
+  else posScore = Math.max(0,40-(posErr-tolO)*0.35);
+
+  const wc=(st.timing.open+st.timing.close)/2, wh=(st.timing.close-st.timing.open)/2+eff.timingBonus;
+  const diff=Math.abs(r.finalStopTime-wc);
+  let timeScore;
+  if(diff<=wh) timeScore = 100-(diff/Math.max(0.1,wh))*26;
+  else timeScore = Math.max(0,74-(diff-wh)*11);
+
+  const safeScore = Math.max(0,100-r.safetyPenalty);
+  const overall = timeScore*0.34 + posScore*0.41 + safeScore*0.25;
+
+  let grade, gradeKey;
+  if(overall>=93){grade='EXCELLENT FIT!!';gradeKey='s';}
+  else if(overall>=78){grade='GOOD FIT!';gradeKey='a';}
+  else if(overall>=55){grade='まずまず…';gradeKey='b';}
+  else if(overall>=30){grade='うーん…';gradeKey='c';}
+  else {grade='いたっ!!';gradeKey='d';}
+
+  const coin0 = Math.max(4, Math.round(overall*0.55 + st.diff*4));
+  let coin = coin0;
+
+  let duel=null;
+  if(r.rival){
+    const d = r.finalStopTime - r.rival.time;
+    const outcome = Math.abs(d)<0.05 ? 'draw' : (d<0 ? 'win' : 'lose');
+    duel = {name:r.rival.name, rivalTime:r.rival.time, outcome, diff:Math.abs(d), self:!!r.rival.self};
+    if(outcome==='win') coin += 20;
+    if(!r.rival.self){
+      const key = st.key+'|'+r.rival.name.toUpperCase();
+      if(!Data.duelRecords[key]) Data.duelRecords[key]={win:0,lose:0,draw:0,name:r.rival.name};
+      Data.duelRecords[key][outcome]++;
+    }
+  }
+
+  r.result = {overall, timeScore, posScore, safeScore, grade, gradeKey, coin,
+              time:r.finalStopTime, posErr, over: stopProgress>target, duel};
+
+  Data.currency += coin;
+  const prevBest = Data.bestTimes[st.key];
+  if(!prevBest || r.finalStopTime<prevBest.time){
+    Data.bestTimes[st.key] = {time:r.finalStopTime, grade};
+    Data.bestGhosts[st.key] = downsampleGhost(r.ghostTrail);
+  }
+  saveData();
+}
+
+function finishToResult(){
+  showScreen('result');
+  renderResult();
+  SFX.fanfare(Run.result.gradeKey);
+  if(Run.result.duel){
+    if(Run.result.duel.outcome==='win') setTimeout(()=>SFX.duelWin(), 250);
+    else if(Run.result.duel.outcome==='lose') setTimeout(()=>SFX.duelLose(), 250);
+  }
+}
+
+/* =========================================================
+   描画
+========================================================= */
+const canvas=document.getElementById('cv');
+const ctx=canvas.getContext('2d');
+function resizeCanvas(){
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  canvas.width=LOGICAL_W*dpr; canvas.height=LOGICAL_H*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function screenY(progress){ return PLAYER_Y-(progress-Run.progress); }
+
+function drawTrack(){
+  const st=Run.stage, cp=Run.track.cp, nz=Run.track.narrowZones;
+  const from=Run.progress-50, to=Run.progress+700, step=16;
+  const left=[], right=[];
+  for(let p=from;p<=to;p+=step){
+    const cx=centerXAt(p,cp), hw=halfWidthAt(p,st,nz);
+    left.push([cx-hw, screenY(p)]);
+    right.push([cx+hw, screenY(p)]);
+  }
+  ctx.beginPath();
+  ctx.moveTo(left[0][0],left[0][1]);
+  for(const pt of left) ctx.lineTo(pt[0],pt[1]);
+  for(let i=right.length-1;i>=0;i--) ctx.lineTo(right[i][0],right[i][1]);
+  ctx.closePath();
+  ctx.fillStyle=st.trackColor; ctx.fill();
+
+  ctx.strokeStyle=st.edgeColor; ctx.lineWidth=6; ctx.lineJoin='round';
+  ctx.beginPath(); ctx.moveTo(left[0][0],left[0][1]); for(const pt of left) ctx.lineTo(pt[0],pt[1]); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(right[0][0],right[0][1]); for(const pt of right) ctx.lineTo(pt[0],pt[1]); ctx.stroke();
+
+  ctx.strokeStyle='rgba(255,255,255,0.38)'; ctx.lineWidth=3; ctx.setLineDash([18,16]);
+  ctx.beginPath();
+  for(let i=0;i<left.length;i++){
+    const mx=(left[i][0]+right[i][0])/2;
+    if(i===0) ctx.moveTo(mx,left[i][1]); else ctx.lineTo(mx,left[i][1]);
+  }
+  ctx.stroke(); ctx.setLineDash([]);
+}
+function drawSteam(){
+  for(const z of Run.track.steamZones){
+    const y1=screenY(z.start), y2=screenY(z.end);
+    if(Math.max(y1,y2)<-20 || Math.min(y1,y2)>LOGICAL_H+20) continue;
+    const midP=(z.start+z.end)/2;
+    const cx=centerXAt(midP,Run.track.cp), hw=halfWidthAt(midP,Run.stage,Run.track.narrowZones);
+    const grad=ctx.createLinearGradient(0,Math.min(y1,y2),0,Math.max(y1,y2));
+    grad.addColorStop(0,'rgba(255,255,255,0)');
+    grad.addColorStop(0.5,'rgba(255,255,255,0.42)');
+    grad.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=grad;
+    ctx.fillRect(cx-hw-20, Math.min(y1,y2), hw*2+40, Math.abs(y2-y1));
+  }
+}
+function drawObstacles(){
+  const st=Run.stage;
+  for(const o of Run.track.obstacles){
+    if(o.hit) continue;
+    const y=screenY(o.progress);
+    if(y<-40||y>LOGICAL_H+40) continue;
+    const ohw=halfWidthAt(o.progress,st,Run.track.narrowZones);
+    const ocx=centerXAt(o.progress,Run.track.cp)+o.side*o.offsetFrac*ohw;
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(ocx,y+o.r*0.6,o.r*0.9,o.r*0.4,0,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.fill();
+    ctx.font=Math.round(o.r*1.7)+'px sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(o.type, ocx, y);
+    ctx.restore();
+  }
+}
+function drawParticlesFn(){
+  for(const p of Run.particles){
+    const y=screenY(p.progress);
+    if(y<-20||y>LOGICAL_H+20) continue;
+    const t=Math.max(0,p.life/p.maxLife);
+    ctx.globalAlpha=t;
+    ctx.fillStyle = p.type==='boost' ? '#FFD27A' : '#FF8A8A';
+    ctx.beginPath();
+    ctx.arc(p.x,y, p.type==='boost'?4:5, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha=1;
+  }
+}
+function drawGoal(){
+  const st=Run.stage;
+  const gy=screenY(st.length);
+  if(gy<-90||gy>LOGICAL_H+90) return;
+  const cx=centerXAt(st.length,Run.track.cp);
+  const hw=halfWidthAt(st.length,st,Run.track.narrowZones)+28;
+  const openAmt=Run.mouthOpenVisual;
+  ctx.save();
+  ctx.fillStyle='#e8768f';
+  ctx.beginPath();
+  ctx.moveTo(cx-hw, gy-6-openAmt*26);
+  ctx.quadraticCurveTo(cx, gy-26-openAmt*26, cx+hw, gy-6-openAmt*26);
+  ctx.lineTo(cx+hw, gy-6-openAmt*10);
+  ctx.quadraticCurveTo(cx, gy-14-openAmt*10, cx-hw, gy-6-openAmt*10);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx-hw, gy+6+openAmt*26);
+  ctx.quadraticCurveTo(cx, gy+26+openAmt*26, cx+hw, gy+6+openAmt*26);
+  ctx.lineTo(cx+hw, gy+6+openAmt*10);
+  ctx.quadraticCurveTo(cx, gy+14+openAmt*10, cx-hw, gy+6+openAmt*10);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#fffdf8';
+  for(let i=-3;i<=3;i++) ctx.fillRect(cx+i*(hw/3.6)-6, gy-6-openAmt*10-8, 10, 8);
+  ctx.strokeStyle = openAmt>0.5 ? '#4DE8B0' : '#FF5C82';
+  ctx.lineWidth=4; ctx.setLineDash([10,6]);
+  ctx.beginPath(); ctx.moveTo(cx-hw,gy); ctx.lineTo(cx+hw,gy); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+function drawGhost(){
+  const rv = Run.rival;
+  if(!rv || !rv.ghost || !rv.ghost.length) return;
+  const gp = getGhostXP(rv.ghost, Run.elapsedRace);
+  if(!gp) return;
+  const y = screenY(gp.p);
+  if(y<-60||y>LOGICAL_H+60) return;
+  ctx.save();
+  ctx.globalAlpha=0.6;
+  ctx.translate(gp.x, y);
+  ctx.fillStyle='#cdb8ff'; ctx.strokeStyle='#8f78d6'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.ellipse(0,10,26,15,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.font='20px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('👻',0,-9);
+  ctx.globalAlpha=0.9;
+  ctx.font='11px sans-serif';
+  ctx.fillStyle='#fffbf2';
+  ctx.fillText(rv.name.slice(0,6), 0, -32);
+  ctx.restore();
+}
+function drawPlayer(){
+  const r=Run;
+  const lean=clamp(r.lateralVel/300,-0.5,0.5);
+  const bob=Math.sin(performance.now()/120)*(r.speed>5?3:0);
+  ctx.save();
+  ctx.translate(r.x, PLAYER_Y+bob);
+  ctx.rotate(lean*0.35);
+  ctx.fillStyle='#fffaf0'; ctx.strokeStyle='#e8ddc8'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.ellipse(0,10,26,15,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#efe9dc';
+  for(let i=-3;i<=3;i++) ctx.fillRect(i*7-2,2,4,10);
+  if(r.boosting){
+    ctx.font='20px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('🔥',0,32);
+  }
+  ctx.font='24px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('🧚',0,-9);
+  ctx.restore();
+}
+function drawVignette(){
+  const cx=Run.x, cy=PLAYER_Y;
+  const grad=ctx.createRadialGradient(cx,cy,60,cx,cy,290);
+  grad.addColorStop(0,'rgba(0,0,0,0)');
+  grad.addColorStop(1,'rgba(3,5,12,0.93)');
+  ctx.fillStyle=grad; ctx.fillRect(0,0,LOGICAL_W,LOGICAL_H);
+}
+function render(){
+  const bgStage = Run ? Run.stage : STAGES[0];
+  ctx.clearRect(0,0,LOGICAL_W,LOGICAL_H);
+  const g=ctx.createLinearGradient(0,0,0,LOGICAL_H);
+  g.addColorStop(0,bgStage.themeBg[0]); g.addColorStop(1,bgStage.themeBg[1]);
+  ctx.fillStyle=g; ctx.fillRect(0,0,LOGICAL_W,LOGICAL_H);
+
+  if((UI.screen==='play'||UI.screen==='result') && Run){
+    ctx.save();
+    if(Run.shake>0) ctx.translate((Math.random()-0.5)*Run.shake*7,(Math.random()-0.5)*Run.shake*7);
+    drawTrack();
+    if(Run.stage.steam) drawSteam();
+    drawObstacles();
+    drawParticlesFn();
+    drawGoal();
+    drawGhost();
+    drawPlayer();
+    ctx.restore();
+    if(Run.stage.dark && UI.screen==='play') drawVignette();
+  }
+}
+
+/* =========================================================
+   HUD更新
+========================================================= */
+let el={};
+function cacheEls(){
+  el.progressBar=document.getElementById('progressBar');
+  el.boostGauge=document.getElementById('boostGauge');
+  el.timingBanner=document.getElementById('timingBanner');
+  el.speedVal=document.getElementById('speedVal');
+  el.currencyVal=document.getElementById('currencyVal');
+  el.currencyVal2=document.getElementById('currencyVal2');
+  el.resultGrade=document.getElementById('resultGrade');
+  el.resultStageName=document.getElementById('resultStageName');
+  el.resultTime=document.getElementById('resultTime');
+  el.barTime=document.getElementById('barTime');
+  el.barPos=document.getElementById('barPos');
+  el.barSafe=document.getElementById('barSafe');
+  el.resultCoin=document.getElementById('resultCoin');
+  el.resultNote=document.getElementById('resultNote');
+  el.boardTitle=document.getElementById('boardTitle');
+  el.boardList=document.getElementById('boardList');
+  el.nameModal=document.getElementById('nameModal');
+  el.nameInput=document.getElementById('nameInput');
+  el.rivalTag=document.getElementById('rivalTag');
+  el.rivalName=document.getElementById('rivalName');
+  el.rivalGap=document.getElementById('rivalGap');
+  el.duelBanner=document.getElementById('duelBanner');
+}
+function updateHUD(){
+  el.currencyVal.textContent = Data.currency;
+  el.currencyVal2.textContent = Data.currency;
+  if(UI.screen!=='play' || !Run) return;
+  const r=Run, st=r.stage;
+  const pct = clamp(r.progress/st.length,0,1)*100;
+  el.progressBar.style.width = pct+'%';
+  el.boostGauge.style.width = r.boost+'%';
+  el.boostGauge.classList.toggle('sticky', r.stickyDebuff);
+  let msg;
+  if(r.finished){ msg = r.result ? r.result.grade : 'ジャストインマウス！'; }
+  else if(r.elapsedRace < st.timing.open) msg = 'あと'+(st.timing.open-r.elapsedRace).toFixed(1)+'秒… '+st.flavorWait;
+  else if(r.elapsedRace <= st.timing.close) msg = st.flavorGo;
+  else msg = '遅刻気味…急げ！';
+  el.timingBanner.textContent = msg;
+  el.timingBanner.classList.toggle('open', r.elapsedRace>=st.timing.open && r.elapsedRace<=st.timing.close && !r.finished);
+  el.speedVal.textContent = Math.round(r.speed);
+
+  if(r.rival){
+    el.rivalTag.classList.add('show');
+    const gp = getGhostXP(r.rival.ghost, r.elapsedRace);
+    if(gp){
+      const gap = Math.round(r.progress-gp.p);
+      el.rivalName.textContent = 'VS '+r.rival.name;
+      el.rivalGap.textContent = (gap>=0?'先行 +':'遅れ ')+Math.abs(gap)+'m';
+      el.rivalGap.className = gap>=0 ? 'lead' : 'behind';
+    } else {
+      el.rivalName.textContent = 'VS '+r.rival.name+'（目標 '+r.rival.time.toFixed(2)+'秒）';
+      el.rivalGap.textContent = '';
+      el.rivalGap.className = '';
+    }
+  } else {
+    el.rivalTag.classList.remove('show');
+  }
+}
+
+/* =========================================================
+   画面切り替え
+========================================================= */
+function showScreen(name){
+  UI.screen=name;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const t=document.getElementById('scr-'+name);
+  if(t) t.classList.add('active');
+}
+
+function buildStageSelect(){
+  const wrap=document.getElementById('stageList');
+  wrap.innerHTML='';
+  STAGES.forEach((s,i)=>{
+    const best=Data.bestTimes[s.key];
+    const hasGhost = Data.bestGhosts[s.key] && Data.bestGhosts[s.key].length;
+    const card=document.createElement('div');
+    card.className='stageCard';
+    card.innerHTML =
+      '<div class="stageCardHead"><span class="stageDiff">'+'🦷'.repeat(s.diff)+'</span>'+
+      '<span class="stageName">'+escapeHtml(s.name)+'</span></div>'+
+      '<div class="stageSub">'+escapeHtml(s.sub)+'</div>'+
+      '<div class="stageBest">'+(best ? ('ベスト: '+best.time.toFixed(2)+'秒　'+escapeHtml(best.grade)) : '未挑戦')+
+        (hasGhost ? '　👻自己ベストと自動対戦中' : '')+'</div>'+
+      '<div class="stageBtns">'+
+        '<button class="btn primary small btnPlay" data-i="'+i+'">出走する</button>'+
+        '<button class="btn ghost small btnBoard" data-i="'+i+'">ランキング</button>'+
+      '</div>';
+    wrap.appendChild(card);
+  });
+  wrap.querySelectorAll('.btnPlay').forEach(b=>b.addEventListener('click',()=>{SFX.click();startRun(+b.dataset.i);}));
+  wrap.querySelectorAll('.btnBoard').forEach(b=>b.addEventListener('click',()=>{SFX.click();openBoard(+b.dataset.i);}));
+}
+
+function renderGarage(){
+  const wrap=document.getElementById('garageList');
+  wrap.innerHTML='';
+  UPGRADES.forEach(u=>{
+    const lv=Data.upgrades[u.key];
+    const cost = lv>=3 ? null : upgradeCost(lv);
+    const row=document.createElement('div');
+    row.className='gRow';
+    row.innerHTML =
+      '<div class="gIcon">'+u.icon+'</div>'+
+      '<div class="gInfo">'+
+        '<div class="gName">'+u.name+' <span class="gLv">Lv.'+lv+'/3</span></div>'+
+        '<div class="gDesc">'+u.desc+'</div>'+
+        '<div class="gDots">'+[0,1,2].map(i=>'<span class="dot '+(i<lv?'on':'')+'"></span>').join('')+'</div>'+
+      '</div>'+
+      '<button class="btn small" '+((cost===null||Data.currency<cost)?'disabled':'')+' data-k="'+u.key+'">'+
+        (cost===null?'MAX':('💰'+cost))+
+      '</button>';
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('button[data-k]').forEach(b=>b.addEventListener('click',()=>{
+    const k=b.dataset.k, lv=Data.upgrades[k], cost=upgradeCost(lv);
+    if(lv<3 && Data.currency>=cost){
+      Data.currency-=cost; Data.upgrades[k]++;
+      SFX.buy(); saveData(); renderGarage();
+    }
+  }));
+}
+
+function renderBoardList(list, stageIndex){
+  if(!list.length){
+    el.boardList.innerHTML='<div class="boardEmpty">まだ記録がありません。一番乗りを目指せ！</div>';
+    return;
+  }
+  const stageKey = STAGES[stageIndex].key;
+  el.boardList.innerHTML = list.map((e,i)=>{
+    const rec = Data.duelRecords[stageKey+'|'+e.name.toUpperCase()];
+    const recTxt = rec ? ('　通算'+rec.win+'勝'+rec.lose+'敗'+(rec.draw?rec.draw+'分':'')) : '';
+    return '<div class="boardRow">'+
+      '<div class="brTop"><span class="bRank">'+(i+1)+'</span>'+
+      '<span class="bName">'+escapeHtml(e.name)+'</span>'+
+      '<span class="bTime">'+e.time.toFixed(2)+'秒</span></div>'+
+      '<div class="brBottom"><span class="bGrade">'+escapeHtml(e.grade)+escapeHtml(recTxt)+'</span>'+
+      '<button class="btn ghost small battleBtn" data-i="'+i+'">🆚対戦する</button></div>'+
+    '</div>';
+  }).join('');
+  el.boardList.querySelectorAll('.battleBtn').forEach(b=>b.addEventListener('click',()=>{
+    const entry = list[+b.dataset.i];
+    SFX.click();
+    startRun(stageIndex, {name:entry.name, time:entry.time, ghost:entry.ghost||[]});
+  }));
+}
+async function openBoard(stageIndex){
+  showScreen('board');
+  const st=STAGES[stageIndex];
+  el.boardTitle.textContent = st.name+' ランキング';
+  el.boardList.innerHTML = '<div class="boardEmpty">読み込み中…</div>';
+  const list = await loadLeaderboard(st.key);
+  renderBoardList(list, stageIndex);
+}
+
+function renderResult(){
+  const r=Run, res=r.result, st=r.stage;
+  el.resultGrade.textContent = res.grade;
+  el.resultGrade.className = 'resultGrade g-'+res.gradeKey;
+  el.resultStageName.textContent = st.name;
+  el.resultTime.textContent = res.time.toFixed(2)+'秒';
+  el.barTime.style.width = Math.max(4,res.timeScore)+'%';
+  el.barPos.style.width = Math.max(4,res.posScore)+'%';
+  el.barSafe.style.width = Math.max(4,res.safeScore)+'%';
+  el.resultCoin.textContent = '+'+res.coin;
+  el.resultNote.textContent = res.over ? '奥まで入りすぎ…オエッ！' : (res.posErr>60 ? '手前すぎ…まだ届いてないぞ！' : '');
+
+  if(res.duel){
+    const d=res.duel;
+    const outcomeText = d.outcome==='win' ? '🏆 勝利！（+20 ボーナス）' : (d.outcome==='lose' ? '😢 敗北…' : '🤝 引き分け');
+    el.duelBanner.style.display='block';
+    el.duelBanner.className = 'duelBanner duel-'+d.outcome;
+    el.duelBanner.textContent = 'VS '+d.name+'（'+d.rivalTime.toFixed(2)+'秒） '+outcomeText+'　差 '+d.diff.toFixed(2)+'秒';
+  } else {
+    el.duelBanner.style.display='none';
+  }
+}
+
+function openNameModal(){ el.nameInput.value=''; el.nameModal.classList.remove('hidden'); el.nameInput.focus(); }
+function closeNameModal(){ el.nameModal.classList.add('hidden'); }
+
+/* =========================================================
+   入力
+========================================================= */
+window.addEventListener('keydown', e=>{
+  const act=KEYMAP[e.code];
+  if(act){ Input[act]=true; if(UI.screen==='play') e.preventDefault(); if(act==='boost'||act==='drift') SFX.ensure(); }
+});
+window.addEventListener('keyup', e=>{
+  const act=KEYMAP[e.code];
+  if(act){ Input[act]=false; }
+});
+function bindHold(elm, act){
+  if(!elm) return;
+  const on=ev=>{ ev.preventDefault(); Input[act]=true; SFX.ensure(); };
+  const off=ev=>{ ev.preventDefault(); Input[act]=false; };
+  elm.addEventListener('pointerdown',on);
+  elm.addEventListener('pointerup',off);
+  elm.addEventListener('pointerleave',off);
+  elm.addEventListener('pointercancel',off);
+}
+
+/* =========================================================
+   ボタン結線
+========================================================= */
+function wireButtons(){
+  document.getElementById('btnTitleStart').addEventListener('click',()=>{SFX.ensure();SFX.click();buildStageSelect();showScreen('select');});
+  document.getElementById('btnHowto').addEventListener('click',()=>{SFX.ensure();SFX.click();showScreen('howto');});
+  document.getElementById('btnHowtoClose').addEventListener('click',()=>{SFX.click();showScreen('title');});
+  document.getElementById('btnSelectBack').addEventListener('click',()=>{SFX.click();showScreen('title');});
+  document.getElementById('btnGarage').addEventListener('click',()=>{SFX.click();renderGarage();showScreen('garage');});
+  document.getElementById('btnGarageBack').addEventListener('click',()=>{SFX.click();buildStageSelect();showScreen('select');});
+  document.getElementById('btnBoardBack').addEventListener('click',()=>{SFX.click();showScreen('select');});
+  document.getElementById('btnQuit').addEventListener('click',()=>{SFX.click();Run=null;buildStageSelect();showScreen('select');});
+  document.getElementById('btnRetry').addEventListener('click',()=>{SFX.click();startRun(Run.stage.id, (Run.rival && !Run.rival.self) ? Run.rival : null);});
+  document.getElementById('btnResultSelect').addEventListener('click',()=>{SFX.click();buildStageSelect();showScreen('select');});
+  document.getElementById('btnResultGarage').addEventListener('click',()=>{SFX.click();renderGarage();showScreen('garage');});
+  document.getElementById('btnResultBoard').addEventListener('click',()=>{SFX.click();openNameModal();});
+  document.getElementById('btnNameCancel').addEventListener('click',()=>{SFX.click();closeNameModal();});
+  document.getElementById('btnNameSubmit').addEventListener('click', async ()=>{
+    const name=(el.nameInput.value||'').trim()||'???';
+    closeNameModal();
+    const st=Run.stage;
+    await submitScore(st.key, name, Run.result.time, Run.result.grade, Run.ghostTrail);
+    SFX.buy();
+    openBoard(st.id);
+  });
+
+  bindHold(document.getElementById('padLeft'),'left');
+  bindHold(document.getElementById('padRight'),'right');
+  bindHold(document.getElementById('btnAccel'),'accel');
+  bindHold(document.getElementById('btnBrake'),'brake');
+  bindHold(document.getElementById('btnBoost'),'boost');
+  bindHold(document.getElementById('btnDrift'),'drift');
+}
+
+/* =========================================================
+   メインループ
+========================================================= */
+let lastT=0;
+function loop(t){
+  if(!lastT) lastT=t;
+  const dt=Math.min((t-lastT)/1000,0.04);
+  lastT=t;
+  if(UI.screen==='play') updateRun(dt);
+  render();
+  updateHUD();
+  requestAnimationFrame(loop);
+}
+
+/* =========================================================
+   初期化
+========================================================= */
+window.addEventListener('DOMContentLoaded', async ()=>{
+  cacheEls();
+  await loadData();
+  wireButtons();
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+  updateHUD();
+  requestAnimationFrame(loop);
+});
+</script>
+</body>
+</html>

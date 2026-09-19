@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ジーバーイーツ ～爆走！シルバーデリバリー～</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #1a1a1a; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+        #game-container { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+    </style>
+</head>
+<body>
+<div id="game-container"></div>
+
+<script>
+// Web Audio APIによる簡易効果音（SE）生成クラス
+class SoundManager {
+    constructor() {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    playBeep(freq = 440, duration = 0.1, type = 'sine') {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    }
+    playHit() { this.playBeep(120, 0.2, 'sawtooth'); }
+    playFever() { this.playBeep(880, 0.3, 'triangle'); }
+}
+
+class MainScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'MainScene' });
+    }
+
+    create() {
+        this.soundMgr = new SoundManager();
+        this.score = 0;
+        this.highScore = parseInt(localStorage.getItem('gbar_highscore') || '0', 10);
+        this.gokigen = 100;
+        this.isBoosting = false;
+        this.isFever = false;
+        this.dentureStuck = false;
+        this.wigLost = false;
+        this.feverTimer = 0;
+
+        const { width, height } = this.scale;
+
+        // 背景
+        this.cameras.main.setBackgroundColor('#3a3a3a');
+
+        // プレイヤー（車椅子＋ジーバー）
+        this.player = this.add.rectangle(width / 2, height - 120, 60, 80, 0xff5722);
+        this.wig = this.add.rectangle(width / 2, height - 150, 40, 20, 0x5d4037); // カツラ
+        this.physics.add.existing(this.player);
+        this.player.body.setCollideWorldBounds(true);
+
+        // キーボード操作設定 (PCメイン向け)
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+        this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+        this.keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+        // 障害物＆アイテムグループ
+        this.obstacles = this.physics.add.group();
+        this.items = this.physics.add.group();
+
+        // タイマー
+        this.time.addEvent({ delay: 1000, callback: this.spawnObstacle, callbackScope: this, loop: true });
+        this.time.addEvent({ delay: 6000, callback: this.spawnItem, callbackScope: this, loop: true });
+
+        // タッチ/マウス操作
+        this.input.on('pointerdown', () => { this.isBoosting = true; });
+        this.input.on('pointerup', () => { this.isBoosting = false; });
+        this.input.on('pointermove', (pointer) => {
+            if (pointer.isDown) this.player.x = Phaser.Math.Clamp(pointer.x, 40, width - 40);
+        });
+
+        // 衝突判定
+        this.physics.add.overlap(this.player, this.obstacles, this.hitObstacle, null, this);
+        this.physics.add.overlap(this.player, this.items, this.collectItem, null, this);
+
+        // UI設定
+        this.uiText = this.add.text(20, 20, '', { font: '18px monospace', fill: '#00ffcc' });
+
+        // 入れ歯オーバーレイ
+        this.dentureOverlay = this.add.rectangle(width / 2, height / 2, width * 0.85, height * 0.35, 0xd32f2f, 0.85)
+            .setVisible(false).setInteractive();
+        this.dentureText = this.add.text(width / 2, height / 2, '【軽傷】入れ歯がカッ飛んだ！\nクリック / タップでワイパー除去！', {
+            font: '20px Bold Arial', fill: '#ffffff', align: 'center'
+        }).setOrigin(0.5).setVisible(false);
+        this.dentureOverlay.on('pointerdown', () => this.removeDenture());
+
+        // リザルト/SNSシェアUIコンテナ
+        this.resultContainer = this.add.container(width / 2, height / 2).setVisible(false);
+    }
+
+    update(time, delta) {
+        if (this.gokigen <= 0) return;
+
+        const { width } = this.scale;
+        const moveSpeed = 7;
+
+        // PCキーボード移動 (A/D または 左右矢印)
+        if (this.cursors.left.isDown || this.keyA.isDown) {
+            this.player.x = Math.max(40, this.player.x - moveSpeed);
+        } else if (this.cursors.right.isDown || this.keyD.isDown) {
+            this.player.x = Math.min(width - 40, this💻 **Ken**: 「途中でコードが途切れてしまい失礼いたしました！イテレーション要素（PCキーボード操作、ハイスコア保持、Xシェアボタン、カツラフライング演出、SE再生）を完備した完全版コードの続きと全容です！」
+
+```html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ジーバーイーツ ～爆走！シルバーデリバリー～</title>
+    <script src="[https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js](https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js)"></script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #111; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+        #game-container { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+    </style>
+</head>
+<body>
+<div id="game-container"></div>
+
+<script>
+class SoundManager {
+    constructor() {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    playBeep(freq = 440, duration = 0.1, type = 'sine') {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    }
+    playHit() { this.playBeep(120, 0.2, 'sawtooth'); }
+    playFever() { this.playBeep(880, 0.3, 'triangle'); }
+}
+
+class MainScene extends Phaser.Scene {
+    constructor() { super({ key: 'MainScene' }); }
+
+    create() {
+        this.soundMgr = new SoundManager();
+        this.score = 0;
+        this.highScore = parseInt(localStorage.getItem('gbar_highscore') || '0', 10);
+        this.gokigen = 100;
+        this.isBoosting = false;
+        this.isFever = false;
+        this.dentureStuck = false;
+        this.wigLost = false;
+        this.feverTimer = 0;
+
+        const { width, height } = this.scale;
+        this.cameras.main.setBackgroundColor('#2c3e50');
+
+        // プレイヤー＆カツラ
+        this.player = this.add.rectangle(width / 2, height - 120, 60, 80, 0xff5722);
+        this.wig = this.add.rectangle(width / 2, height - 160, 40, 20, 0x5d4037);
+        this.physics.add.existing(this.player);
+
+        // PC操作
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.keyA = this.input.keyboard.addKey('A');
+        this.keyD = this.input.keyboard.addKey('D');
+
+        this.obstacles = this.physics.add.group();
+        this.items = this.physics.add.group();
+
+        this.time.addEvent({ delay: 1000, callback: this.spawnObstacle, callbackScope: this, loop: true });
+        this.time.addEvent({ delay: 5000, callback: this.spawnItem, callbackScope: this, loop: true });
+
+        // マウス・タッチ操作
+        this.input.on('pointerdown', () => { this.isBoosting = true; });
+        this.input.on('pointerup', () => { this.isBoosting = false; });
+        this.input.on('pointermove', (p) => {
+            if (p.isDown) this.player.x = Phaser.Math.Clamp(p.x, 40, width - 40);
+        });
+
+        this.physics.add.overlap(this.player, this.obstacles, this.hitObstacle, null, this);
+        this.physics.add.overlap(this.player, this.items, this.collectItem, null, this);
+
+        // UI
+        this.uiText = this.add.text(20, 20, '', { font: '18px sans-serif', fill: '#00ffcc' });
+
+        // 入れ歯オーバレイ
+        this.dentureOverlay = this.add.rectangle(width / 2, height / 2, width * 0.8, height * 0.3, 0xe74c3c, 0.9)
+            .setVisible(false).setInteractive();
+        this.dentureText = this.add.text(width / 2, height / 2, '【軽傷】入れ歯飛散！\nクリックでワイパー除去！', {
+            font: '20px Bold Arial', fill: '#fff', align: 'center'
+        }).setOrigin(0.5).setVisible(false);
+        this.dentureOverlay.on('pointerdown', () => this.removeDenture());
+    }
+
+    update(time, delta) {
+        if (this.gokigen <= 0) return;
+        const { width, height } = this.scale;
+
+        // キーボード操作
+        if (this.cursors.left.isDown || this.keyA.isDown) this.player.x = Math.max(40, this.player.x - 6);
+        if (this.cursors.right.isDown || this.keyD.isDown) this.player.x = Math.min(width - 40, this.player.x + 6);
+        this.isBoosting = this.cursors.up.isDown || this.cursors.space.isDown;
+
+        // カツラの位置追従（未紛失時）
+        if (!this.wigLost) {
+            this.wig.x = this.player.x;
+            this.wig.y = this.player.y - 45;
+        }
+
+        const speed = (this.isBoosting ? 8 : 4) * (this.isFever ? 2 : 1);
+        this.score += Math.round(speed);
+
+        if (this.isFever) {
+            this.feverTimer -= delta;
+            if (this.feverTimer <= 0) {
+                this.isFever = false;
+                this.player.setFillStyle(0xff5722);
+            }
+        }
+
+        this.obstacles.getChildren().forEach(o => { o.y += speed; if (o.y > height + 50) o.destroy(); });
+        this.items.getChildren().forEach(i => { i.y += speed; if (i.y > height + 50) i.destroy(); });
+
+        this.uiText.setText(
+            `SCORE: ${this.score} (HI: ${this.highScore})\n` +
+            `ご機嫌 (HP): ${Math.max(0, Math.round(this.gokigen))}%\n` +
+            `状態: ${this.isFever ? '🔥 超音速フィーバー！' : (this.isBoosting ? '⚡ ブースト中' : '通常走行')}`
+        );
+    }
+
+    spawnObstacle() {
+        const obs = this.add.rectangle(Phaser.Math.Between(50, this.scale.width - 50), -30, 40, 40, 0x7f8c8d);
+        this.obstacles.add(obs);
+    }
+
+    spawnItem() {
+        const item = this.add.circle(Phaser.Math.Between(50, this.scale.width - 50), -30, 16, 0xf1c40f);
+        this.items.add(item);
+    }
+
+    hitObstacle(player, obs) {
+        obs.destroy();
+        if (this.isFever) return;
+
+        this.soundMgr.playHit();
+        this.gokigen -= this.isBoosting ? 25 : 15;
+
+        // 中傷：カツラフライアウェイ
+        if (this.gokigen < 50 && !this.wigLost) {
+            this.wigLost = true;
+            this.tweens.add({ targets: this.wig, y: -100, alpha: 0, duration: 1000 });
+        }
+        // 軽傷：入れ歯パージ
+        else if (this.gokigen < 75 && !this.dentureStuck) {
+            this.dentureStuck = true;
+            this.dentureOverlay.setVisible(true);
+            this.dentureText.setVisible(true);
+        }
+
+        if (this.gokigen <= 0) this.gameOver();
+    }
+
+    collectItem(player, item) {
+        item.destroy();
+        this.soundMgr.playFever();
+        this.isFever = true;
+        this.feverTimer = 5000;
+        this.player.setFillStyle(0x00ffff);
+    }
+
+    removeDenture() {
+        this.dentureStuck = false;
+        this.dentureOverlay.setVisible(false);
+        this.dentureText.setVisible(false);
+    }
+
+    gameOver() {
+        this.gokigen = 0;
+        this.physics.pause();
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+            localStorage.setItem('gbar_highscore', this.highScore.toString());
+        }
+
+        const shareText = encodeURIComponent(`【ジーバーイーツ】爆走結果：SCORE ${this.score}！ご機嫌尽きて腰を痛めた！ #ジーバーイーツ`);
+        const shareUrl = `[https://twitter.com/intent/tweet?text=$](https://twitter.com/intent/tweet?text=$){shareText}`;
+
+        this.add.text(this.scale.width / 2, this.scale.height / 2 - 40,
+            `GAME OVER\nSCORE: ${this.score}\nHI-SCORE: ${this.highScore}\n\nジーバー「アイタタタ！」`, {
+            font: '22px Bold Arial', fill: '#ff5555', align: 'center'
+        }).setOrigin(0.5);
+
+        const shareBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 80, '[ X(Twitter)でスコアをシェア ]', {
+            font: '20px Bold Arial', fill: '#1da1f2', backgroundColor: '#ffffff', padding: { x: 10, y: 5 }
+        }).setOrigin(0.5).setInteractive();
+
+        shareBtn.on('pointerdown', () => window.open(shareUrl, '_blank'));
+    }
+}
+
+new Phaser.Game({
+    type: Phaser.AUTO,
+    parent: 'game-container',
+    width: 480,
+    height: 720,
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    physics: { default: 'arcade', arcade: { debug: false } },
+    scene: MainScene
+});
+</script>
+</body>
+</html>

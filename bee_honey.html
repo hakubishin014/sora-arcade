@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>生捕り！スズメバチ蜂蜜漬け職人 - 操作改善版</title>
+<style>
+  * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; }
+  body {
+    background: #100b07;
+    color: #f5e6d3;
+    font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+  #game-container {
+    position: relative;
+    box-shadow: 0 12px 50px rgba(0,0,0,0.9);
+    border: 4px solid #5a3d28;
+    border-radius: 10px;
+  }
+  canvas {
+    display: block;
+    background: #24150b;
+    cursor: none;
+  }
+  .guide {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #b89f85;
+    text-align: center;
+  }
+  #book-modal {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 760px;
+    height: 520px;
+    background: #2b1a0e;
+    border: 3px solid #d4af37;
+    border-radius: 8px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.9);
+    padding: 24px;
+    color: #f5e6d3;
+    z-index: 100;
+  }
+  #book-modal h2 {
+    color: #d4af37;
+    text-align: center;
+    margin-bottom: 16px;
+    font-family: serif;
+  }
+  .book-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    height: 380px;
+    overflow-y: auto;
+  }
+  .book-card {
+    background: #1a0f08;
+    border: 1px solid #5a3d28;
+    border-radius: 6px;
+    padding: 10px;
+    text-align: center;
+  }
+  .book-card.locked { opacity: 0.4; filter: grayscale(1); }
+  .book-card h4 { color: #f39c12; margin-bottom: 4px; font-size: 14px; }
+  .book-card p { font-size: 11px; color: #b89f85; line-height: 1.4; text-align: left; }
+  .close-btn {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #d4af37;
+    color: #1a0f08;
+    border: none;
+    padding: 8px 24px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <canvas id="gameCanvas" width="960" height="640"></canvas>
+  <div id="book-modal">
+    <h2>蜂蜜瓶 職人図鑑</h2>
+    <div class="book-grid" id="book-grid"></div>
+    <button class="close-btn" onclick="closeBook()">図鑑を閉じる</button>
+  </div>
+</div>
+<div class="guide">【操作】マウス：ピンセット操作 ｜ 左クリック長押し：挟む ｜ 瓶へ運んで離す：沈める ｜ SPACE：二刀流発動</div>
+
+<script>
+// --- 音響システム (Web Audio API) ---
+class SoundSystem {
+  constructor() { this.ctx = null; }
+  init() {
+    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  playHeartbeat() {
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(55, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(); osc.stop(this.ctx.currentTime + 0.15);
+  }
+  playPlop() {
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(280, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(750, this.ctx.currentTime + 0.1);
+    osc.frequency.exponentialRampToValueAtTime(180, this.ctx.currentTime + 0.25);
+    gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(); osc.stop(this.ctx.currentTime + 0.25);
+  }
+  playSting() {
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(880, this.ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(110, this.ctx.currentTime + 0.45);
+    gain.gain.setValueAtTime(1.0, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.45);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(); osc.stop(this.ctx.currentTime + 0.45);
+  }
+  playShieldBlock() {
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(1200, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.7, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+  }
+  playItem() {
+    if (!this.ctx) return;
+    [440, 554, 659, 880].forEach((f, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine'; osc.frequency.value = f;
+      gain.gain.setValueAtTime(0.2, this.ctx.currentTime + i * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + i * 0.05 + 0.15);
+      osc.connect(gain); gain.connect(this.ctx.destination);
+      osc.start(this.ctx.currentTime + i * 0.05);
+      osc.stop(this.ctx.currentTime + i * 0.05 + 0.15);
+    });
+  }
+  playSwatter() {
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+  }
+  playPowerUp() {
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(900, this.ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+  }
+  playShipment() {
+    if (!this.ctx) return;
+    [523, 659, 783, 1046, 1318].forEach((f, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle'; osc.frequency.value = f;
+      gain.gain.setValueAtTime(0.3, this.ctx.currentTime + i * 0.07);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + i * 0.07 + 0.35);
+      osc.connect(gain); gain.connect(this.ctx.destination);
+      osc.start(this.ctx.currentTime + i * 0.07);
+      osc.stop(this.ctx.currentTime + i * 0.07 + 0.35);
+    });
+  }
+}
+
+// --- ゲーム定数・変数 ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const sound = new SoundSystem();
+
+const STATE = { TITLE: 0, PLAYING: 1, GAMEOVER: 2 };
+let gameState = STATE.TITLE;
+
+let score = 0;
+let combo = 1;
+let comboTimer = 0;
+let jarCount = 0;
+const JAR_CAPACITY = 10;
+let jarLevel = 0;
+let shipments = 0;
+let nitoryuGauge = 0;
+let isNitoryu = false;
+let nitoryuTimer = 0;
+
+let hasShield = false;
+let smokeTimer = 0;
+let rengeTimer = 0;
+let titanTimer = 0;
+let freezeTimer = 0;
+
+let mouseX = canvas.width / 2;
+let mouseY = canvas.height / 2;
+let isMouseDown = false;
+let heldBees = [];
+let hitStop = 0;
+let flashRed = 0;
+let gameOverReason = "";
+
+let currentJarLog = { kiiro: 0, kogata: 0, mon: 0, oosu: 0, kyouran: 0, queen: 0, dead: 0 };
+
+const RECIPES = [
+  { id: "S_HYAKUDOKU", name: "特選・百毒大王蜜 (Rank S)", desc: "オオスズメバチと女王蜂の猛毒エキスが極限まで溶け込んだ至高の珍味。", unlocked: false },
+  { id: "A_GOKUJO",    name: "極上・アドレナリン蜜 (Rank A)", desc: "狂乱蜂の激しい生体エキスにより、鮮烈な刺激と活力が漲る黄金蜜。", unlocked: false },
+  { id: "B_STIM",      name: "刺激・熟成琥珀蜜 (Rank B)", desc: "モンスズメバチのダイブエネルギーを凝縮した、ピリリと辛口の薬膳蜜。", unlocked: false },
+  { id: "C_HYAKKA",    name: "職人仕込み一般百花蜜 (Rank C)", desc: "キイロとコガタを中心に丁寧に漬け込んだ、まろやかで親しみやすい標準蜜。", unlocked: false },
+  { id: "X_CONTAM",    name: "訳あり・異物混入蜜 (Rank D)", desc: "ハエ叩きの混入により鮮度が損なわれた失敗作。職人の修行は続く。", unlocked: false }
+];
+
+// 蜂蜜瓶の定義
+const jar = {
+  x: canvas.width / 2,
+  y: canvas.height / 2 + 40,
+  width: 170,
+  height: 230,
+  mouthY: canvas.height / 2 - 60,
+  mouthRadius: 75
+};
+
+// 【改善】瓶の受け入れ判定（口から胴体、周辺までワイドに判定）
+function isOverJar(x, y) {
+  // 1. 口の円形判定（広め）
+  const inMouth = Math.hypot(x - jar.x, y - jar.mouthY) <= jar.mouthRadius + 45;
+  // 2. 瓶の胴体矩形判定（マージン付き）
+  const inBody = (x >= jar.x - jar.width/2 - 40 && x <= jar.x + jar.width/2 + 40 &&
+                  y >= jar.mouthY - 30 && y <= jar.y + jar.height/2 + 50);
+  return inMouth || inBody;
+}
+
+// スズメバチ全6種
+const BEE_TYPES = {
+  KIIRO:   { id: 'kiiro',   name: "キイロスズメバチ", speed: 2.8, size: 1.0,  score: 100,  maxResist: 1.0, color: "#f39c12" },
+  KOGATA:  { id: 'kogata',  name: "コガタスズメバチ", speed: 2.0, size: 0.9,  score: 150,  maxResist: 0.8, color: "#e67e22" },
+  MON:     { id: 'mon',     name: "モンスズメバチ",   speed: 3.5, size: 1.15, score: 300,  maxResist: 1.4, color: "#d35400" },
+  OOSU:    { id: 'oosu',    name: "オオスズメバチ",   speed: 1.8, size: 1.6,  score: 1000, maxResist: 2.2, color: "#c0392b" },
+  KYOURAN: { id: 'kyouran', name: "狂乱スズメバチ",   speed: 4.2, size: 1.25, score: 500,  maxResist: 1.5, color: "#e74c3c" },
+  QUEEN:   { id: 'queen',   name: "女王蜂",           speed: 1.4, size: 1.9,  score: 3000, maxResist: 3.0, color: "#f1c40f" }
+};
+
+const ITEM_TYPES = {
+  SMOKER:  { name: "くん煙器",       icon: "💨", color: "#95a5a6" },
+  RENGE:   { name: "最高級レンゲ蜜", icon: "🍯", color: "#f39c12" },
+  GLOVE:   { name: "防護革手袋",     icon: "🧤", color: "#3498db" },
+  TITAN:   { name: "チタンピンセット", icon: "⚡", color: "#9b59b6" },
+  SWAT_TRAP: { name: "ハエ叩き(罠)", icon: "❌", color: "#e74c3c" }
+};
+
+let bees = [];
+let items = [];
+let particles = [];
+let pickledBees = [];
+let spawnTimer = 0;
+let itemSpawnTimer = 0;
+
+class Particle {
+  constructor(x, y, color, size = 4) {
+    this.x = x; this.y = y; this.color = color;
+    this.vx = (Math.random() - 0.5) * 6;
+    this.vy = (Math.random() - 0.5) * 6 - 2;
+    this.alpha = 1.0;
+    this.size = Math.random() * size + 2;
+  }
+  update() {
+    this.x += this.vx; this.y += this.vy;
+    this.vy += 0.12;
+    this.alpha -= 0.025;
+  }
+  draw(c) {
+    c.save();
+    c.globalAlpha = Math.max(0, this.alpha);
+    c.fillStyle = this.color;
+    c.beginPath();
+    c.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+  }
+}
+
+class Item {
+  constructor(type) {
+    this.type = type;
+    this.x = Math.random() * (canvas.width - 200) + 100;
+    this.y = -40;
+    this.vy = 1.5;
+    this.radius = 24;
+    this.wobble = Math.random() * Math.PI;
+  }
+  update() {
+    this.wobble += 0.05;
+    this.x += Math.sin(this.wobble) * 1.0;
+    this.y += this.vy;
+  }
+  draw(c) {
+    c.save();
+    c.translate(this.x, this.y);
+    c.fillStyle = "rgba(0,0,0,0.6)";
+    c.beginPath(); c.arc(0, 0, this.radius, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = this.type.color; c.lineWidth = 3; c.stroke();
+    c.font = "20px sans-serif"; c.textAlign = "center"; c.textBaseline = "middle";
+    c.fillText(this.type.icon, 0, 0);
+    c.restore();
+  }
+}
+
+class Bee {
+  constructor(type, customX, customY) {
+    this.type = type;
+    this.size = type.size;
+    this.scale = 22 * this.size;
+
+    if (customX !== undefined) {
+      this.x = customX; this.y = customY;
+    } else {
+      const edge = Math.floor(Math.random() * 4);
+      if (edge === 0) { this.x = -50; this.y = Math.random() * canvas.height; }
+      else if (edge === 1) { this.x = canvas.width + 50; this.y = Math.random() * canvas.height; }
+      else if (edge === 2) { this.x = Math.random() * canvas.width; this.y = -50; }
+      else { this.x = Math.random() * canvas.width; this.y = canvas.height + 50; }
+    }
+
+    this.angle = Math.atan2(canvas.height / 2 - this.y, canvas.width / 2 - this.x);
+    this.targetAngle = this.angle;
+    this.speed = type.speed;
+    this.wingAnim = 0;
+    this.resistTimer = 0;
+    this.maxResist = (titanTimer > 0) ? 999 : type.maxResist;
+    this.diveTimer = (type === BEE_TYPES.MON) ? Math.random() * 120 + 60 : 0;
+    this.isDiving = false;
+    this.stopTimer = 0;
+  }
+
+  update() {
+    this.wingAnim += 0.8;
+
+    if (heldBees.includes(this)) {
+      this.x = mouseX + (Math.random() - 0.5) * 6;
+      this.y = mouseY + (Math.random() - 0.5) * 6;
+      if (titanTimer <= 0) {
+        this.resistTimer += 0.016;
+        if (this.resistTimer >= this.maxResist) {
+          if (hasShield) {
+            hasShield = false;
+            sound.playShieldBlock();
+            this.resistTimer = 0;
+            heldBees = heldBees.filter(b => b !== this);
+          } else {
+            triggerGameOver(`${this.type.name}の暴れを抑えきれず、刺されてしまった！`);
+          }
+        }
+      }
+      return;
+    }
+
+    if (freezeTimer > 0) return;
+
+    let curSpeed = (smokeTimer > 0) ? this.speed * 0.4 : this.speed;
+
+    if (rengeTimer > 0) {
+      const toJarAngle = Math.atan2(jar.mouthY - this.y, jar.x - this.x);
+      this.angle += (toJarAngle - this.angle) * 0.05;
+    }
+
+    if (this.type === BEE_TYPES.KIIRO) {
+      this.angle += (Math.random() - 0.5) * 0.25;
+    } else if (this.type === BEE_TYPES.KOGATA) {
+      if (this.stopTimer > 0) { this.stopTimer--; return; }
+      if (Math.random() < 0.01) this.stopTimer = 80;
+      this.angle += (Math.random() - 0.5) * 0.15;
+    } else if (this.type === BEE_TYPES.MON) {
+      this.diveTimer--;
+      if (this.diveTimer < 0 && !this.isDiving) {
+        this.isDiving = true;
+        this.targetAngle = Math.atan2(mouseY - this.y, mouseX - this.x);
+      }
+      if (this.isDiving) {
+        this.angle = this.targetAngle;
+        curSpeed *= 2.4;
+      }
+    } else if (this.type === BEE_TYPES.OOSU) {
+      const dx = mouseX - this.x;
+      const dy = mouseY - this.y;
+      this.targetAngle = Math.atan2(dy, dx);
+      this.angle += (this.targetAngle - this.angle) * 0.03;
+    } else if (this.type === BEE_TYPES.KYOURAN) {
+      this.targetAngle = Math.atan2(mouseY - this.y, mouseX - this.x);
+      this.angle += (this.targetAngle - this.angle) * 0.1;
+    } else if (this.type === BEE_TYPES.QUEEN) {
+      this.angle += Math.sin(Date.now() * 0.002) * 0.02;
+    }
+
+    this.x += Math.cos(this.angle) * curSpeed;
+    this.y += Math.sin(this.angle) * curSpeed;
+
+    if (this.x < -80) this.x = canvas.width + 70;
+    if (this.x > canvas.width + 80) this.x = -70;
+    if (this.y < -80) this.y = canvas.height + 70;
+    if (this.y > canvas.height + 80) this.y = -70;
+  }
+
+  getHitboxes() {
+    const cos = Math.cos(this.angle);
+    const sin = Math.sin(this.angle);
+    const mult = (titanTimer > 0) ? 1.8 : 1.0;
+    return {
+      head: {
+        x: this.x + cos * (this.scale * 0.4),
+        y: this.y + sin * (this.scale * 0.4),
+        r: this.scale * 0.65 * mult
+      },
+      stinger: {
+        x: this.x - cos * (this.scale * 0.9),
+        y: this.y - sin * (this.scale * 0.9),
+        r: (smokeTimer > 0) ? 0 : this.scale * 0.45
+      }
+    };
+  }
+
+  draw(c) {
+    c.save();
+    c.translate(this.x, this.y);
+    c.rotate(this.angle);
+
+    const s = this.scale;
+
+    if (this.type === BEE_TYPES.QUEEN) {
+      c.strokeStyle = "rgba(241, 196, 15, 0.7)";
+      c.lineWidth = 4;
+      c.beginPath();
+      c.arc(0, 0, s * 1.5 + Math.sin(Date.now() * 0.01) * 6, 0, Math.PI * 2);
+      c.stroke();
+    }
+
+    if (this.type === BEE_TYPES.KYOURAN) {
+      c.fillStyle = "rgba(231, 76, 60, 0.35)";
+      c.beginPath(); c.arc(0, 0, s * 1.3, 0, Math.PI * 2); c.fill();
+    }
+
+    // 羽
+    c.save();
+    c.fillStyle = "rgba(230, 245, 255, 0.5)";
+    const wingW = Math.sin(this.wingAnim) * s * 0.9;
+    c.beginPath();
+    c.ellipse(0, -s * 0.7, Math.abs(wingW), s * 0.4, Math.PI / 4, 0, Math.PI * 2);
+    c.ellipse(0, s * 0.7, Math.abs(wingW), s * 0.4, -Math.PI / 4, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+
+    // 腹部
+    c.fillStyle = this.type.color;
+    c.beginPath();
+    c.ellipse(-s * 0.4, 0, s * 0.65, s * 0.38, 0, 0, Math.PI * 2);
+    c.fill();
+    c.lineWidth = 2.5; c.strokeStyle = "#111"; c.stroke();
+
+    for (let i = -0.7; i <= -0.1; i += 0.25) {
+      c.beginPath(); c.moveTo(s * i, -s * 0.3); c.lineTo(s * i, s * 0.3); c.stroke();
+    }
+
+    // 胸部
+    c.fillStyle = "#2c1c0f";
+    c.beginPath(); c.arc(s * 0.2, 0, s * 0.35, 0, Math.PI * 2); c.fill();
+
+    // 頭部
+    c.fillStyle = this.type.color;
+    c.beginPath(); c.arc(s * 0.55, 0, s * 0.25, 0, Math.PI * 2); c.fill();
+
+    // 毒針
+    c.fillStyle = (smokeTimer > 0) ? "#7f8c8d" : "#ff1744";
+    c.beginPath();
+    c.moveTo(-s * 1.05, 0); c.lineTo(-s * 1.3, -s * 0.08); c.lineTo(-s * 1.3, s * 0.08);
+    c.closePath(); c.fill();
+
+    if (smokeTimer <= 0) {
+      const glow = Math.sin(Date.now() * 0.015) * 3 + 5;
+      c.fillStyle = "rgba(255, 23, 68, 0.8)";
+      c.beginPath(); c.arc(-s * 1.3, 0, glow, 0, Math.PI * 2); c.fill();
+    }
+
+    c.restore();
+
+    if (heldBees.includes(this) && titanTimer <= 0) {
+      const p = 1.0 - (this.resistTimer / this.maxResist);
+      c.fillStyle = "rgba(0,0,0,0.6)";
+      c.fillRect(this.x - 30, this.y - s - 20, 60, 8);
+      c.fillStyle = p > 0.3 ? "#e74c3c" : "#ff0000";
+      c.fillRect(this.x - 28, this.y - s - 18, 56 * p, 4);
+    }
+  }
+}
+
+class PickledBee {
+  constructor(x, y, type) {
+    this.x = x; this.y = y;
+    this.targetY = jar.y + 70 - (jarLevel * 10) + (Math.random() - 0.5) * 20;
+    this.color = type.color;
+    this.size = type.size * 13;
+    this.angle = Math.random() * Math.PI * 2;
+  }
+  update() { if (this.y < this.targetY) this.y += 0.8; }
+  draw(c) {
+    c.save();
+    c.translate(this.x, this.y);
+    c.rotate(this.angle);
+    c.fillStyle = "rgba(35, 20, 10, 0.65)";
+    c.beginPath();
+    c.ellipse(0, 0, this.size, this.size * 0.55, 0, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+  }
+}
+
+function initGame() {
+  score = 0; combo = 1; comboTimer = 0;
+  jarCount = 0; jarLevel = 0; shipments = 0;
+  nitoryuGauge = 0; isNitoryu = false; nitoryuTimer = 0;
+  hasShield = false; smokeTimer = 0; rengeTimer = 0; titanTimer = 0; freezeTimer = 0;
+  bees = []; items = []; particles = []; pickledBees = []; heldBees = [];
+  hitStop = 0; flashRed = 0;
+  currentJarLog = { kiiro: 0, kogata: 0, mon: 0, oosu: 0, kyouran: 0, queen: 0, dead: 0 };
+  gameState = STATE.PLAYING;
+}
+
+function triggerGameOver(reason) {
+  sound.playSting();
+  gameOverReason = reason;
+  flashRed = 1.0;
+  gameState = STATE.GAMEOVER;
+  heldBees = [];
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && gameState === STATE.PLAYING) {
+    if (nitoryuGauge >= 100 && !isNitoryu) {
+      isNitoryu = true;
+      nitoryuTimer = 500;
+      nitoryuGauge = 0;
+      sound.playPowerUp();
+      for (let i = 0; i < 25; i++) particles.push(new Particle(mouseX, mouseY, "#ffd700", 6));
+    }
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+  mouseY = e.clientY - rect.top;
+});
+
+canvas.addEventListener('mousedown', (e) => {
+  sound.init();
+  if (gameState === STATE.TITLE || gameState === STATE.GAMEOVER) {
+    initGame();
+    return;
+  }
+
+  isMouseDown = true;
+  if (heldBees.length > 0) return;
+
+  // アイテム判定
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i];
+    const dist = Math.hypot(mouseX - item.x, mouseY - item.y);
+    if (dist <= item.radius + 15) {
+      applyItem(item.type);
+      items.splice(i, 1);
+      return;
+    }
+  }
+
+  // 蜂判定
+  const maxCatch = isNitoryu ? 2 : 1;
+  for (let i = bees.length - 1; i >= 0; i--) {
+    const bee = bees[i];
+    const hb = bee.getHitboxes();
+
+    const dStinger = Math.hypot(mouseX - hb.stinger.x, mouseY - hb.stinger.y);
+    if (dStinger <= hb.stinger.r && hb.stinger.r > 0) {
+      if (hasShield) {
+        hasShield = false;
+        sound.playShieldBlock();
+        for (let p = 0; p < 15; p++) particles.push(new Particle(mouseX, mouseY, "#3498db"));
+        return;
+      } else {
+        triggerGameOver(`${bee.type.name}の毒針に触れてしまった！`);
+        return;
+      }
+    }
+
+    const dHead = Math.hypot(mouseX - hb.head.x, mouseY - hb.head.y);
+    if (dHead <= hb.head.r) {
+      heldBees.push(bee);
+      sound.playHeartbeat();
+      hitStop = 6;
+      for (let p = 0; p < 8; p++) particles.push(new Particle(hb.head.x, hb.head.y, "#f1c40f"));
+
+      if (heldBees.length >= maxCatch) break;
+    }
+  }
+});
+
+// 【改善】マウスを離した際の投入判定
+canvas.addEventListener('mouseup', () => {
+  isMouseDown = false;
+  if (heldBees.length === 0) return;
+
+  // 瓶の上（口〜胴体〜周囲）で離したか判定
+  if (isOverJar(mouseX, mouseY)) {
+    sound.playPlop();
+    heldBees.forEach(b => {
+      const mul = (rengeTimer > 0) ? combo * 3.0 : combo;
+      score += Math.floor(b.type.score * mul);
+      combo = Math.min(5.0, combo + 0.5);
+      comboTimer = 240;
+      jarCount++;
+      jarLevel++;
+      nitoryuGauge = Math.min(100, nitoryuGauge + 15);
+      currentJarLog[b.type.id]++;
+
+      if (b.type === BEE_TYPES.QUEEN) {
+        freezeTimer = 300;
+        sound.playPowerUp();
+      }
+
+      pickledBees.push(new PickledBee(jar.x + (Math.random() - 0.5) * 60, jar.mouthY + 30, b.type));
+      for (let p = 0; p < 15; p++) particles.push(new Particle(jar.x, jar.mouthY + 10, "#f39c12", 5));
+    });
+
+    bees = bees.filter(b => !heldBees.includes(b));
+    heldBees = [];
+
+    if (jarCount >= JAR_CAPACITY) {
+      completeShipment();
+    }
+  } else {
+    // 瓶以外で離した：脱走
+    heldBees = [];
+  }
+});
+
+function applyItem(type) {
+  if (type === ITEM_TYPES.SMOKER) {
+    smokeTimer = 300; sound.playItem();
+  } else if (type === ITEM_TYPES.RENGE) {
+    rengeTimer = 420; sound.playItem();
+  } else if (type === ITEM_TYPES.GLOVE) {
+    hasShield = true; sound.playItem();
+  } else if (type === ITEM_TYPES.TITAN) {
+    titanTimer = 420; sound.playItem();
+  } else if (type === ITEM_TYPES.SWAT_TRAP) {
+    sound.playSwatter();
+    score = Math.max(0, score - 500);
+    currentJarLog.dead += 2;
+    for (let p = 0; p < 30; p++) particles.push(new Particle(mouseX, mouseY, "#e74c3c", 8));
+  }
+}
+
+function completeShipment() {
+  sound.playShipment();
+  shipments++;
+
+  let recipeId = "C_HYAKKA";
+  let bonus = 1000;
+
+  if (currentJarLog.dead > 0) {
+    recipeId = "X_CONTAM"; bonus = 200;
+  } else if (currentJarLog.queen > 0 || currentJarLog.oosu >= 3) {
+    recipeId = "S_HYAKUDOKU"; bonus = 5000;
+  } else if (currentJarLog.kyouran >= 2 || currentJarLog.oosu >= 1) {
+    recipeId = "A_GOKUJO"; bonus = 3000;
+  } else if (currentJarLog.mon >= 3) {
+    recipeId = "B_STIM"; bonus = 1800;
+  }
+
+  score += bonus;
+  const target = RECIPES.find(r => r.id === recipeId);
+  if (target) target.unlocked = true;
+
+  jarCount = 0; jarLevel = 0; pickledBees = [];
+  currentJarLog = { kiiro: 0, kogata: 0, mon: 0, oosu: 0, kyouran: 0, queen: 0, dead: 0 };
+  for (let p = 0; p < 40; p++) particles.push(new Particle(jar.x, jar.y, "#ffd700", 6));
+}
+
+function update() {
+  if (hitStop > 0) { hitStop--; return; }
+
+  if (gameState === STATE.PLAYING) {
+    if (comboTimer > 0) { comboTimer--; if (comboTimer === 0) combo = 1.0; }
+    if (smokeTimer > 0) smokeTimer--;
+    if (rengeTimer > 0) rengeTimer--;
+    if (titanTimer > 0) titanTimer--;
+    if (freezeTimer > 0) freezeTimer--;
+    if (isNitoryu) {
+      nitoryuTimer--;
+      if (nitoryuTimer <= 0) isNitoryu = false;
+    }
+
+    spawnTimer++;
+    if (spawnTimer > 70 && bees.length < 8) {
+      spawnTimer = 0;
+      const r = Math.random();
+      let type = BEE_TYPES.KIIRO;
+      if (r < 0.04) {
+        type = BEE_TYPES.QUEEN;
+        bees.push(new Bee(BEE_TYPES.KIIRO, -40, 200));
+        bees.push(new Bee(BEE_TYPES.KIIRO, -40, 240));
+        bees.push(new Bee(BEE_TYPES.KIIRO, -40, 280));
+      } else if (r < 0.20) type = BEE_TYPES.KYOURAN;
+      else if (r < 0.40) type = BEE_TYPES.OOSU;
+      else if (r < 0.65) type = BEE_TYPES.MON;
+      else if (r < 0.85) type = BEE_TYPES.KOGATA;
+
+      bees.push(new Bee(type));
+    }
+
+    itemSpawnTimer++;
+    if (itemSpawnTimer > 350 && items.length < 2) {
+      itemSpawnTimer = 0;
+      const r = Math.random();
+      let it = ITEM_TYPES.SMOKER;
+      if (r < 0.25) it = ITEM_TYPES.RENGE;
+      else if (r < 0.5) it = ITEM_TYPES.GLOVE;
+      else if (r < 0.75) it = ITEM_TYPES.TITAN;
+      else if (r < 0.90) it = ITEM_TYPES.SWAT_TRAP;
+      items.push(new Item(it));
+    }
+
+    bees.forEach(b => b.update());
+    items.forEach(it => it.update());
+    items = items.filter(it => it.y < canvas.height + 50);
+    pickledBees.forEach(pb => pb.update());
+  }
+
+  particles.forEach(p => p.update());
+  particles = particles.filter(p => p.alpha > 0);
+  if (flashRed > 0) flashRed -= 0.03;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 背景
+  const grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 50, canvas.width/2, canvas.height/2, 500);
+  grad.addColorStop(0, "#3e2717"); grad.addColorStop(1, "#150c05");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (smokeTimer > 0) {
+    ctx.fillStyle = "rgba(200, 210, 220, 0.25)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  drawJar(ctx);
+  items.forEach(it => it.draw(ctx));
+  bees.forEach(b => b.draw(ctx));
+  particles.forEach(p => p.draw(ctx));
+
+  if (gameState === STATE.PLAYING) drawHUD(ctx);
+  drawTweezers(ctx, mouseX, mouseY, isMouseDown);
+
+  if (gameState === STATE.TITLE) drawTitleScreen(ctx);
+  else if (gameState === STATE.GAMEOVER) drawGameOverScreen(ctx);
+
+  if (flashRed > 0) {
+    ctx.save();
+    ctx.fillStyle = `rgba(255, 0, 0, ${Math.min(0.7, flashRed)})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+  }
+}
+
+// 【改善】瓶描画（ホバー時のガイド表示を追加）
+function drawJar(c) {
+  c.save();
+
+  const isHover = heldBees.length > 0 && isOverJar(mouseX, mouseY);
+
+  // ホバー時の黄金発光エフェクト
+  if (isHover) {
+    c.fillStyle = "rgba(241, 196, 15, 0.35)";
+    c.beginPath();
+    c.roundRect(jar.x - jar.width/2 - 20, jar.y - 85, jar.width + 40, jar.height + 45, [25, 25, 35, 35]);
+    c.fill();
+
+    // 投入ガイド文字
+    c.fillStyle = "#ffd700";
+    c.font = "bold 18px sans-serif";
+    c.textAlign = "center";
+    c.fillText("▼ 離して投入！ ▼", jar.x, jar.mouthY - 30);
+  }
+
+  // 瓶の影
+  c.fillStyle = "rgba(0,0,0,0.4)";
+  c.beginPath(); c.ellipse(jar.x, jar.y + 120, jar.width * 0.7, 25, 0, 0, Math.PI * 2); c.fill();
+
+  // 蜂蜜中身
+  const honeyHeight = Math.min(195, 45 + jarLevel * 14);
+  const honeyGrad = c.createLinearGradient(0, jar.y + 110 - honeyHeight, 0, jar.y + 110);
+  honeyGrad.addColorStop(0, rengeTimer > 0 ? "#ffd700" : "#f39c12");
+  honeyGrad.addColorStop(1, "#d35400");
+  c.fillStyle = honeyGrad;
+  c.beginPath();
+  c.roundRect(jar.x - jar.width/2 + 6, jar.y + 110 - honeyHeight, jar.width - 12, honeyHeight, [0, 0, 25, 25]);
+  c.fill();
+
+  pickledBees.forEach(pb => pb.draw(c));
+
+  // ガラス枠
+  c.strokeStyle = isHover ? "#ffd700" : "rgba(255, 255, 255, 0.45)";
+  c.lineWidth = isHover ? 6 : 4;
+  c.beginPath();
+  c.roundRect(jar.x - jar.width/2, jar.y - 70, jar.width, jar.height, [15, 15, 30, 30]);
+  c.stroke();
+
+  // 開口部
+  c.fillStyle = isHover ? "rgba(241, 196, 15, 0.6)" : "rgba(243, 156, 18, 0.35)";
+  c.beginPath(); c.ellipse(jar.x, jar.mouthY, jar.mouthRadius, 20, 0, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = isHover ? "#fff" : "rgba(255, 255, 255, 0.6)"; c.stroke();
+
+  // ラベル
+  c.fillStyle = "#ecdcb9";
+  c.fillRect(jar.x - 55, jar.y - 10, 110, 48);
+  c.fillStyle = "#3e2717";
+  c.font = "bold 14px serif"; c.textAlign = "center";
+  c.fillText("特選・生蜂蜜", jar.x, jar.y + 14);
+  c.font = "12px sans-serif";
+  c.fillText(`充填: ${jarCount}/${JAR_CAPACITY}`, jar.x, jar.y + 34);
+  c.restore();
+}
+
+function drawTweezers(c, x, y, closed) {
+  c.save();
+  c.translate(x, y);
+
+  if (hasShield) {
+    c.strokeStyle = "rgba(52, 152, 219, 0.7)";
+    c.lineWidth = 3;
+    c.beginPath(); c.arc(0, -20, 45, 0, Math.PI * 2); c.stroke();
+  }
+
+  const gap = closed ? 2 : 12;
+  c.lineWidth = 4;
+  c.lineCap = "round";
+
+  if (isNitoryu) {
+    c.strokeStyle = "#f1c40f";
+    [-15, 15].forEach(offset => {
+      c.beginPath(); c.moveTo(offset - gap, 0); c.lineTo(offset - 6, -110); c.stroke();
+      c.beginPath(); c.moveTo(offset + gap, 0); c.lineTo(offset + 6, -110); c.stroke();
+    });
+  } else {
+    c.strokeStyle = (titanTimer > 0) ? "#9b59b6" : "#dcdde1";
+    c.beginPath(); c.moveTo(-gap, 0); c.bezierCurveTo(-gap * 1.5, -40, -25, -90, -10, -130); c.stroke();
+    c.beginPath(); c.moveTo(gap, 0); c.bezierCurveTo(gap * 1.5, -40, 25, -90, 10, -130); c.stroke();
+    c.strokeStyle = "#718093"; c.lineWidth = 6;
+    c.beginPath(); c.moveTo(-10, -130); c.lineTo(10, -130); c.stroke();
+  }
+
+  c.restore();
+}
+
+function drawHUD(c) {
+  c.save();
+  c.fillStyle = "#fff"; c.font = "bold 20px sans-serif"; c.textAlign = "left";
+  c.fillText(`SCORE: ${score.toLocaleString()}`, 25, 40);
+  c.fillText(`出荷数: ${shipments} 瓶`, 25, 70);
+
+  if (combo > 1.0) {
+    c.fillStyle = "#f1c40f"; c.font = "bold 22px sans-serif";
+    c.fillText(`LIVE DUNK ×${combo.toFixed(1)}!`, 25, 105);
+  }
+
+  let buffY = 140;
+  if (smokeTimer > 0) { c.fillStyle = "#95a5a6"; c.font = "14px sans-serif"; c.fillText(`💨 くん煙中: ${(smokeTimer/60).toFixed(1)}s`, 25, buffY); buffY += 22; }
+  if (rengeTimer > 0) { c.fillStyle = "#f39c12"; c.font = "14px sans-serif"; c.fillText(`🍯 レンゲ倍率×3: ${(rengeTimer/60).toFixed(1)}s`, 25, buffY); buffY += 22; }
+  if (titanTimer > 0) { c.fillStyle = "#9b59b6"; c.font = "14px sans-serif"; c.fillText(`⚡ チタン強化中: ${(titanTimer/60).toFixed(1)}s`, 25, buffY); buffY += 22; }
+  if (hasShield)      { c.fillStyle = "#3498db"; c.font = "14px sans-serif"; c.fillText(`🧤 防護革手袋: 有効`, 25, buffY); buffY += 22; }
+
+  c.textAlign = "right";
+  c.fillStyle = "#ecdcb9"; c.font = "14px sans-serif";
+  c.fillText("二刀流（箸）ゲージ [SPACE]", canvas.width - 25, 35);
+  c.fillStyle = "rgba(0,0,0,0.5)";
+  c.fillRect(canvas.width - 185, 45, 160, 12);
+  c.fillStyle = isNitoryu ? "#e74c3c" : (nitoryuGauge >= 100 ? "#f1c40f" : "#3498db");
+  const gaugeW = isNitoryu ? (nitoryuTimer / 500) * 156 : (nitoryuGauge / 100) * 156;
+  c.fillRect(canvas.width - 183, 47, Math.max(0, gaugeW), 8);
+
+  c.restore();
+}
+
+function drawTitleScreen(c) {
+  c.save();
+  c.fillStyle = "rgba(0, 0, 0, 0.8)";
+  c.fillRect(0, 0, canvas.width, canvas.height);
+
+  c.textAlign = "center";
+  c.fillStyle = "#f39c12"; c.font = "bold 44px serif";
+  c.fillText("生捕り！スズメバチ蜂蜜漬け職人", canvas.width / 2, canvas.height / 2 - 90);
+
+  c.fillStyle = "#f5e6d3"; c.font = "16px sans-serif";
+  c.fillText("【操作改善版】胸部を掴み、中央の瓶へ運んで離すだけ！", canvas.width / 2, canvas.height / 2 - 30);
+  c.fillText("※毒針（赤発光）に触れると即死！", canvas.width / 2, canvas.height / 2);
+
+  c.fillStyle = "#2ecc71"; c.font = "bold 24px sans-serif";
+  c.fillText("【 クリックして職人修行を開始 】", canvas.width / 2, canvas.height / 2 + 70);
+
+  c.fillStyle = "#d4af37"; c.font = "16px sans-serif";
+  c.fillText("（※右上の図鑑ボタンでコレクションを閲覧できます）", canvas.width / 2, canvas.height / 2 + 110);
+  c.restore();
+}
+
+function drawGameOverScreen(c) {
+  c.save();
+  c.fillStyle = "rgba(20, 5, 5, 0.88)";
+  c.fillRect(0, 0, canvas.width, canvas.height);
+
+  c.textAlign = "center";
+  c.fillStyle = "#e74c3c"; c.font = "bold 46px sans-serif";
+  c.fillText("痛恨の一刺し（GAME OVER）", canvas.width / 2, canvas.height / 2 - 100);
+
+  c.fillStyle = "#d35400";
+  c.beginPath(); c.ellipse(canvas.width / 2, canvas.height / 2 - 20, 55, 45, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = "#e74c3c";
+  c.beginPath(); c.arc(canvas.width / 2 + 20, canvas.height / 2 - 30, 15, 0, Math.PI * 2); c.fill();
+
+  c.fillStyle = "#fff"; c.font = "18px sans-serif";
+  c.fillText(`死因: ${gameOverReason}`, canvas.width / 2, canvas.height / 2 + 50);
+  c.font = "bold 24px sans-serif";
+  c.fillText(`最終スコア: ${score.toLocaleString()} pt ｜ 出荷数: ${shipments} 瓶`, canvas.width / 2, canvas.height / 2 + 85);
+
+  c.fillStyle = "#f1c40f"; c.font = "bold 22px sans-serif";
+  c.fillText("【 クリックして再挑戦 】", canvas.width / 2, canvas.height / 2 + 135);
+  c.restore();
+}
+
+function openBook() {
+  const grid = document.getElementById('book-grid');
+  grid.innerHTML = '';
+  RECIPES.forEach(r => {
+    const card = document.createElement('div');
+    card.className = `book-card ${r.unlocked ? '' : 'locked'}`;
+    card.innerHTML = `
+      <h4>${r.unlocked ? r.name : '？？？（未出荷）'}</h4>
+      <p>${r.unlocked ? r.desc : '特定の蜂の組み合わせで瓶を満杯にして出荷すると解禁。'}</p>
+    `;
+    grid.appendChild(card);
+  });
+  document.getElementById('book-modal').style.display = 'block';
+}
+
+function closeBook() {
+  document.getElementById('book-modal').style.display = 'none';
+}
+
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  if ((gameState === STATE.TITLE || gameState === STATE.GAMEOVER) && x > canvas.width - 120 && y < 60) {
+    openBook();
+  }
+});
+
+function gameLoop() {
+  update();
+  draw();
+
+  if (gameState === STATE.TITLE || gameState === STATE.GAMEOVER) {
+    ctx.save();
+    ctx.fillStyle = "#d4af37";
+    ctx.fillRect(canvas.width - 110, 15, 95, 32);
+    ctx.fillStyle = "#1a0f08";
+    ctx.font = "bold 13px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("📖 図鑑", canvas.width - 62, 36);
+    ctx.restore();
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>

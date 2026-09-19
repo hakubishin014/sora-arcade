@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スイカ割マインスイーパー (Blind Watermelon Sweeper)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes shake {
+      0%, 100% { transform: translate(0, 0); }
+      20%, 60% { transform: translate(-6px, 0); }
+      40%, 80% { transform: translate(6px, 0); }
+    }
+    .animate-shake {
+      animation: shake 0.4s ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-amber-50 min-h-screen text-slate-800 font-sans flex flex-col justify-between p-4 selection:bg-amber-200">
+  <div class="max-w-4xl mx-auto w-full flex-grow flex flex-col">
+    
+    <!-- ヘッダーエリア -->
+    <header class="bg-white/90 backdrop-blur rounded-2xl p-4 shadow-sm mb-4 border border-amber-200/80 flex flex-wrap justify-between items-center gap-2">
+      <div>
+        <h1 class="text-xl md:text-2xl font-bold text-amber-900 flex items-center gap-2">
+          <span>🍉</span> スイカ割マインスイーパー
+        </h1>
+        <p class="text-xs text-amber-700/80">視界ゼロの恐怖 × AIのナビゲート</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="text-sm font-semibold bg-amber-100 px-3 py-1.5 rounded-full border border-amber-300 text-amber-900 shadow-inner" id="miss-indicator">
+          チャンス: 🍉 🍉 🍉
+        </div>
+        <button onclick="initGame()" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow transition">
+          🔄 リセット
+        </button>
+      </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-grow" id="main-container">
+      
+      <!-- 左/上: フィールド（盤面） -->
+      <section class="bg-slate-900 rounded-2xl p-4 shadow-md border border-slate-700 flex flex-col items-center justify-center">
+        <div class="text-xs text-slate-400 mb-2 flex justify-between w-full max-w-[320px]">
+          <span>フィールド (7 × 7)</span>
+          <span id="pos-display" class="font-mono text-amber-400">現在地: (0, 0)</span>
+        </div>
+        <div id="board" class="grid grid-cols-7 gap-1 w-full max-w-[320px] aspect-square bg-slate-800 p-2 rounded-xl border border-slate-700 shadow-inner">
+          <!-- JSで動的生成 -->
+        </div>
+      </section>
+
+      <!-- 右/下: AIログ & 操作UI -->
+      <section class="flex flex-col gap-4">
+        
+        <!-- チャットログ -->
+        <div class="bg-white rounded-2xl p-4 shadow-md border border-amber-200/80 flex-grow flex flex-col h-[280px]">
+          <h2 class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            🤖 AIナビゲーターの指導ログ
+          </h2>
+          <div id="chat-logs" class="flex-grow overflow-y-auto space-y-2 pr-1 text-sm">
+            <!-- ログメッセージ挿入領域 -->
+          </div>
+        </div>
+
+        <!-- 操作パネル -->
+        <div class="bg-white rounded-2xl p-4 shadow-md border border-amber-200/80 flex flex-col items-center gap-3">
+          <div class="grid grid-cols-3 gap-2 w-full max-w-[200px]">
+            <div></div>
+            <button onclick="move(0, 1)" class="bg-amber-100 hover:bg-amber-200 active:bg-amber-300 text-amber-900 font-bold py-3 rounded-xl border border-amber-300/80 shadow-sm transition text-lg">⬆️</button>
+            <div></div>
+            <button onclick="move(-1, 0)" class="bg-amber-100 hover:bg-amber-200 active:bg-amber-300 text-amber-900 font-bold py-3 rounded-xl border border-amber-300/80 shadow-sm transition text-lg">⬅️</button>
+            <button onclick="move(0, -1)" class="bg-amber-100 hover:bg-amber-200 active:bg-amber-300 text-amber-900 font-bold py-3 rounded-xl border border-amber-300/80 shadow-sm transition text-lg">⬇️</button>
+            <button onclick="move(1, 0)" class="bg-amber-100 hover:bg-amber-200 active:bg-amber-300 text-amber-900 font-bold py-3 rounded-xl border border-amber-300/80 shadow-sm transition text-lg">➡️</button>
+          </div>
+          <button id="swing-btn" onclick="swing()" class="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 active:scale-95 text-white font-bold py-3 px-6 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-base">
+            🏏 ここで割る！（スイング）
+          </button>
+        </div>
+
+      </section>
+    </main>
+
+    <footer class="mt-4 text-center text-xs text-amber-800/60">
+      キーボード操作: 矢印キー/WASDで移動 | Space/Enterでスイング
+    </footer>
+  </div>
+
+  <script>
+    const BOARD_SIZE = 7;
+    let gameState = {
+      playerPos: { x: 0, y: 0 },
+      watermelonPos: { x: 0, y: 0 },
+      mines: [],
+      visited: [],
+      missCount: 0,
+      maxMisses: 3,
+      gameStatus: 'PLAYING'
+    };
+
+    function initGame() {
+      gameState.playerPos = { x: 0, y: 0 };
+      gameState.visited = [{ x: 0, y: 0 }];
+      gameState.missCount = 0;
+      gameState.gameStatus = 'PLAYING';
+
+      // スイカの配置 (初期位置(0,0)およびその隣接マスを除く)
+      let wx, wy;
+      do {
+        wx = Math.floor(Math.random() * BOARD_SIZE);
+        wy = Math.floor(Math.random() * BOARD_SIZE);
+      } while (Math.abs(wx) <= 1 && Math.abs(wy) <= 1);
+      gameState.watermelonPos = { x: wx, y: wy };
+
+      // 地雷の配置 (約18% = 9個)
+      gameState.mines = [];
+      const totalMines = 9;
+      while (gameState.mines.length < totalMines) {
+        const mx = Math.floor(Math.random() * BOARD_SIZE);
+        const my = Math.floor(Math.random() * BOARD_SIZE);
+
+        // (0,0)およびスイカの位置には置かない
+        const isStart = (mx === 0 && my === 0);
+        const isWatermelon = (mx === wx && my === wy);
+        const isAlreadyMine = gameState.mines.some(m => m.x === mx && m.y === my);
+
+        if (!isStart && !isWatermelon && !isAlreadyMine) {
+          gameState.mines.push({ x: mx, y: my });
+        }
+      }
+
+      document.getElementById('chat-logs').innerHTML = '';
+      addAiLog("ゲームスタート！目隠しをしたよ。声だけを頼りにスイカを目指してね！", "info");
+      
+      // 初期のAIアドバイス
+      const initialHint = getAiHint(0, 0);
+      addAiLog(initialHint, "info");
+
+      render();
+    }
+
+    function getAiHint(px, py) {
+      // 周囲8マスの地雷カウント
+      let mineCount = 0;
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = px + dx;
+          const ny = py + dy;
+          if (gameState.mines.some(m => m.x === nx && m.y === ny)) {
+            mineCount++;
+          }
+        }
+      }
+
+      let mineText = "";
+      if (mineCount === 0) {
+        mineText = "足元は安全（地雷0）みたい！";
+      } else if (mineCount <= 2) {
+        mineText = `気をつけて、近くに${mineCount}個の気配（地雷）を感じるよ…`;
+      } else {
+        mineText = `ストップ！周囲は危険だらけだ（地雷${mineCount}個）！慎重に！`;
+      }
+
+      // スイカの方角と距離
+      const dx = gameState.watermelonPos.x - px;
+      const dy = gameState.watermelonPos.y - py;
+      const isNear = Math.abs(dx) <= 1 && Math.abs(dy) <= 1;
+
+      let dirText = "";
+      if (isNear) {
+        dirText = "スイカの匂いがする！すぐ近くだ！";
+      } else {
+        let vert = "";
+        let horiz = "";
+        if (dy > 0) vert = "前（上）";
+        else if (dy < 0) vert = "後ろ（下）";
+
+        if (dx > 0) horiz = "右";
+        else if (dx < 0) horiz = "左";
+
+        if (vert && horiz) {
+          dirText = `${horiz}${vert}の方角だよ！`;
+        } else {
+          dirText = `${horiz || vert}の方角だよ！`;
+        }
+      }
+
+      return `${dirText} ${mineText}`;
+    }
+
+    function move(dx, dy) {
+      if (gameState.gameStatus !== 'PLAYING') return;
+
+      const nx = gameState.playerPos.x + dx;
+      const ny = gameState.playerPos.y + dy;
+
+      // 壁衝突判定
+      if (nx < 0 || nx >= BOARD_SIZE || ny < 0 || ny >= BOARD_SIZE) {
+        addAiLog("イタッ！そっちは砂浜の端（壁）だよ！進めない！", "warning");
+        return;
+      }
+
+      gameState.playerPos = { x: nx, y: ny };
+
+      // 訪問履歴更新
+      if (!gameState.visited.some(v => v.x === nx && v.y === ny)) {
+        gameState.visited.push({ x: nx, y: ny });
+      }
+
+      // 地雷踏破判定
+      if (gameState.mines.some(m => m.x === nx && m.y === ny)) {
+        gameState.gameStatus = 'GAMEOVER';
+        addAiLog("キャーッ！！地雷を踏んじゃった！ドカン！💥", "danger");
+        triggerShake();
+        render();
+        return;
+      }
+
+      // 移動後のAIヒント
+      const hint = getAiHint(nx, ny);
+      addAiLog(hint, "info");
+      render();
+    }
+
+    function swing() {
+      if (gameState.gameStatus !== 'PLAYING') return;
+
+      const px = gameState.playerPos.x;
+      const py = gameState.playerPos.y;
+      const wx = gameState.watermelonPos.x;
+      const wy = gameState.watermelonPos.y;
+
+      if (px === wx && py === wy) {
+        gameState.gameStatus = 'CLEAR';
+        addAiLog("パッカーン！！見事にスイカを割ったよ！ゲームクリア！🎉🍉", "success");
+      } else {
+        gameState.missCount++;
+        triggerShake();
+        if (gameState.missCount >= gameState.maxMisses) {
+          gameState.gameStatus = 'GAMEOVER';
+          addAiLog("スカッ…空振り3回で体力が尽きたよ！ゲームオーバー！😵", "danger");
+        } else {
+          const rem = gameState.maxMisses - gameState.missCount;
+          addAiLog(`スカッ！そこにはスイカはないよ…（空振り！あと${rem}回）`, "warning");
+        }
+      }
+      render();
+    }
+
+    function addAiLog(msg, type) {
+      const chatLogs = document.getElementById('chat-logs');
+      const logItem = document.createElement('div');
+      
+      let bgClass = "bg-slate-100 text-slate-800 border-slate-200";
+      if (type === "warning") bgClass = "bg-amber-100 text-amber-900 border-amber-300";
+      if (type === "danger") bgClass = "bg-rose-100 text-rose-900 border-rose-300 font-bold";
+      if (type === "success") bgClass = "bg-emerald-100 text-emerald-900 border-emerald-300 font-bold";
+
+      logItem.className = `p-2.5 rounded-xl border text-xs leading-relaxed shadow-sm transition-all ${bgClass}`;
+      logItem.innerText = `💬 ${msg}`;
+      
+      chatLogs.appendChild(logItem);
+      chatLogs.scrollTop = chatLogs.scrollHeight;
+    }
+
+    function triggerShake() {
+      const container = document.getElementById('main-container');
+      container.classList.remove('animate-shake');
+      void container.offsetWidth; // リフロー発生
+      container.classList.add('animate-shake');
+    }
+
+    function render() {
+      const board = document.getElementById('board');
+      board.innerHTML = '';
+
+      // Y軸は上がプラス、下が0（左下が 0,0）
+      for (let r = 0; r < BOARD_SIZE; r++) {
+        const y = BOARD_SIZE - 1 - r;
+        for (let x = 0; x < BOARD_SIZE; x++) {
+          const cell = document.createElement('div');
+          cell.className = "flex items-center justify-center rounded-lg text-sm font-bold select-none transition-all duration-200 aspect-square";
+
+          const isPlayer = (x === gameState.playerPos.x && y === gameState.playerPos.y);
+          const isVisited = gameState.visited.some(v => v.x === x && v.y === y);
+          const isWatermelon = (x === gameState.watermelonPos.x && y === gameState.watermelonPos.y);
+          const isMine = gameState.mines.some(m => m.x === x && m.y === y);
+
+          if (gameState.gameStatus === 'PLAYING') {
+            if (isPlayer) {
+              cell.className += " bg-amber-400 text-slate-900 shadow-md ring-2 ring-amber-300";
+              cell.innerText = "👦";
+            } else if (isVisited) {
+              cell.className += " bg-amber-200/90 text-amber-800/60";
+              cell.innerText = "👣";
+            } else {
+              cell.className += " bg-slate-800 text-slate-600";
+              cell.innerText = "";
+            }
+          } else {
+            // 答え合わせ (CLEAR / GAMEOVER)
+            if (isWatermelon) {
+              cell.className += " bg-emerald-500 text-white ring-2 ring-emerald-300";
+              cell.innerText = "🍉";
+            } else if (isMine) {
+              cell.className += " bg-rose-500 text-white";
+              cell.innerText = "💥";
+            } else if (isPlayer) {
+              cell.className += " bg-amber-400 text-slate-900";
+              cell.innerText = "👦";
+            } else if (isVisited) {
+              cell.className += " bg-amber-200/90 text-amber-800/60";
+              cell.innerText = "👣";
+            } else {
+              cell.className += " bg-slate-700/50 text-slate-500";
+              cell.innerText = "";
+            }
+          }
+
+          board.appendChild(cell);
+        }
+      }
+
+      // 位置表示の更新
+      document.getElementById('pos-display').innerText = `現在地: (${gameState.playerPos.x}, ${gameState.playerPos.y})`;
+
+      // チャンス表示の更新
+      const remMiss = gameState.maxMisses - gameState.missCount;
+      let missText = "チャンス: ";
+      for (let i = 0; i < remMiss; i++) missText += "🍉 ";
+      for (let i = 0; i < gameState.missCount; i++) missText += "❌ ";
+      document.getElementById('miss-indicator').innerText = missText;
+
+      // ボタン制御
+      const isEnded = gameState.gameStatus !== 'PLAYING';
+      document.getElementById('swing-btn').disabled = isEnded;
+      if (isEnded) {
+        document.getElementById('swing-btn').classList.add('opacity-50', 'cursor-not-allowed');
+      } else {
+        document.getElementById('swing-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    // キーボード操作対応
+    window.addEventListener('keydown', (e) => {
+      if (['ArrowUp', 'KeyW'].includes(e.code)) { e.preventDefault(); move(0, 1); }
+      if (['ArrowDown', 'KeyS'].includes(e.code)) { e.preventDefault(); move(0, -1); }
+      if (['ArrowLeft', 'KeyA'].includes(e.code)) { e.preventDefault(); move(-1, 0); }
+      if (['ArrowRight', 'KeyD'].includes(e.code)) { e.preventDefault(); move(1, 0); }
+      if (['Space', 'Enter'].includes(e.code)) { e.preventDefault(); swing(); }
+    });
+
+    // 初期化実行
+    window.onload = initGame;
+  </script>
+</body>
+</html>

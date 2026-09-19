@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bio-Forge Ecosystem: Transcendent - 放置型生物育成</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: #151d2a;
+            --accent-green: #2ea043;
+            --accent-blue: #388bfd;
+            --accent-purple: #8957e5;
+            --accent-gold: #f2c744;
+            --accent-warn: #da3633;
+            --text-main: #c9d1d9;
+            --text-sub: #8b949e;
+            --border-color: #30363d;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 950px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            position: relative;
+        }
+
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            color: #58a6ff;
+            letter-spacing: 1px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* ディスプレイ領域 */
+        .creature-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #06090e;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #particleCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .organism-avatar {
+            font-size: 5.5rem;
+            margin: 15px 0;
+            cursor: pointer;
+            transition: transform 0.08s ease;
+            animation: float 3s infinite ease-in-out;
+            z-index: 1;
+            position: relative;
+        }
+
+        .organism-avatar:active { transform: scale(0.85); }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .fever-active {
+            animation: rainbow-glow 0.5s infinite alternate !important;
+        }
+
+        @keyframes rainbow-glow {
+            0% { filter: drop-shadow(0 0 15px #ff0000); }
+            50% { filter: drop-shadow(0 0 15px #00ff00); }
+            100% { filter: drop-shadow(0 0 15px #0000ff); }
+        }
+
+        /* ゲージ */
+        .gauge-container {
+            width: 100%;
+            background: #21262d;
+            border-radius: 6px;
+            height: 12px;
+            overflow: hidden;
+            margin: 8px 0;
+            position: relative;
+        }
+
+        .gauge-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #388bfd, #f2c744);
+            transition: width 0.1s linear;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            width: 100%;
+            background: var(--panel-bg);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            border: 1px solid var(--border-color);
+            z-index: 1;
+        }
+
+        .stat-item { display: flex; flex-direction: column; }
+        .stat-label { color: var(--text-sub); font-size: 0.75rem; }
+        .stat-value { font-size: 1rem; font-weight: bold; color: #f0f6fc; }
+        .stat-gold { color: var(--accent-gold); }
+
+        /* タブ & コントロール */
+        .controls { display: flex; flex-direction: column; gap: 10px; }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 6px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-sub);
+            padding: 6px 12px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .tab-btn.active {
+            color: #fff;
+            background: var(--border-color);
+        }
+
+        .tab-content { display: flex; flex-direction: column; gap: 8px; }
+
+        .btn {
+            background: var(--border-color);
+            color: var(--text-main);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.15s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #3c444d;
+            border-color: #8b949e;
+        }
+
+        .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        .btn-primary { background: #238636; color: #fff; }
+        .btn-primary:hover:not(:disabled) { background: #2ea043; }
+
+        .btn-purple { background: #8957e5; color: #fff; }
+        .btn-purple:hover:not(:disabled) { background: #a371f7; }
+
+        .btn-gold { background: #9e6a03; color: #fff; }
+        .btn-gold:hover:not(:disabled) { background: #bb7d03; }
+
+        .btn-danger { background: #da3633; color: #fff; }
+
+        .btn-title { font-weight: bold; display: block; font-size: 0.9rem; }
+        .btn-sub { font-size: 0.72rem; opacity: 0.85; display: block; margin-top: 2px; }
+        .btn-cost { font-size: 0.8rem; font-weight: bold; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; white-space: nowrap; }
+
+        /* 浮遊黄金遺伝子 */
+        .golden-gene {
+            position: absolute;
+            font-size: 2rem;
+            cursor: pointer;
+            z-index: 10;
+            animation: pulse-gold 1s infinite alternate;
+            filter: drop-shadow(0 0 10px #f2c744);
+        }
+
+        @keyframes pulse-gold {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.3); }
+        }
+
+        .log-container {
+            grid-column: 1 / -1;
+            background: #06090e;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px;
+            height: 100px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.78rem;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+        .log-entry { margin-bottom: 2px; }
+        .log-info { color: var(--text-sub); }
+        .log-success { color: var(--accent-blue); }
+        .log-gold { color: var(--accent-gold); }
+        .log-warn { color: #f2cc60; }
+        .log-error { color: var(--accent-warn); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Bio-Forge: Transcendent</h1>
+        <div class="header-actions">
+            <button id="saveBtn" class="btn" style="padding:4px 8px; font-size:0.75rem;">セーブ</button>
+            <button id="resetDataBtn" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;">初期化</button>
+        </div>
+    </div>
+
+    <!-- ディスプレイ -->
+    <div class="creature-display">
+        <canvas id="particleCanvas"></canvas>
+        <div id="organismAvatar" class="organism-avatar">🦠</div>
+        
+        <div style="width:100%; text-align:center; z-index:1;">
+            <div id="creatureName" style="font-size:1.3rem; font-weight:bold; color:#f0f6fc;">単細胞生物</div>
+            <div id="creatureStage" style="font-size:0.85rem; color:var(--accent-blue); margin-bottom:6px;">世代: 1</div>
+            
+            <div class="gauge-container">
+                <div id="feverBar" class="gauge-bar"></div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-label">保有DNA</span>
+                    <span id="dnaDisplay" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">秒間DNA (DPS)</span>
+                    <span id="dpsDisplay" class="stat-value">0.0 /s</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">環境適応度</span>
+                    <span id="adaptDisplay" class="stat-value">1.0x</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">遺伝子結晶 (超越)</span>
+                    <span id="crystalDisplay" class="stat-value stat-gold">0 💎</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作パネル -->
+    <div class="controls">
+        <div class="tabs">
+            <button id="tabEvolution" class="tab-btn active">遺伝子操作</button>
+            <button id="tabTranscend" class="tab-btn">遺伝子超越 (転生)</button>
+        </div>
+
+        <!-- 遺伝子操作タブ -->
+        <div id="panelEvolution" class="tab-content">
+            <button id="clickBtn" class="btn btn-primary">
+                <div>
+                    <span class="btn-title">細胞分裂 (手動採取)</span>
+                    <span class="btn-sub">連打でフィーバーゲージ加速！</span>
+                </div>
+                <span id="clickValue" class="btn-cost">+1 DNA</span>
+            </button>
+
+            <button id="genomeEditBtn" class="btn">
+                <div>
+                    <span class="btn-title">ゲノム編集</span>
+                    <span class="btn-sub">安全に基礎DPSを強化</span>
+                </div>
+                <span id="genomeCost" class="btn-cost">15 DNA</span>
+            </button>
+
+            <button id="gmoBtn" class="btn btn-purple">
+                <div>
+                    <span class="btn-title">遺伝子組み換え</span>
+                    <span class="btn-sub">大増殖 (※失敗・💩化リスクあり)</span>
+                </div>
+                <span id="gmoCost" class="btn-cost">100 DNA</span>
+            </button>
+
+            <button id="hgtBtn" class="btn">
+                <div>
+                    <span class="btn-title">水平伝播 (HGT)</span>
+                    <span class="btn-sub">環境適応度を高めて倍率補正</span>
+                </div>
+                <span id="hgtCost" class="btn-cost">500 DNA</span>
+            </button>
+
+            <button id="rebirthBtn" class="btn btn-danger" style="display:none;">
+                <div>
+                    <span class="btn-title">有機分解と再誕生</span>
+                    <span class="btn-sub">💩を分解しボーナスDNAで再生成</span>
+                </div>
+                <span class="btn-cost">分解実行</span>
+            </button>
+        </div>
+
+        <!-- 超越タブ -->
+        <div id="panelTranscend" class="tab-content" style="display:none;">
+            <div style="font-size:0.8rem; color:var(--text-sub); line-height:1.4;">
+                現在の生命体をリセットし、『遺伝子結晶』を獲得します。結晶は永久パッシブ効果をもたらします。
+            </div>
+
+            <button id="transcendBtn" class="btn btn-gold">
+                <div>
+                    <span class="btn-title">遺伝子超越の実行</span>
+                    <span class="btn-sub">現在の適応度に応じた結晶を獲得</span>
+                </div>
+                <span id="transcendReward" class="btn-cost">+0 💎</span>
+            </button>
+
+            <button id="perkDnaBtn" class="btn">
+                <div>
+                    <span class="btn-title">全生産補正 (+50%/Lv)</span>
+                    <span class="btn-sub">超越パッシブ: 全生産量を底上げ</span>
+                </div>
+                <span id="perkDnaCost" class="btn-cost">1 💎</span>
+            </button>
+
+            <button id="perkSafetyBtn" class="btn">
+                <div>
+                    <span class="btn-title">ゲノム保護膜 (💩化率低下)</span>
+                    <span class="btn-sub">組み換え失敗リスクを軽減</span>
+                </div>
+                <span id="perkSafetyCost" class="btn-cost">2 💎</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ログ -->
+    <div id="logContainer" class="log-container"></div>
+</div>
+
+<script>
+    // --- Web Audio API 効果音エンジン ---
+    const AudioSys = {
+        ctx: null,
+        init() {
+            if (!this.ctx) {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (this.ctx.state === 'suspended') {
+                this.ctx.resume();
+            }
+        },
+        play(freq, type, duration, vol = 0.08) {
+            if (!this.ctx) return;
+            try {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            } catch(e) {}
+        },
+        click() { this.play(600, 'sine', 0.05, 0.04); },
+        upgrade() {
+            this.play(523, 'triangle', 0.08, 0.06);
+            setTimeout(() => this.play(659, 'triangle', 0.12, 0.06), 60);
+        },
+        fever() {
+            [523, 659, 783, 1046].forEach((f, i) => setTimeout(() => this.play(f, 'sine', 0.15, 0.08), i * 50));
+        },
+        poop() {
+            this.play(160, 'sawtooth', 0.25, 0.12);
+            setTimeout(() => this.play(110, 'sawtooth', 0.35, 0.12), 120);
+        },
+        transcend() {
+            [440, 554, 659, 880, 1108].forEach((f, i) => setTimeout(() => this.play(f, 'sine', 0.25, 0.08), i * 80));
+        }
+    };
+
+    // --- ゲーム状態 ---
+    const state = {
+        dna: 0,
+        dpsBase: 0,
+        clickPower: 1,
+        adaptation: 1.0,
+        generation: 1,
+        isPoop: false,
+        
+        genomeLevel: 0,
+        gmoLevel: 0,
+        hgtLevel: 0,
+        
+        // 周回・超越
+        crystals: 0,
+        perkDnaLv: 0,
+        perkSafetyLv: 0,
+        
+        // フィーバー
+        feverGauge: 0,
+        isFever: false,
+        
+        stageIndex: 0
+    };
+
+    const stages = [
+        { name: "単細胞生物", avatar: "🦠", minAdapt: 1.0 },
+        { name: "水生多細胞体", avatar: "🐟", minAdapt: 2.5 },
+        { name: "両生類変異体", avatar: "🦎", minAdapt: 6.0 },
+        { name: "陸生高等生物", avatar: "🦊", minAdapt: 15.0 },
+        { name: "超適応頂点生物", avatar: "🐉", minAdapt: 40.0 },
+        { name: "星間生命体", avatar: "🌌", minAdapt: 100.0 }
+    ];
+
+    // Canvas パーティクル
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function spawnParticles(x, y, text, color = '#f2c744') {
+        particles.push({
+            x, y,
+            vx: (Math.random() - 0.5) * 3,
+            vy: -2 - Math.random() * 2,
+            alpha: 1,
+            text, color
+        });
+    }
+
+    function updateParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.alpha -= 0.02;
+            
+            ctx.globalAlpha = Math.max(0, p.alpha);
+            ctx.fillStyle = p.color;
+            ctx.font = 'bold 14px Segoe UI';
+            ctx.fillText(p.text, p.x, p.y);
+            
+            if (p.alpha <= 0) particles.splice(i, 1);
+        }
+        ctx.globalAlpha = 1;
+        requestAnimationFrame(updateParticles);
+    }
+    requestAnimationFrame(updateParticles);
+
+    // DOM参照
+    const dom = {
+        avatar: document.getElementById('organismAvatar'),
+        name: document.getElementById('creatureName'),
+        stage: document.getElementById('creatureStage'),
+        dna: document.getElementById('dnaDisplay'),
+        dps: document.getElementById('dpsDisplay'),
+        adapt: document.getElementById('adaptDisplay'),
+        crystal: document.getElementById('crystalDisplay'),
+        feverBar: document.getElementById('feverBar'),
+        
+        clickBtn: document.getElementById('clickBtn'),
+        genomeBtn: document.getElementById('genomeEditBtn'),
+        gmoBtn: document.getElementById('gmoBtn'),
+        hgtBtn: document.getElementById('hgtBtn'),
+        rebirthBtn: document.getElementById('rebirthBtn'),
+        
+        clickVal: document.getElementById('clickValue'),
+        genomeCost: document.getElementById('genomeCost'),
+        gmoCost: document.getElementById('gmoCost'),
+        hgtCost: document.getElementById('hgtCost'),
+        
+        transcendBtn: document.getElementById('transcendBtn'),
+        transcendReward: document.getElementById('transcendReward'),
+        perkDnaBtn: document.getElementById('perkDnaBtn'),
+        perkDnaCost: document.getElementById('perkDnaCost'),
+        perkSafetyBtn: document.getElementById('perkSafetyBtn'),
+        perkSafetyCost: document.getElementById('perkSafetyCost'),
+        
+        tabEvo: document.getElementById('tabEvolution'),
+        tabTrans: document.getElementById('tabTranscend'),
+        panelEvo: document.getElementById('panelEvolution'),
+        panelTrans: document.getElementById('panelTranscend'),
+        
+        log: document.getElementById('logContainer')
+    };
+
+    function formatNum(num) {
+        if (num >= 1e9) return (num / 1e9).toFixed(2) + ' B';
+        if (num >= 1e6) return (num / 1e6).toFixed(2) + ' M';
+        if (num >= 1e3) return (num / 1e3).toFixed(1) + ' K';
+        return Math.floor(num).toLocaleString();
+    }
+
+    function addLog(msg, type = 'info') {
+        const time = new Date().toLocaleTimeString();
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
+        entry.textContent = `[${time}] ${msg}`;
+        dom.log.insertBefore(entry, dom.log.firstChild);
+    }
+
+    function getGenomeCost() { return Math.floor(15 * Math.pow(1.15, state.genomeLevel)); }
+    function getGmoCost() { return Math.floor(100 * Math.pow(1.25, state.gmoLevel)); }
+    function getHgtCost() { return Math.floor(500 * Math.pow(1.4, state.hgtLevel)); }
+
+    function getDPS() {
+        if (state.isPoop) return 0;
+        const crystalMult = 1 + (state.crystals * 0.2) + (state.perkDnaLv * 0.5);
+        const feverMult = state.isFever ? 10 : 1;
+        return (state.dpsBase + (state.gmoLevel * 5)) * state.adaptation * crystalMult * feverMult;
+    }
+
+    function getPendingCrystals() {
+        if (state.adaptation < 5.0) return 0;
+        return Math.floor(Math.pow(state.adaptation / 5.0, 1.2));
+    }
+
+    function updateUI() {
+        dom.dna.textContent = formatNum(state.dna);
+        dom.dps.textContent = `${formatNum(getDPS())} /s`;
+        dom.adapt.textContent = `${state.adaptation.toFixed(1)}x`;
+        dom.crystal.textContent = `${state.crystals} 💎`;
+        dom.feverBar.style.width = `${state.feverGauge}%`;
+
+        if (state.isPoop) {
+            dom.avatar.textContent = "💩";
+            dom.name.textContent = "うんち君 (変異失敗)";
+            dom.stage.textContent = "状態: 構造崩壊";
+            dom.clickBtn.disabled = true;
+            dom.genomeBtn.disabled = true;
+            dom.gmoBtn.disabled = true;
+            dom.hgtBtn.disabled = true;
+            dom.rebirthBtn.style.display = 'flex';
+            return;
+        }
+
+        dom.rebirthBtn.style.display = 'none';
+        dom.clickBtn.disabled = false;
+
+        let currentStage = stages[state.stageIndex];
+        for (let i = stages.length - 1; i >= 0; i--) {
+            if (state.adaptation >= stages[i].minAdapt) {
+                if (state.stageIndex !== i) {
+                    state.stageIndex = i;
+                    addLog(`進化完了: 【${stages[i].name}】へ形態変化！`, 'success');
+                }
+                currentStage = stages[i];
+                break;
+            }
+        }
+
+        dom.avatar.textContent = currentStage.avatar;
+        dom.name.textContent = currentStage.name;
+        dom.stage.textContent = `世代: ${state.generation} | 段階: ${currentStage.name}`;
+
+        const gCost = getGenomeCost();
+        const gmoCost = getGmoCost();
+        const hgtCost = getHgtCost();
+
+        dom.genomeCost.textContent = `${formatNum(gCost)} DNA`;
+        dom.gmoCost.textContent = `${formatNum(gmoCost)} DNA`;
+        dom.hgtCost.textContent = `${formatNum(hgtCost)} DNA`;
+        dom.clickVal.textContent = `+${formatNum(state.clickPower * (state.isFever ? 10 : 1))} DNA`;
+
+        dom.genomeBtn.disabled = state.dna < gCost;
+        dom.gmoBtn.disabled = state.dna < gmoCost;
+        dom.hgtBtn.disabled = state.dna < hgtCost;
+
+        // 超越パネル
+        const reward = getPendingCrystals();
+        dom.transcendReward.textContent = `+${reward} 💎`;
+        dom.transcendBtn.disabled = reward <= 0;
+
+        const perkDnaCost = Math.floor(1 * Math.pow(1.5, state.perkDnaLv));
+        const perkSafetyCost = Math.floor(2 * Math.pow(2.0, state.perkSafetyLv));
+
+        dom.perkDnaCost.textContent = `${perkDnaCost} 💎`;
+        dom.perkSafetyCost.textContent = `${perkSafetyCost} 💎`;
+        
+        dom.perkDnaBtn.disabled = state.crystals < perkDnaCost;
+        dom.perkSafetyBtn.disabled = state.crystals < perkSafetyCost || state.perkSafetyLv >= 2;
+    }
+
+    // タブ切り替え
+    dom.tabEvo.addEventListener('click', () => {
+        dom.tabEvo.classList.add('active');
+        dom.tabTrans.classList.remove('active');
+        dom.panelEvo.style.display = 'flex';
+        dom.panelTrans.style.display = 'none';
+    });
+
+    dom.tabTrans.addEventListener('click', () => {
+        dom.tabTrans.classList.add('active');
+        dom.tabEvo.classList.remove('active');
+        dom.panelTrans.style.display = 'flex';
+        dom.panelEvo.style.display = 'none';
+    });
+
+    // クリック・タップアクション
+    function doClick(e) {
+        AudioSys.init();
+        if (state.isPoop) return;
+        
+        AudioSys.click();
+        const gained = state.clickPower * (state.isFever ? 10 : 1);
+        state.dna += gained;
+
+        // ゲージ増加
+        if (!state.isFever) {
+            state.feverGauge = Math.min(100, state.feverGauge + 4);
+            if (state.feverGauge >= 100) {
+                triggerFever();
+            }
+        }
+
+        const rect = dom.avatar.getBoundingClientRect();
+        const x = (e ? e.clientX : rect.left + rect.width / 2) - rect.left;
+        const y = (e ? e.clientY : rect.top) - rect.top;
+        spawnParticles(x, y, `+${formatNum(gained)}`, state.isFever ? '#ff4d4d' : '#f2c744');
+        updateUI();
+    }
+
+    dom.avatar.addEventListener('click', doClick);
+    dom.clickBtn.addEventListener('click', doClick);
+
+    function triggerFever() {
+        state.isFever = true;
+        dom.avatar.classList.add('fever-active');
+        AudioSys.fever();
+        addLog(`🔥 フィーバータイム突入！ 10秒間生産性10倍！`, 'gold');
+
+        let left = 10;
+        const timer = setInterval(() => {
+            left--;
+            state.feverGauge = (left / 10) * 100;
+            updateUI();
+            if (left <= 0) {
+                clearInterval(timer);
+                state.isFever = false;
+                state.feverGauge = 0;
+                dom.avatar.classList.remove('fever-active');
+                addLog(`フィーバータイムが終了しました。`, 'info');
+                updateUI();
+            }
+        }, 1000);
+    }
+
+    // 強化アクション
+    dom.genomeBtn.addEventListener('click', () => {
+        AudioSys.init();
+        const cost = getGenomeCost();
+        if (state.dna >= cost) {
+            AudioSys.upgrade();
+            state.dna -= cost;
+            state.genomeLevel++;
+            state.dpsBase += 1;
+            state.clickPower = 1 + Math.floor(state.genomeLevel * 0.6);
+            addLog(`ゲノム編集成功。`, 'info');
+            updateUI();
+        }
+    });
+
+    dom.gmoBtn.addEventListener('click', () => {
+        AudioSys.init();
+        const cost = getGmoCost();
+        if (state.dna >= cost) {
+            state.dna -= cost;
+            const failChance = Math.max(0.005, 0.03 - (state.perkSafetyLv * 0.012));
+
+            if (Math.random() < failChance) {
+                AudioSys.poop();
+                state.isPoop = true;
+                addLog(`【警告】遺伝子組み換えに失敗！💩化しました。`, 'error');
+            } else {
+                AudioSys.upgrade();
+                state.gmoLevel++;
+                addLog(`遺伝子組み換え成功！強靭な配列を獲得。`, 'success');
+            }
+            updateUI();
+        }
+    });
+
+    dom.hgtBtn.addEventListener('click', () => {
+        AudioSys.init();
+        const cost = getHgtCost();
+        if (state.dna >= cost) {
+            AudioSys.upgrade();
+            state.dna -= cost;
+            state.hgtLevel++;
+            state.adaptation += 0.9;
+            addLog(`水平伝播成功。適応度が向上。`, 'success');
+            updateUI();
+        }
+    });
+
+    dom.rebirthBtn.addEventListener('click', () => {
+        AudioSys.init();
+        const bonus = 200 * (state.generation + state.gmoLevel + 1);
+        state.dna += bonus;
+        state.isPoop = false;
+        state.generation++;
+        addLog(`💩を分解し、${bonus} DNAを得て再創世しました。`, 'warn');
+        updateUI();
+    });
+
+    // 超越
+    dom.transcendBtn.addEventListener('click', () => {
+        AudioSys.init();
+        const reward = getPendingCrystals();
+        if (reward > 0) {
+            AudioSys.transcend();
+            state.crystals += reward;
+            
+            // リセット処理
+            state.dna = 0;
+            state.dpsBase = 0;
+            state.clickPower = 1;
+            state.adaptation = 1.0;
+            state.genomeLevel = 0;
+            state.gmoLevel = 0;
+            state.hgtLevel = 0;
+            state.stageIndex = 0;
+            state.isPoop = false;
+            state.generation = 1;
+
+            addLog(`✨ 遺伝子超越を実行！ 結晶 +${reward} 💎 を獲得して新世界へ移行。`, 'gold');
+            saveGame();
+            updateUI();
+        }
+    });
+
+    dom.perkDnaBtn.addEventListener('click', () => {
+        const perkDnaCost = Math.floor(1 * Math.pow(1.5, state.perkDnaLv));
+        if (state.crystals >= perkDnaCost) {
+            AudioSys.upgrade();
+            state.crystals -= perkDnaCost;
+            state.perkDnaLv++;
+            addLog(`超越能力強化: 全生産量パッシブが上昇。`, 'gold');
+            updateUI();
+        }
+    });
+
+    dom.perkSafetyBtn.addEventListener('click', () => {
+        const perkSafetyCost = Math.floor(2 * Math.pow(2.0, state.perkSafetyLv));
+        if (state.crystals >= perkSafetyCost && state.perkSafetyLv < 2) {
+            AudioSys.upgrade();
+            state.crystals -= perkSafetyCost;
+            state.perkSafetyLv++;
+            addLog(`超越能力強化: ゲノム保護膜を強化。`, 'gold');
+            updateUI();
+        }
+    });
+
+    // 突発イベント（黄金遺伝子）
+    function spawnGoldenGene() {
+        if (document.querySelector('.golden-gene') || state.isPoop) return;
+        
+        const gene = document.createElement('div');
+        gene.className = 'golden-gene';
+        gene.textContent = '🧬';
+        gene.style.top = `${20 + Math.random() * 50}%`;
+        gene.style.left = `${10 + Math.random() * 70}%`;
+        
+        gene.addEventListener('click', () => {
+            AudioSys.init();
+            AudioSys.transcend();
+            const reward = Math.max(50, Math.floor(getDPS() * 30));
+            state.dna += reward;
+            addLog(`🌟 黄金遺伝子をキャッチ！ ボーナス +${formatNum(reward)} DNA獲得！`, 'gold');
+            gene.remove();
+            updateUI();
+        });
+
+        document.querySelector('.creature-display').appendChild(gene);
+        setTimeout(() => { if (gene.parentNode) gene.remove(); }, 8000);
+    }
+    setInterval(spawnGoldenGene, 35000);
+
+    // セーブ/ロード
+    function saveGame() {
+        localStorage.setItem('bio_forge_save_v2', JSON.stringify(state));
+    }
+
+    function loadGame() {
+        const saved = localStorage.getItem('bio_forge_save_v2');
+        if (saved) {
+            try {
+                Object.assign(state, JSON.parse(saved));
+                addLog("セーブデータを復元しました。", "info");
+            } catch(e) {}
+        }
+    }
+
+    document.getElementById('saveBtn').addEventListener('click', () => {
+        saveGame();
+        addLog("手動セーブを完了しました。", "info");
+    });
+
+    document.getElementById('resetDataBtn').addEventListener('click', () => {
+        if (confirm("データを初期化しますか？")) {
+            localStorage.removeItem('bio_forge_save_v2');
+            location.reload();
+        }
+    });
+
+    // 自動セーブ (10秒ごと)
+    setInterval(saveGame, 10000);
+
+    // メインループ
+    let lastTime = Date.now();
+    setInterval(() => {
+        const now = Date.now();
+        const delta = (now - lastTime) / 1000;
+        lastTime = now;
+
+        const dps = getDPS();
+        if (dps > 0) {
+            state.dna += dps * delta;
+            updateUI();
+        }
+    }, 100);
+
+    // 開始
+    loadGame();
+    addLog("Bio-Forge: Transcendent 起動完了。", "info");
+    updateUI();
+</script>
+</body>
+</html>

@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ハチ！ハチ！ハチ！</title>
+<style>
+  :root{
+    --bg:#0c0a07;
+    --danger:#c81f34;
+    --hazard:#e8b923;
+    --bone:#e7d9b8;
+    --bone-dim:#a89878;
+    --tool-roller:#c9a15a;
+    --tool-spray:#8fae4a;
+    --tool-vacuum:#4f8f9e;
+    --tool-swatter:#c8443a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none;}
+  html,body{
+    margin:0; padding:0; width:100%; height:100%; overflow:hidden;
+    background:#000; font-family:'Courier New',Consolas,monospace; color:var(--bone);
+  }
+  #stage{position:relative; width:100vw; height:100vh; overflow:hidden;}
+  canvas{position:absolute; top:0; left:0; width:100%; height:100%; display:block; cursor:none;}
+
+  .hud-font{font-family:'Impact','Arial Narrow',sans-serif; letter-spacing:0.5px;}
+
+  /* ---------- top bar ---------- */
+  #topbar{
+    position:absolute; top:0; left:0; width:100%; padding:14px 18px;
+    display:flex; justify-content:space-between; align-items:flex-start;
+    pointer-events:none; z-index:5;
+  }
+  #stageLabel{font-size:15px; color:var(--bone-dim); text-shadow:0 1px 2px #000;}
+  #stageLabel b{color:var(--bone); font-size:17px; display:block;}
+  #scoreLabel{font-size:14px; color:var(--bone-dim); text-align:right; text-shadow:0 1px 2px #000;}
+  #scoreLabel b{color:var(--hazard); font-size:20px; display:block;}
+
+  #stings{display:flex; gap:6px; margin-top:6px;}
+  .stingSlot{
+    width:16px; height:16px; border-radius:50%;
+    border:2px solid var(--bone-dim); background:transparent;
+    box-shadow:0 1px 2px #000;
+  }
+  .stingSlot.filled{background:var(--danger); border-color:var(--danger); box-shadow:0 0 8px var(--danger);}
+
+  #alertText{
+    position:absolute; top:70px; left:50%; transform:translateX(-50%);
+    font-size:13px; letter-spacing:3px; color:var(--danger); opacity:0;
+    text-shadow:0 0 8px rgba(200,31,52,.8); transition:opacity .15s; z-index:5; pointer-events:none;
+  }
+  #alertText.show{opacity:1;}
+
+  /* ---------- boss bar ---------- */
+  #bossbar{
+    position:absolute; top:14px; left:50%; transform:translateX(-50%);
+    width:min(480px,70vw); display:none; z-index:5; pointer-events:none;
+  }
+  #bossbar b{display:block; text-align:center; font-size:13px; color:var(--bone); margin-bottom:4px; text-shadow:0 1px 2px #000;}
+  #bossbarOuter{height:12px; background:#1a1512; border:1px solid #000; border-radius:2px; overflow:hidden;}
+  #bossbarInner{height:100%; width:100%; background:linear-gradient(90deg,#7a0e1f,var(--danger));}
+
+  /* ---------- tool bar ---------- */
+  #toolbar{
+    position:absolute; bottom:16px; left:50%; transform:translateX(-50%);
+    display:flex; gap:10px; z-index:5;
+  }
+  .toolBtn{
+    width:64px; height:64px; border-radius:8px; border:2px solid #3a3226;
+    background:rgba(15,12,9,.82); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:3px; cursor:pointer;
+    position:relative; overflow:hidden;
+  }
+  .toolBtn .ic{font-size:22px;}
+  .toolBtn .key{position:absolute; top:2px; left:5px; font-size:9px; color:var(--bone-dim);}
+  .toolBtn .gaugeWrap{width:80%; height:4px; background:#000; border-radius:2px; overflow:hidden;}
+  .toolBtn .gauge{height:100%; width:100%;}
+  .toolBtn.active{border-color:var(--bone); box-shadow:0 0 10px rgba(231,217,184,.35);}
+  .toolBtn.roller .gauge{background:var(--tool-roller);}
+  .toolBtn.spray .gauge{background:var(--tool-spray);}
+  .toolBtn.vacuum .gauge{background:var(--tool-vacuum);}
+  .toolBtn.swatter .gauge{background:var(--tool-swatter);}
+
+  /* ---------- crosshair ---------- */
+  #crosshair{
+    position:absolute; width:26px; height:26px; margin:-13px 0 0 -13px;
+    pointer-events:none; z-index:6; transition:transform .06s;
+  }
+  #crosshair svg{width:100%; height:100%;}
+  #crosshair.target circle{stroke:var(--danger) !important;}
+  #crosshair.target line{stroke:var(--danger) !important;}
+
+  /* ---------- vignette / flash ---------- */
+  #vignette{position:absolute; inset:0; pointer-events:none; z-index:4; box-shadow: inset 0 0 140px 40px rgba(200,20,30,0); transition:box-shadow .12s;}
+  #flash{position:absolute; inset:0; pointer-events:none; z-index:7; background:rgba(255,255,255,0); }
+
+  /* ---------- overlays / screens ---------- */
+  .screen{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at center, rgba(20,14,10,.94), rgba(4,3,2,.98));
+    z-index:20; text-align:center; padding:24px;
+  }
+  .hidden{display:none !important;}
+  .title{
+    font-family:'Impact','Arial Narrow',sans-serif; font-size:min(15vw,74px); color:var(--danger);
+    letter-spacing:2px; text-shadow:0 0 18px rgba(200,31,52,.55), 0 2px 0 #000; margin:0 0 6px;
+    line-height:1.05;
+  }
+  .subtitle{color:var(--bone-dim); font-size:14px; margin-bottom:28px; letter-spacing:1px;}
+  .bigmsg{font-family:'Impact','Arial Narrow',sans-serif; font-size:min(9vw,44px); margin:0 0 10px; letter-spacing:1px;}
+  .bigmsg.clear{color:var(--tool-spray); text-shadow:0 0 14px rgba(143,174,74,.5);}
+  .bigmsg.over{color:var(--danger); text-shadow:0 0 14px rgba(200,31,52,.6);}
+  .bigmsg.win{color:var(--hazard); text-shadow:0 0 18px rgba(232,185,35,.6);}
+  .desc{color:var(--bone-dim); font-size:13px; max-width:420px; line-height:1.7; margin-bottom:18px;}
+  .statline{color:var(--bone); font-size:15px; margin-bottom:22px;}
+  .statline b{color:var(--hazard);}
+
+  .btnRow{display:flex; gap:14px; flex-wrap:wrap; justify-content:center;}
+  .btn{
+    font-family:'Courier New',monospace; font-size:14px; letter-spacing:1px; color:var(--bone);
+    background:#1a1410; border:2px solid var(--bone-dim); border-radius:4px; padding:12px 22px;
+    cursor:pointer;
+  }
+  .btn:hover{border-color:var(--bone); background:#241c15;}
+  .btn.primary{border-color:var(--danger); color:#fff; background:linear-gradient(180deg,#8f1c2c,#5e1220);}
+  .btn.primary:hover{filter:brightness(1.15);}
+
+  .toolLegend{display:flex; gap:16px; margin:6px 0 22px; flex-wrap:wrap; justify-content:center; max-width:520px;}
+  .toolLegend div{font-size:11px; color:var(--bone-dim); width:105px;}
+  .toolLegend div b{display:block; font-size:12px; margin-bottom:2px;}
+  .roller b{color:var(--tool-roller);} .spray b{color:var(--tool-spray);}
+  .vacuum b{color:var(--tool-vacuum);} .swatter b{color:var(--tool-swatter);}
+
+  #soundToggle{position:absolute; top:14px; left:50%; transform:translateX(-50%); font-size:12px; color:var(--bone-dim); cursor:pointer; z-index:25;}
+
+  #pauseBtn{position:absolute; top:14px; right:14px; z-index:8; font-size:18px; color:var(--bone-dim); cursor:pointer; padding:6px 10px;}
+
+  @media (max-width:520px){
+    #topbar{padding:10px 12px;}
+    .toolBtn{width:54px; height:54px;}
+    .toolBtn .ic{font-size:18px;}
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="game"></canvas>
+
+  <div id="vignette"></div>
+  <div id="flash"></div>
+
+  <div id="topbar">
+    <div id="stageLabel"><span id="stageSub">STAGE 1</span><b id="stageName">和室の侵入者</b>
+      <div id="stings"><div class="stingSlot"></div><div class="stingSlot"></div><div class="stingSlot"></div></div>
+    </div>
+    <div id="scoreLabel">SCORE<b id="scoreVal">0</b><span id="remainLabel">残り 0匹</span></div>
+  </div>
+
+  <div id="alertText">警戒</div>
+
+  <div id="bossbar"><b id="bossName">女王蜂</b><div id="bossbarOuter"><div id="bossbarInner"></div></div></div>
+
+  <div id="pauseBtn">II</div>
+
+  <div id="toolbar">
+    <div class="toolBtn roller" data-tool="roller"><span class="key">1</span><span class="ic">🧻</span><div class="gaugeWrap"><div class="gauge" id="gauge-roller"></div></div></div>
+    <div class="toolBtn spray" data-tool="spray"><span class="key">2</span><span class="ic">🧴</span><div class="gaugeWrap"><div class="gauge" id="gauge-spray"></div></div></div>
+    <div class="toolBtn vacuum" data-tool="vacuum"><span class="key">3</span><span class="ic">🌀</span><div class="gaugeWrap"><div class="gauge" id="gauge-vacuum"></div></div></div>
+    <div class="toolBtn swatter" data-tool="swatter"><span class="key">4</span><span class="ic">🪰</span><div class="gaugeWrap"><div class="gauge" id="gauge-swatter"></div></div></div>
+  </div>
+
+  <div id="crosshair">
+    <svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="9" fill="none" stroke="#e7d9b8" stroke-width="1.4"/><line x1="13" y1="0" x2="13" y2="6" stroke="#e7d9b8" stroke-width="1.4"/><line x1="13" y1="20" x2="13" y2="26" stroke="#e7d9b8" stroke-width="1.4"/><line x1="0" y1="13" x2="6" y2="13" stroke="#e7d9b8" stroke-width="1.4"/><line x1="20" y1="13" x2="26" y2="13" stroke="#e7d9b8" stroke-width="1.4"/></svg>
+  </div>
+
+  <!-- TITLE -->
+  <div class="screen" id="screenTitle">
+    <div id="soundToggle">🔊 サウンド ON（クリックでOFF）</div>
+    <h1 class="title">ハチ！<br>ハチ！ハチ！</h1>
+    <div class="subtitle">1人称視点 リアル・パニック害虫駆除アクション</div>
+    <div class="toolLegend">
+      <div class="roller"><b>🧻 粘着クリーナー</b>近距離。テープ切れに注意。</div>
+      <div class="spray"><b>🧴 殺虫スプレー</b>中距離。長押しで噴射。</div>
+      <div class="vacuum"><b>🌀 サイクロン掃除機</b>広範囲吸引。バッテリー制。</div>
+      <div class="swatter"><b>🪰 ハエ叩き</b>至近距離・一撃必殺。ハズレ注意。</div>
+    </div>
+    <div class="btnRow">
+      <div class="btn primary" id="btnStartStage">ステージモード開始</div>
+      <div class="btn" id="btnStartEndless">エンドレスモード（防衛限界）</div>
+    </div>
+  </div>
+
+  <!-- STAGE INTRO -->
+  <div class="screen hidden" id="screenIntro">
+    <div class="subtitle" id="introSub">STAGE 1</div>
+    <div class="bigmsg" id="introName">和室の侵入者</div>
+    <div class="desc" id="introDesc">開けた窓から迷い込んだハチを駆除せよ。</div>
+    <div class="btnRow"><div class="btn primary" id="btnIntroGo">突入する</div></div>
+  </div>
+
+  <!-- STAGE CLEAR -->
+  <div class="screen hidden" id="screenClear">
+    <div class="bigmsg clear">ステージクリア</div>
+    <div class="statline">スコア <b id="clearScore">0</b> ／ 被刺傷 <b id="clearStings">0</b>/3</div>
+    <div class="btnRow"><div class="btn primary" id="btnNextStage">次のステージへ</div></div>
+  </div>
+
+  <!-- GAME OVER -->
+  <div class="screen hidden" id="screenOver">
+    <div class="bigmsg over">ゲームオーバー</div>
+    <div class="desc" id="overReason">アナフィラキシーショック発症……意識が遠のく。</div>
+    <div class="statline">最終スコア <b id="overScore">0</b><span id="overWaveWrap"> ／ 到達ウェーブ <b id="overWave">0</b></span></div>
+    <div class="btnRow">
+      <div class="btn primary" id="btnRetry">同じステージから再挑戦</div>
+      <div class="btn" id="btnToTitle1">タイトルへ戻る</div>
+    </div>
+  </div>
+
+  <!-- VICTORY -->
+  <div class="screen hidden" id="screenWin">
+    <div class="bigmsg win">討伐完了</div>
+    <div class="desc">女王蜂を撃退し、家屋の平和が戻った。</div>
+    <div class="statline">最終スコア <b id="winScore">0</b></div>
+    <div class="btnRow">
+      <div class="btn primary" id="btnEndlessAfterWin">エンドレスに挑戦</div>
+      <div class="btn" id="btnToTitle2">タイトルへ戻る</div>
+    </div>
+  </div>
+
+  <!-- PAUSE -->
+  <div class="screen hidden" id="screenPause">
+    <div class="bigmsg">一時停止</div>
+    <div class="btnRow">
+      <div class="btn primary" id="btnResume">再開する</div>
+      <div class="btn" id="btnToTitle3">タイトルへ戻る</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================
+   基本セットアップ
+========================================================= */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+function resize(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const el = id => document.getElementById(id);
+
+/* =========================================================
+   オーディオ（合成音）
+========================================================= */
+let audioCtx = null;
+let soundOn = true;
+function ensureAudio(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+  }
+  if(audioCtx && audioCtx.state==='suspended') audioCtx.resume();
+}
+function playTone(freq, dur, type, vol, panVal){
+  if(!soundOn || !audioCtx) return;
+  const t0 = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  const pan = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+  osc.type = type||'sine';
+  osc.frequency.setValueAtTime(freq, t0);
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(Math.max(vol,0.0002), t0+0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  osc.connect(gain);
+  if(pan){ pan.pan.value = Math.max(-1,Math.min(1,panVal||0)); gain.connect(pan); pan.connect(audioCtx.destination); }
+  else gain.connect(audioCtx.destination);
+  osc.start(t0); osc.stop(t0+dur+0.02);
+}
+function playNoise(dur, vol){
+  if(!soundOn || !audioCtx) return;
+  const bufferSize = audioCtx.sampleRate*dur;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++) data[i] = (Math.random()*2-1)*(1-i/bufferSize);
+  const src = audioCtx.createBufferSource();
+  src.buffer = buffer;
+  const gain = audioCtx.createGain();
+  gain.gain.value = vol;
+  src.connect(gain); gain.connect(audioCtx.destination);
+  src.start();
+}
+function sfxSting(){ playTone(150,0.28,'sawtooth',0.22,0); playNoise(0.15,0.12); }
+function sfxHit(){ playTone(700,0.06,'square',0.10,0); }
+function sfxDeath(){ playTone(220,0.12,'triangle',0.14,0); }
+function sfxSpray(){ playNoise(0.06,0.05); }
+function sfxVacuum(){ playTone(90,0.08,'sawtooth',0.05,0); }
+function sfxSwing(){ playTone(500,0.05,'square',0.07,0); }
+function sfxReload(){ playTone(340,0.12,'sine',0.08,0); }
+function sfxUI(){ playTone(500,0.05,'sine',0.06,0); }
+function sfxWave(){ playTone(880,0.18,'sine',0.10,0); playTone(1100,0.18,'sine',0.06,0.2); }
+
+/* バズ音（近くのハチ最大6匹分をバイノーラルで合成） */
+let buzzNodes = []; // {osc,gain,pan}
+function initBuzzPool(n){
+  buzzNodes = [];
+  if(!audioCtx) return;
+  for(let i=0;i<n;i++){
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const pan = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+    osc.type='sawtooth';
+    gain.gain.value=0;
+    osc.connect(gain);
+    if(pan){ gain.connect(pan); pan.connect(audioCtx.destination); }
+    else gain.connect(audioCtx.destination);
+    osc.frequency.value=200;
+    osc.start();
+    buzzNodes.push({osc,gain,pan});
+  }
+}
+function updateBuzz(bees){
+  if(!soundOn || !audioCtx || buzzNodes.length===0) return;
+  const sorted = bees.slice().sort((a,b)=>a.dist-b.dist).slice(0,buzzNodes.length);
+  for(let i=0;i<buzzNodes.length;i++){
+    const node = buzzNodes[i];
+    const b = sorted[i];
+    if(!b){ node.gain.gain.setTargetAtTime(0,audioCtx.currentTime,0.08); continue; }
+    const closeness = 1-Math.min(1,b.dist);
+    const alertBoost = b.alert>=2?1.6:(b.alert===1?1.15:1);
+    const freq = BEE_TYPES[b.type].buzz * alertBoost * (1+closeness*0.4);
+    node.osc.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.05);
+    const vol = Math.min(0.16, 0.02+closeness*0.16) * (b.alert>=2?1.3:1);
+    node.gain.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.08);
+    if(node.pan) node.pan.pan.setTargetAtTime(Math.max(-1,Math.min(1,b.x)), audioCtx.currentTime, 0.08);
+  }
+}
+
+/* =========================================================
+   データ定義：ハチの種類
+========================================================= */
+const BEE_TYPES = {
+  ashinaga:{ name:'アシナガバチ', hp:2,  speed:0.05, chargeSpeed:0.16, damage:1, size:16, color:'#8a6d33', stripe:'#5c4620', buzz:230, score:10 },
+  kiiro:   { name:'キイロスズメバチ', hp:3,  speed:0.075,chargeSpeed:0.24, damage:1, size:18, color:'#e8b923', stripe:'#221a0a', buzz:340, score:20 },
+  mon:     { name:'モンスズメバチ', hp:5,  speed:0.065,chargeSpeed:0.20, damage:2, size:22, color:'#5b3d20', stripe:'#1b1108', buzz:190, score:35 },
+  oo:      { name:'オオスズメバチ', hp:9,  speed:0.055,chargeSpeed:0.19, damage:3, size:30, color:'#8a3a1e', stripe:'#c8443a', buzz:150, score:60 },
+  queenEscort:{ name:'親衛隊', hp:9, speed:0.06, chargeSpeed:0.20, damage:3, size:28, color:'#8a3a1e', stripe:'#c8443a', buzz:150, score:70 },
+  queen:   { name:'女王蜂', hp:170,speed:0.012,chargeSpeed:0.02, damage:3, size:70, color:'#7a1224', stripe:'#e8b923', buzz:95, score:1000 }
+};
+
+/* =========================================================
+   データ定義：ステージ
+========================================================= */
+const STAGES = [
+  { sub:'STAGE 1', name:'和室の侵入者', desc:'開けた窓から迷い込んだアシナガバチ。まずは落ち着いて狙いを定めよう。', dark:false, nest:false,
+    queue:[ {type:'ashinaga',count:3,interval:2600} ] },
+  { sub:'STAGE 2', name:'台所の甘い罠', desc:'放置されたジュースにキイロスズメバチが群がっている。狭所での立ち回りに注意。', dark:false, nest:false,
+    queue:[ {type:'kiiro',count:10,interval:1000} ] },
+  { sub:'STAGE 3', name:'ベランダの初期巣', desc:'物干し竿の下に初期の巣。刺激すると一斉に防衛態勢へ移行する。', dark:false, nest:true,
+    queue:[ {type:'kiiro',count:5,interval:1400,dormant:true}, {type:'mon',count:4,interval:1600,dormant:true,delayStart:4000} ] },
+  { sub:'STAGE 4', name:'屋根裏の巨大巣', desc:'暗闇の中、懐中電灯の光だけが頼り。オオスズメバチの気配が近い。', dark:true, nest:false,
+    queue:[ {type:'mon',count:7,interval:1300}, {type:'oo',count:4,interval:2400,delayStart:6000} ] },
+  { sub:'STAGE 5', name:'閉鎖空間の決戦', desc:'窓の閉ざされた作業小屋。女王蜂と親衛隊との最終防衛戦。', dark:false, nest:false, boss:true,
+    queue:[ {type:'oo',count:4,interval:1800} ] }
+];
+
+/* =========================================================
+   ツール設定
+========================================================= */
+const TOOLS = {
+  roller:{ label:'粘着クリーナー', maxRes:100, useCost:34, regen:14, dmg:2, cooldown:0.28, minDist:0, maxDist:0.42, aimR:66, hold:false },
+  spray:{ label:'殺虫スプレー', maxRes:100, drain:26, regen:9, dps:11, minDist:0.10, maxDist:0.78, aimR:120, hold:true },
+  vacuum:{ label:'サイクロン掃除機', maxRes:100, drain:22, regen:7, dps:15, minDist:0.04, maxDist:0.55, aimR:96, hold:true },
+  swatter:{ label:'ハエ叩き', maxRes:100, useCost:0, regen:0, dmg:999, cooldown:0.42, minDist:0, maxDist:0.16, aimR:52, hold:false }
+};
+
+/* =========================================================
+   ゲーム状態
+========================================================= */
+const Game = {
+  state:'title', // title/intro/playing/clear/over/win/pause
+  mode:'stage',  // stage / endless
+  stageIndex:0,
+  wave:0,
+  score:0,
+  stings:0,
+  invuln:0,
+  bees:[],
+  spawnQueue:[],
+  spawnTimer:0,
+  nestDisturbed:false,
+  nestTimer:0,
+  boss:null,
+  bossEscortCap:3,
+  bossSpawnTimer:0,
+  crosshair:{x:0,y:0},
+  aimScreen:{x:0,y:0},
+  currentTool:'roller',
+  toolRes:{roller:100,spray:100,vacuum:100,swatter:100},
+  toolCooldown:{roller:0,swatter:0},
+  toolHolding:false,
+  reloadLock:{roller:false,swatter:false},
+  shake:0,
+  flashAlpha:0,
+  time:0,
+  endlessDifficulty:1,
+  endlessBossWave:false,
+  running:false
+};
+
+/* =========================================================
+   ハチ生成 / 更新
+========================================================= */
+let beeSeq=0;
+function makeBee(type, opts){
+  opts = opts||{};
+  const def = BEE_TYPES[type];
+  return {
+    id: ++beeSeq,
+    type,
+    hp: def.hp * (opts.hpMul||1),
+    maxHp: def.hp * (opts.hpMul||1),
+    x: (Math.random()*1.6-0.8),
+    y: (Math.random()*0.7-0.35),
+    dist: 1.0,
+    alert: opts.dormant ? -1 : 0,
+    alertTimer: 1.2+Math.random()*1.6,
+    dormant: !!opts.dormant,
+    stingCooldown: 0,
+    wobblePhase: Math.random()*Math.PI*2,
+    hitFlash:0,
+    dying:0,
+    isBoss: !!opts.isBoss,
+    speedMul: opts.speedMul||1
+  };
+}
+
+function queueStage(stage){
+  Game.spawnQueue = [];
+  stage.queue.forEach(q=>{
+    Game.spawnQueue.push({
+      type:q.type, remaining:q.count, interval:q.interval, timer:q.delayStart||0,
+      dormant: !!q.dormant
+    });
+  });
+  Game.bees = [];
+  Game.nestDisturbed = false;
+  Game.nestTimer = 0;
+  Game.boss = null;
+  Game.bossSpawned = false;
+}
+
+function totalPending(){
+  let n = Game.bees.filter(b=>!b.isBoss).length;
+  Game.spawnQueue.forEach(q=>n+=q.remaining);
+  return n;
+}
+
+/* =========================================================
+   エンドレスモード用ウェーブ
+========================================================= */
+// ウェーブ数が増えるごとに新しい種類が解禁され、混成の群れになっていく
+const ENDLESS_TIERS = [
+  { type:'ashinaga', unlock:1, weight:6 },
+  { type:'kiiro',    unlock:2, weight:6 },
+  { type:'mon',      unlock:4, weight:5 },
+  { type:'oo',       unlock:6, weight:4 },
+  { type:'queenEscort', unlock:9, weight:3 } // 上位種：親衛隊クラスの強個体も混ざる
+];
+const RAID_INTERVAL = 8; // これウェーブごとに女王蜂レイド
+
+function buildEndlessQueue(wave){
+  const unlocked = ENDLESS_TIERS.filter(t=>wave>=t.unlock);
+  const count = 4 + Math.floor(wave*1.7);
+  const interval = Math.max(280, 1000 - wave*22);
+  const totalWeight = unlocked.reduce((s,t)=>s+t.weight,0);
+  const queue = [];
+  let assigned = 0;
+  unlocked.forEach((t,i)=>{
+    let c;
+    if(i===unlocked.length-1) c = Math.max(1, count-assigned);
+    else { c = Math.max(1, Math.round(count*(t.weight/totalWeight))); assigned += c; }
+    queue.push({ type:t.type, remaining:c, interval, timer: Math.random()*500, hpMul: 1+wave*0.045, speedMul: Math.min(1.6, 1+wave*0.02) });
+  });
+  return queue;
+}
+
+function spawnEndlessBoss(wave){
+  const hpMul = 0.32 + wave*0.045;
+  const b = makeBee('queen', { isBoss:true, hpMul });
+  b.dist = 0.55; b.x = 0; b.y = -0.05;
+  Game.boss = b;
+  Game.bossSpawned = true;
+  Game.bees.push(b);
+  Game.bossEscortCap = 2 + Math.floor(wave/RAID_INTERVAL);
+  Game.bossSpawnTimer = 2600;
+  Game.endlessBossWave = true;
+}
+
+function startEndlessWave(){
+  Game.wave++;
+  const wave = Game.wave;
+  Game.endlessDifficulty = 1 + wave*0.08;
+  Game.spawnQueue = [];
+  Game.bees = [];
+
+  if(wave % RAID_INTERVAL === 0){
+    spawnEndlessBoss(wave);
+    el('bossbar').style.display = 'block';
+    el('stageSub').textContent = 'ENDLESS RAID';
+    el('stageName').textContent = '群れの襲来！ ウェーブ '+wave;
+  } else {
+    Game.endlessBossWave = false;
+    Game.boss = null;
+    el('bossbar').style.display = 'none';
+    Game.spawnQueue = buildEndlessQueue(wave);
+    const unlockedNames = ENDLESS_TIERS.filter(t=>wave>=t.unlock).map(t=>BEE_TYPES[t.type].name);
+    el('stageSub').textContent = 'ENDLESS';
+    el('stageName').textContent = 'ウェーブ '+wave+'（'+unlockedNames.length+'種混成）';
+  }
+
+  if(wave % 5 === 0){
+    Object.keys(Game.toolRes).forEach(k=>Game.toolRes[k]=TOOLS[k].maxRes);
+    sfxReload();
+  }
+  sfxWave();
+}
+
+/* =========================================================
+   入力
+========================================================= */
+function setCrosshairFromClient(cx, cy){
+  const r = canvas.getBoundingClientRect();
+  const nx = ((cx - r.left) / r.width) * 2 - 1;
+  const ny = ((cy - r.top) / r.height) * 2 - 1;
+  Game.crosshair.x = Math.max(-1,Math.min(1,nx));
+  Game.crosshair.y = Math.max(-1,Math.min(1,ny*0.85));
+  Game.aimScreen.x = (nx*0.5+0.5)*canvas.width;
+  Game.aimScreen.y = (ny*0.5+0.5)*canvas.height;
+  const ch = el('crosshair');
+  ch.style.left = Game.aimScreen.x+'px';
+  ch.style.top = Game.aimScreen.y+'px';
+}
+window.addEventListener('mousemove', e=>setCrosshairFromClient(e.clientX,e.clientY));
+window.addEventListener('touchmove', e=>{ if(e.touches[0]) setCrosshairFromClient(e.touches[0].clientX,e.touches[0].clientY); e.preventDefault(); }, {passive:false});
+window.addEventListener('touchstart', e=>{ if(e.touches[0]) setCrosshairFromClient(e.touches[0].clientX,e.touches[0].clientY); if(Game.state==='playing') startAction(); e.preventDefault(); }, {passive:false});
+window.addEventListener('touchend', e=>{ stopAction(); }, {passive:false});
+
+window.addEventListener('mousedown', e=>{ if(Game.state==='playing'){ ensureAudio(); startAction(); } });
+window.addEventListener('mouseup', ()=>stopAction());
+
+function startAction(){
+  Game.toolHolding = true;
+  const tool = Game.currentTool;
+  if(!TOOLS[tool].hold) fireInstant(tool);
+}
+function stopAction(){ Game.toolHolding = false; }
+
+window.addEventListener('keydown', e=>{
+  if(e.key>='1'&&e.key<='4'){
+    const map={'1':'roller','2':'spray','3':'vacuum','4':'swatter'};
+    selectTool(map[e.key]);
+  }
+  if(e.key==='Escape'||e.key==='p'||e.key==='P'){
+    if(Game.state==='playing') pauseGame();
+    else if(Game.state==='pause') resumeGame();
+  }
+});
+
+document.querySelectorAll('.toolBtn').forEach(b=>{
+  b.addEventListener('click', ()=>selectTool(b.dataset.tool));
+});
+function selectTool(t){
+  Game.currentTool = t;
+  document.querySelectorAll('.toolBtn').forEach(b=>b.classList.toggle('active', b.dataset.tool===t));
+  sfxUI();
+}
+selectTool('roller');
+
+/* =========================================================
+   狙い判定 & ダメージ処理
+========================================================= */
+function screenPosOf(b){
+  const spread = 0.12 + 0.88*b.dist;
+  const sx = (b.x*spread*0.5+0.5)*canvas.width;
+  const sy = (b.y*spread*0.5+0.5)*canvas.height*0.9 + canvas.height*0.08;
+  return {x:sx,y:sy};
+}
+function sizeOf(b){
+  const def = BEE_TYPES[b.type];
+  const scale = 1.5 - b.dist*1.15;
+  return def.size * Math.max(0.35, scale) * (b.isBoss?1:1);
+}
+function findTarget(tool){
+  const spec = TOOLS[tool];
+  let best=null, bestDist=Infinity;
+  for(const b of Game.bees){
+    if(b.dying>0) continue;
+    if(b.dist<spec.minDist-0.05 || b.dist>spec.maxDist) continue;
+    const p = screenPosOf(b);
+    const dx=p.x-Game.aimScreen.x, dy=p.y-Game.aimScreen.y;
+    const d=Math.sqrt(dx*dx+dy*dy);
+    const r = spec.aimR + sizeOf(b)*0.6;
+    if(d<r && d<bestDist){ best=b; bestDist=d; }
+  }
+  return best;
+}
+function findTargetsInRadius(tool){
+  const spec = TOOLS[tool];
+  const arr=[];
+  for(const b of Game.bees){
+    if(b.dying>0) continue;
+    if(b.dist<spec.minDist-0.05 || b.dist>spec.maxDist) continue;
+    const p = screenPosOf(b);
+    const dx=p.x-Game.aimScreen.x, dy=p.y-Game.aimScreen.y;
+    const d=Math.sqrt(dx*dx+dy*dy);
+    const r = spec.aimR + sizeOf(b)*0.6;
+    if(d<r) arr.push(b);
+  }
+  return arr;
+}
+
+function fireInstant(tool){
+  if(Game.toolCooldown[tool]>0 || Game.reloadLock[tool]) return;
+  if(tool==='roller'){
+    if(Game.toolRes.roller<TOOLS.roller.useCost){ triggerReload('roller'); return; }
+    Game.toolRes.roller -= TOOLS.roller.useCost;
+    Game.toolCooldown.roller = TOOLS.roller.cooldown;
+    sfxSwing();
+    const t = findTarget('roller');
+    if(t) damageBee(t, TOOLS.roller.dmg, 'roller');
+  } else if(tool==='swatter'){
+    Game.toolCooldown.swatter = TOOLS.swatter.cooldown;
+    sfxSwing();
+    const t = findTarget('swatter');
+    if(t && !t.isBoss) damageBee(t, TOOLS.swatter.dmg, 'swatter');
+    else if(t && t.isBoss) damageBee(t, 4, 'swatter');
+  }
+}
+function triggerReload(tool){
+  Game.reloadLock[tool]=true;
+  sfxReload();
+  setTimeout(()=>{ Game.reloadLock[tool]=false; }, 1100);
+}
+
+function damageBee(b, dmg, tool){
+  if(b.dying>0) return;
+  b.hp -= dmg;
+  b.hitFlash = 0.12;
+  b.alert = Math.max(b.alert,1);
+  sfxHit();
+  if(b.dormant){ b.dormant=false; }
+  if(b.hp<=0){ killBee(b, tool); }
+}
+function killBee(b, tool){
+  b.dying = 0.35;
+  Game.score += BEE_TYPES[b.type].score;
+  el('scoreVal').textContent = Game.score;
+  sfxDeath();
+  if(b.isBoss){
+    Game.boss = null;
+  }
+}
+
+/* =========================================================
+   ステージ / ウェーブ フロー
+========================================================= */
+function startGame(mode){
+  Game.mode = mode;
+  Game.score = 0;
+  Game.stings = 0;
+  Game.wave = 0;
+  Game.stageIndex = 0;
+  el('scoreVal').textContent=0;
+  updateStingUI();
+  ensureAudio();
+  initBuzzPool(6);
+  if(mode==='stage'){ showIntro(0); }
+  else { el('bossbar').style.display='none'; showEndlessIntro(); }
+}
+function showIntro(idx){
+  Game.stageIndex = idx;
+  const s = STAGES[idx];
+  el('introSub').textContent = s.sub;
+  el('introName').textContent = s.name;
+  el('introDesc').textContent = s.desc;
+  showScreen('screenIntro');
+}
+function showEndlessIntro(){
+  el('introSub').textContent = 'ENDLESS';
+  el('introName').textContent = '防衛限界';
+  el('introDesc').textContent = '換気扇や隙間から際限なくハチが侵入してくる。ウェーブが進むほど新しい種類が混ざり、群れは獰猛になっていく。8ウェーブごとに女王蜂のレイド襲来、5ウェーブごとに道具が補充される。';
+  showScreen('screenIntro');
+}
+function beginStage(){
+  Game.state='playing';
+  hideAllScreens();
+  Object.keys(Game.toolRes).forEach(k=>Game.toolRes[k]=TOOLS[k].maxRes);
+  if(Game.mode==='stage'){
+    const s = STAGES[Game.stageIndex];
+    el('stageSub').textContent = s.sub;
+    el('stageName').textContent = s.name;
+    queueStage(s);
+    el('bossbar').style.display = s.boss ? 'block' : 'none';
+    Game.bossEscortCap = 3;
+    Game.bossSpawnTimer = 4000;
+  } else {
+    startEndlessWave();
+  }
+  Game.spawnTimer = 400;
+  Game.running = true;
+}
+
+function stageComplete(){
+  if(Game.mode==='endless'){
+    startEndlessWave();
+    return;
+  }
+  Game.state='clear';
+  el('clearScore').textContent = Game.score;
+  el('clearStings').textContent = Game.stings;
+  showScreen('screenClear');
+}
+function nextStageOrWin(){
+  if(Game.stageIndex+1 >= STAGES.length){
+    Game.state='win';
+    el('winScore').textContent = Game.score;
+    showScreen('screenWin');
+  } else {
+    showIntro(Game.stageIndex+1);
+  }
+}
+function gameOver(reason){
+  Game.state='over';
+  Game.running=false;
+  el('overReason').textContent = reason;
+  el('overScore').textContent = Game.score;
+  if(Game.mode==='endless'){
+    el('overWaveWrap').style.display='inline';
+    el('overWave').textContent = Game.wave;
+  } else {
+    el('overWaveWrap').style.display='none';
+  }
+  showScreen('screenOver');
+}
+function pauseGame(){ if(Game.state!=='playing') return; Game.state='pause'; showScreen('screenPause'); }
+function resumeGame(){ Game.state='playing'; hideAllScreens(); }
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  el(id).classList.remove('hidden');
+}
+function hideAllScreens(){ document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden')); }
+
+/* =========================================================
+   スポーン処理
+========================================================= */
+function updateSpawns(dtMs){
+  for(const q of Game.spawnQueue){
+    if(q.remaining<=0) continue;
+    q.timer -= dtMs;
+    if(q.timer<=0){
+      const hpMul = q.hpMul!=null ? q.hpMul : 1;
+      const speedMul = q.speedMul!=null ? q.speedMul : 1;
+      const b = makeBee(q.type, {dormant:q.dormant, hpMul, speedMul});
+      Game.bees.push(b);
+      q.remaining--;
+      q.timer = q.interval;
+    }
+  }
+  Game.spawnQueue = Game.spawnQueue.filter(q=>q.remaining>0);
+}
+
+function updateBossSpawns(dtMs){
+  if(!Game.boss || Game.boss.dying>0) return;
+  Game.bossSpawnTimer -= dtMs;
+  const aliveEscorts = Game.bees.filter(b=>b.type==='queenEscort'&&b.dying<=0).length;
+  if(Game.bossSpawnTimer<=0 && aliveEscorts<Game.bossEscortCap){
+    const wave = Game.mode==='endless' ? Game.wave : 0;
+    const hpMul = Game.mode==='endless' ? Math.min(2.4, 1+wave*0.035) : 1;
+    const speedMul = Game.mode==='endless' ? Math.min(1.6, 1+wave*0.015) : 1;
+    Game.bees.push(makeBee('queenEscort',{hpMul, speedMul}));
+    Game.bossSpawnTimer = Game.mode==='endless' ? Math.max(2400, 5200 - wave*35) : 5200;
+  }
+}
+
+/* =========================================================
+   メインアップデート
+========================================================= */
+let lastT = performance.now();
+function loop(now){
+  const dtMs = Math.min(50, now-lastT);
+  lastT = now;
+  if(Game.state==='playing') update(dtMs);
+  render();
+  requestAnimationFrame(loop);
+}
+
+function update(dtMs){
+  const dt = dtMs/1000;
+  Game.time += dt;
+
+  // spawn queue (stage3 nest: delay until disturbed handled below)
+  updateSpawns(dtMs);
+
+  // stage3 nest logic
+  if(Game.mode==='stage' && STAGES[Game.stageIndex].nest && !Game.nestDisturbed){
+    Game.nestTimer += dtMs;
+    if(Game.nestTimer>5200) disturbNest();
+  }
+
+  // boss stage: spawn boss once regular queue is drained and no boss yet
+  if(Game.mode==='stage' && STAGES[Game.stageIndex].boss && !Game.boss && !Game.bossSpawned && totalPending()===0){
+    spawnBoss();
+  }
+  if(Game.boss) updateBossSpawns(dtMs);
+
+  // update bees
+  for(const b of Game.bees){
+    updateBee(b, dt);
+  }
+  // remove bees whose death animation finished
+  Game.bees = Game.bees.filter(b=> !b._markRemove);
+
+  // cooldowns
+  ['roller','swatter'].forEach(t=>{ if(Game.toolCooldown[t]>0) Game.toolCooldown[t]-=dt; });
+
+  // holding tools (spray/vacuum)
+  if(Game.toolHolding && TOOLS[Game.currentTool].hold){
+    handleHoldTool(Game.currentTool, dt);
+  } else {
+    // passive regen for hold-tools when not in use
+    ['spray','vacuum'].forEach(t=>{
+      if(t!==Game.currentTool || !Game.toolHolding){
+        Game.toolRes[t] = Math.min(TOOLS[t].maxRes, Game.toolRes[t] + TOOLS[t].regen*dt);
+      }
+    });
+  }
+  // regen roller/swatter passively
+  Game.toolRes.roller = Math.min(TOOLS.roller.maxRes, Game.toolRes.roller + TOOLS.roller.regen*dt);
+
+  if(Game.invuln>0) Game.invuln -= dt;
+  if(Game.shake>0) Game.shake -= dt;
+  if(Game.flashAlpha>0) Game.flashAlpha = Math.max(0, Game.flashAlpha-dt*2.2);
+
+  updateBuzz(Game.bees);
+  updateHUD();
+
+  // win condition per stage
+  if(Game.mode==='stage'){
+    const s = STAGES[Game.stageIndex];
+    if(s.boss){
+      if(Game.boss===null && Game.bees.filter(b=>!b.dying).length===0 && totalPending()===0 && Game.bossSpawned){
+        stageComplete();
+      }
+    } else if(totalPending()===0 && Game.bees.filter(b=>b.dying<=0).length===0){
+      stageComplete();
+    }
+  } else {
+    const bossClear = !Game.endlessBossWave || Game.boss===null;
+    if(bossClear && totalPending()===0 && Game.bees.filter(b=>b.dying<=0).length===0){
+      stageComplete();
+    }
+  }
+}
+
+function disturbNest(){
+  Game.nestDisturbed = true;
+  Game.bees.forEach(b=>{ if(b.dormant){ b.dormant=false; b.alert=2; }});
+  Game.spawnQueue.forEach(q=>q.dormant=false);
+  Game.shake = 0.4;
+  sfxSting();
+}
+
+function spawnBoss(){
+  const b = makeBee('queen', {isBoss:true});
+  b.dist = 0.55;
+  b.x = 0; b.y = -0.05;
+  Game.boss = b;
+  Game.bossSpawned = true;
+  Game.bees.push(b);
+  Game.bossSpawnTimer = 3000;
+  sfxWave();
+}
+
+function handleHoldTool(tool, dt){
+  const spec = TOOLS[tool];
+  if(Game.toolRes[tool]<=0.5){ Game.toolHolding=false; return; }
+  Game.toolRes[tool] = Math.max(0, Game.toolRes[tool]-spec.drain*dt);
+  const targets = findTargetsInRadius(tool);
+  targets.forEach(b=>damageBee(b, spec.dps*dt, tool));
+  if(tool==='spray' && Math.random()<0.3) sfxSpray();
+  if(tool==='vacuum' && Math.random()<0.2) sfxVacuum();
+}
+
+function updateBee(b, dt){
+  if(b.dying>0){
+    b.dying -= dt;
+    if(b.dying<=0) b._markRemove = true;
+    return;
+  }
+  const def = BEE_TYPES[b.type];
+  b.wobblePhase += dt*3;
+  b.hitFlash = Math.max(0,b.hitFlash-dt*4);
+
+  if(b.dormant){
+    b.x += Math.sin(b.wobblePhase)*0.0008;
+    return;
+  }
+
+  // alert state machine
+  b.alertTimer -= dt*1000;
+  if(b.alertTimer<=0){
+    if(b.alert===0){ b.alert=1; b.alertTimer=900+Math.random()*1400; }
+    else if(b.alert===1 && !b.isBoss){ b.alert=2; b.alertTimer=99999; }
+  }
+  if(b.isBoss){
+    // queen hovers, doesn't charge
+    b.dist = 0.5 + Math.sin(Game.time*0.6)*0.06;
+    b.x = Math.sin(Game.time*0.35)*0.5;
+    b.y = -0.1+Math.sin(Game.time*0.5)*0.08;
+    return;
+  }
+
+  const speed = (b.alert>=2 ? def.chargeSpeed : def.speed) * (b.speedMul||1);
+  b.dist -= speed*dt;
+  b.x += Math.sin(b.wobblePhase*1.3)*0.006 * (0.4+b.dist);
+  b.y += Math.cos(b.wobblePhase)*0.004 * (0.4+b.dist);
+  b.x *= 0.999;
+
+  if(b.stingCooldown>0) b.stingCooldown -= dt;
+
+  if(b.dist<=0.045 && b.stingCooldown<=0){
+    stingPlayer(b);
+    b.dist = 0.32+Math.random()*0.1;
+    b.alert = 1;
+    b.alertTimer = 700+Math.random()*900;
+    b.stingCooldown = 1.6;
+  }
+  if(b.dist<0.02) b.dist=0.02;
+}
+
+function stingPlayer(b){
+  if(Game.invuln>0) return;
+  Game.stings++;
+  Game.invuln = 1.0;
+  Game.shake = 0.5;
+  Game.flashAlpha = 0.55;
+  sfxSting();
+  updateStingUI();
+  if(Game.stings>=3){
+    gameOver('アナフィラキシーショック発症……意識が遠のく。');
+  }
+}
+
+/* =========================================================
+   HUD更新
+========================================================= */
+function updateStingUI(){
+  const slots = document.querySelectorAll('.stingSlot');
+  slots.forEach((s,i)=>s.classList.toggle('filled', i<Game.stings));
+}
+function updateHUD(){
+  el('remainLabel').textContent = Game.boss ? '' : ('残り '+totalPending()+'匹');
+  const anyAlert = Game.bees.some(b=>b.alert>=1 && !b.dormant);
+  el('alertText').classList.toggle('show', anyAlert);
+  el('alertText').textContent = Game.bees.some(b=>b.alert>=2) ? '突撃警報' : '警戒';
+
+  ['roller','spray','vacuum','swatter'].forEach(t=>{
+    const pct = Math.max(0,Math.min(100, (Game.toolRes[t]/TOOLS[t].maxRes)*100));
+    el('gauge-'+t).style.width = pct+'%';
+  });
+  document.querySelectorAll('.toolBtn').forEach(b=>b.classList.toggle('active', b.dataset.tool===Game.currentTool));
+
+  if(Game.boss){
+    el('bossbar').style.display='block';
+    const pct = Math.max(0,Game.boss.hp/Game.boss.maxHp*100);
+    el('bossbarInner').style.width = pct+'%';
+  }
+
+  const chEl = el('crosshair');
+  const t = findTarget(Game.currentTool);
+  chEl.classList.toggle('target', !!t);
+
+  const vign = el('vignette');
+  const base = Game.stings/3;
+  const pulse = base>0 ? (Math.sin(Game.time*6)*0.06+base*0.55) : 0;
+  vign.style.boxShadow = `inset 0 0 ${140+base*60}px ${40+base*40}px rgba(200,20,30,${pulse})`;
+  el('flash').style.background = `rgba(255,255,255,${Game.flashAlpha*0.5})`;
+}
+
+/* =========================================================
+   描画
+========================================================= */
+function render(){
+  ctx.save();
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // shake
+  let sx=0, sy=0;
+  if(Game.shake>0){
+    sx = (Math.random()*2-1)*Game.shake*14;
+    sy = (Math.random()*2-1)*Game.shake*14;
+  }
+  ctx.translate(sx,sy);
+
+  drawBackground();
+
+  const list = Game.bees.slice().sort((a,b)=>b.dist-a.dist);
+  list.forEach(drawBee);
+
+  if(Game.mode==='stage' && STAGES[Game.stageIndex] && STAGES[Game.stageIndex].dark){
+    drawDarkness();
+  }
+
+  ctx.restore();
+}
+
+function drawBackground(){
+  const stageDark = Game.mode==='stage' && STAGES[Game.stageIndex] && STAGES[Game.stageIndex].dark;
+  const g = ctx.createLinearGradient(0,0,0,canvas.height);
+  if(stageDark){
+    g.addColorStop(0,'#050403'); g.addColorStop(1,'#0a0705');
+  } else if(Game.boss){
+    g.addColorStop(0,'#1a0a0c'); g.addColorStop(1,'#0d0506');
+  } else {
+    g.addColorStop(0,'#1c170f'); g.addColorStop(1,'#0f0b07');
+  }
+  ctx.fillStyle=g;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // faint room texture lines
+  ctx.strokeStyle='rgba(120,100,70,0.05)';
+  ctx.lineWidth=1;
+  for(let i=0;i<6;i++){
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height*0.15*i);
+    ctx.lineTo(canvas.width, canvas.height*0.15*i - canvas.height*0.05);
+    ctx.stroke();
+  }
+}
+
+function drawDarkness(){
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,0.93)';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.globalCompositeOperation='destination-out';
+  const grad = ctx.createRadialGradient(Game.aimScreen.x,Game.aimScreen.y,10,Game.aimScreen.x,Game.aimScreen.y,220);
+  grad.addColorStop(0,'rgba(0,0,0,1)');
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.arc(Game.aimScreen.x,Game.aimScreen.y,220,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawBee(b){
+  const def = BEE_TYPES[b.type];
+  const p = screenPosOf(b);
+  const size = sizeOf(b);
+  const flap = Math.sin(b.wobblePhase*18)*0.5+0.5;
+  const alpha = b.dying>0 ? Math.max(0,b.dying/0.35) : 1;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(p.x,p.y);
+
+  // wings
+  ctx.fillStyle='rgba(230,240,255,0.28)';
+  ctx.save();
+  ctx.rotate(-0.5-flap*0.3);
+  ctx.beginPath();
+  ctx.ellipse(-size*0.3,-size*0.2,size*0.7,size*0.32,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.rotate(0.5+flap*0.3);
+  ctx.beginPath();
+  ctx.ellipse(size*0.3,-size*0.2,size*0.7,size*0.32,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  // body
+  const bodyColor = b.hitFlash>0 ? '#ffffff' : def.color;
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath();
+  ctx.ellipse(0,0,size*0.5,size*0.68,0,0,Math.PI*2);
+  ctx.fill();
+
+  // stripes
+  ctx.fillStyle = def.stripe;
+  for(let i=-1;i<=1;i++){
+    ctx.beginPath();
+    ctx.ellipse(0,i*size*0.28,size*0.5,size*0.1,0,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  // eyes
+  ctx.fillStyle='#0a0a0a';
+  ctx.beginPath();
+  ctx.ellipse(-size*0.18,-size*0.32,size*0.09,size*0.11,0,0,Math.PI*2);
+  ctx.ellipse(size*0.18,-size*0.32,size*0.09,size*0.11,0,0,Math.PI*2);
+  ctx.fill();
+
+  // stinger glow when charging
+  if(b.alert>=2 && !b.isBoss){
+    ctx.fillStyle='rgba(200,31,52,0.85)';
+    ctx.beginPath();
+    ctx.ellipse(0,size*0.66,size*0.08,size*0.16,0,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+
+  // boss hp handled via DOM bar; small alert marker for regular bees
+  if(!b.isBoss && b.alert>=2 && b.dying<=0){
+    ctx.save();
+    ctx.fillStyle='rgba(200,31,52,0.9)';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('!', p.x, p.y-size-8);
+    ctx.restore();
+  }
+}
+
+/* =========================================================
+   UI ボタン配線
+========================================================= */
+el('btnStartStage').addEventListener('click', ()=>startGame('stage'));
+el('btnStartEndless').addEventListener('click', ()=>startGame('endless'));
+el('btnIntroGo').addEventListener('click', ()=>{ ensureAudio(); beginStage(); });
+el('btnNextStage').addEventListener('click', ()=>nextStageOrWin());
+el('btnRetry').addEventListener('click', ()=>{ if(Game.mode==='stage'){ showIntro(Game.stageIndex); } else { Game.wave=0; Game.score=0; Game.stings=0; updateStingUI(); showEndlessIntro(); } });
+el('btnToTitle1').addEventListener('click', toTitle);
+el('btnToTitle2').addEventListener('click', toTitle);
+el('btnToTitle3').addEventListener('click', toTitle);
+el('btnEndlessAfterWin').addEventListener('click', ()=>startGame('endless'));
+el('btnResume').addEventListener('click', resumeGame);
+el('pauseBtn').addEventListener('click', ()=>{ if(Game.state==='playing') pauseGame(); else if(Game.state==='pause') resumeGame(); });
+
+function toTitle(){
+  Game.state='title';
+  Game.bees=[];
+  Game.spawnQueue=[];
+  showScreen('screenTitle');
+}
+
+const soundToggleEl = el('soundToggle');
+soundToggleEl.addEventListener('click', ()=>{
+  soundOn = !soundOn;
+  soundToggleEl.textContent = soundOn ? '🔊 サウンド ON（クリックでOFF）' : '🔇 サウンド OFF（クリックでON）';
+  if(!soundOn && buzzNodes.length){ buzzNodes.forEach(n=>n.gain.gain.value=0); }
+});
+
+/* =========================================================
+   起動
+========================================================= */
+Game.crosshair.x=0; Game.crosshair.y=0;
+Game.aimScreen.x=canvas.width/2; Game.aimScreen.y=canvas.height/2;
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>

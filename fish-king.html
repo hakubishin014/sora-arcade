@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>FISH KING - じゃんけんバトルRPG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --abyss:#050f1a;
+  --deep:#0c2233;
+  --deep2:#123049;
+  --panel:#0e2a3f;
+  --bio-cyan:#4de8d8;
+  --bio-cyan-dim:#2a7a72;
+  --bio-amber:#ffb454;
+  --coral:#ff6b5c;
+  --pearl:#eef6f3;
+  --seafoam:#8fd8c9;
+  --line:rgba(77,232,216,0.18);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:radial-gradient(ellipse at 50% -10%, var(--stage-bg2, #10314a) 0%, var(--stage-bg1, var(--abyss)) 55%, #020609 100%);
+  color:var(--pearl);
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important;}
+}
+
+/* ---------- ambient particles (signature motif) ---------- */
+#particles{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.particle{
+  position:absolute;bottom:-5%;
+  width:var(--s,4px);height:var(--s,4px);
+  border-radius:50%;
+  background:radial-gradient(circle, var(--stage-accent, var(--bio-cyan)) 0%, transparent 70%);
+  box-shadow:0 0 8px 2px var(--stage-accent, var(--bio-cyan));
+  animation:drift linear infinite;
+  opacity:0.6;
+}
+@keyframes drift{
+  0%{transform:translateY(0) translateX(0);opacity:0;}
+  10%{opacity:0.65;}
+  90%{opacity:0.45;}
+  100%{transform:translateY(-110vh) translateX(var(--dx,20px));opacity:0;}
+}
+
+.app{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:28px 20px 60px;}
+
+/* ---------- header ---------- */
+.brand{text-align:center;margin-bottom:22px;}
+.brand-eyebrow{
+  font-family:'JetBrains Mono',monospace;
+  letter-spacing:0.35em;
+  font-size:11px;
+  color:var(--seafoam);
+  text-transform:uppercase;
+}
+.brand-title{
+  font-family:'Kaisei Decol', serif;
+  font-size:clamp(36px,7vw,64px);
+  margin:6px 0 4px;
+  letter-spacing:0.06em;
+  background:linear-gradient(180deg, var(--pearl) 0%, var(--bio-cyan) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 0 40px rgba(77,232,216,0.25);
+}
+.brand-sub{color:var(--seafoam);font-size:13px;letter-spacing:0.05em;}
+.rules-btn{
+  margin-top:14px;background:transparent;border:1px solid var(--line);color:var(--seafoam);
+  font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 16px;border-radius:20px;
+  cursor:pointer;transition:border-color .15s ease,color .15s ease;
+}
+.rules-btn:hover{border-color:var(--bio-cyan);color:var(--bio-cyan);}
+
+/* ---------- screens ---------- */
+.screen{display:none;}
+.screen.active{display:block;animation:fadein 0.4s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ---------- select screen ---------- */
+.select-hint{
+  text-align:center;color:var(--seafoam);font-size:13px;margin-bottom:18px;
+  font-family:'JetBrains Mono',monospace;
+}
+.roster{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  gap:14px;
+}
+.fish-card{
+  background:linear-gradient(160deg, var(--panel) 0%, var(--deep) 100%);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:16px;
+  cursor:pointer;
+  position:relative;
+  transition:transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.fish-card:hover{transform:translateY(-3px);border-color:var(--bio-cyan);}
+.fish-card.selected{
+  border-color:var(--bio-cyan);
+  box-shadow:0 0 0 1px var(--bio-cyan), 0 0 24px rgba(77,232,216,0.35);
+}
+.fish-card-top{display:flex;align-items:center;gap:12px;}
+.fish-emoji{
+  font-size:36px;width:56px;height:56px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  background:radial-gradient(circle, rgba(77,232,216,0.18), transparent 70%);
+  filter:var(--tint,none);
+}
+.fish-name{font-family:'Kaisei Decol',serif;font-size:18px;margin:0;}
+.fish-kana{font-size:11px;color:var(--seafoam);margin:0;}
+.meta-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;}
+.type-tag{
+  display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;
+  padding:2px 7px;border-radius:20px;letter-spacing:0.05em;
+}
+.type-gu{background:rgba(255,107,92,0.16);color:var(--coral);border:1px solid rgba(255,107,92,0.4);}
+.type-choki{background:rgba(255,180,84,0.16);color:var(--bio-amber);border:1px solid rgba(255,180,84,0.4);}
+.type-pa{background:rgba(77,232,216,0.16);color:var(--bio-cyan);border:1px solid rgba(77,232,216,0.4);}
+.tag-chip{
+  font-family:'JetBrains Mono',monospace;font-size:9.5px;padding:2px 7px;border-radius:20px;
+  border:1px solid var(--line);color:var(--seafoam);
+}
+.rarity{font-size:12px;color:var(--bio-amber);margin-top:6px;letter-spacing:1px;}
+.stat-bars{margin-top:6px;}
+.stat-bar-line{display:flex;align-items:center;gap:6px;margin-top:3px;}
+.stat-bar-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--seafoam);width:28px;}
+.stat-bar-track{flex:1;height:5px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;}
+.stat-bar-fill{height:100%;border-radius:4px;background:var(--bio-cyan);}
+.eco-line{margin-top:10px;font-size:11.5px;color:var(--pearl);line-height:1.5;border-top:1px dashed var(--line);padding-top:8px;}
+.eco-label{color:var(--bio-amber);font-weight:700;}
+.special-line{margin-top:6px;font-size:11.5px;color:var(--pearl);line-height:1.5;}
+.special-label{color:var(--coral);font-weight:700;}
+.habitat-line{margin-top:6px;font-size:10.5px;color:var(--bio-amber);line-height:1.5;}
+
+.cta-bar{position:sticky;bottom:14px;display:flex;justify-content:center;gap:12px;margin-top:22px;flex-wrap:wrap;}
+.btn{
+  font-family:'Zen Kaku Gothic New',sans-serif;font-weight:700;
+  border:none;border-radius:999px;padding:14px 34px;font-size:15px;
+  cursor:pointer;letter-spacing:0.04em;transition:transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+.btn-primary{
+  background:linear-gradient(120deg, var(--bio-cyan), #2fb6a8);
+  color:#04211d;box-shadow:0 6px 22px rgba(77,232,216,0.35);
+}
+.btn-primary:disabled{opacity:0.35;cursor:not-allowed;box-shadow:none;}
+.btn-primary:not(:disabled):hover{transform:translateY(-2px);}
+.btn-ghost{
+  background:transparent;border:1px solid var(--line);color:var(--pearl);
+}
+.btn-ghost:hover{border-color:var(--bio-cyan);}
+
+/* ---------- support picker ---------- */
+.support-section{margin-top:38px;}
+.support-cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;}
+.support-cat-title{font-family:'Kaisei Decol',serif;font-size:15px;color:var(--bio-amber);margin-bottom:8px;text-align:center;}
+.support-cat-list{display:flex;flex-direction:column;gap:8px;}
+.support-pick-card{
+  background:linear-gradient(160deg,var(--panel),var(--deep));border:1px solid var(--line);border-radius:10px;
+  padding:10px 12px;cursor:pointer;transition:border-color .15s ease,transform .15s ease;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.support-pick-card:hover{transform:translateY(-2px);border-color:var(--bio-cyan);}
+.support-pick-card.selected{border-color:var(--bio-cyan);box-shadow:0 0 0 1px var(--bio-cyan);}
+.support-pick-emoji{font-size:20px;}
+.support-pick-name{font-family:'Zen Kaku Gothic New',sans-serif;font-weight:700;font-size:12.5px;width:56px;}
+.support-pick-desc{font-size:10.5px;color:var(--seafoam);flex:1;min-width:120px;line-height:1.4;}
+
+/* ---------- stage select ---------- */
+.stage-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;}
+.stage-card{
+  background:linear-gradient(160deg,var(--panel),var(--deep));border:1px solid var(--line);border-radius:14px;
+  padding:18px 14px;text-align:center;cursor:pointer;transition:transform .18s ease,border-color .18s ease;
+}
+.stage-card:hover{transform:translateY(-3px);border-color:var(--bio-cyan);}
+.stage-card.selected{border-color:var(--bio-cyan);box-shadow:0 0 0 1px var(--bio-cyan),0 0 24px rgba(77,232,216,.35);}
+.stage-emoji{font-size:32px;}
+.stage-name{font-family:'Kaisei Decol',serif;font-size:16px;margin:6px 0 4px;}
+.stage-desc{font-size:11px;color:var(--seafoam);line-height:1.5;min-height:32px;}
+.stage-badge{
+  margin-top:8px;font-size:10px;color:#2a1200;background:linear-gradient(120deg,var(--bio-amber),var(--coral));
+  display:inline-block;padding:3px 9px;border-radius:20px;font-weight:700;
+}
+
+/* ---------- battle screen ---------- */
+.battle-wrap{display:flex;flex-direction:column;gap:16px;}
+.turn-strip{
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;align-items:center;
+  font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--seafoam);
+  border-bottom:1px solid var(--line);padding-bottom:8px;
+}
+.turn-strip b{color:var(--bio-cyan);}
+
+.arena{
+  display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:start;
+}
+.vs-mark{
+  font-family:'Kaisei Decol',serif;font-size:22px;color:var(--coral);
+  align-self:center;text-align:center;opacity:0.8;
+}
+.fighter{
+  background:linear-gradient(160deg, var(--panel), var(--deep));
+  border:1px solid var(--line);border-radius:16px;padding:16px;position:relative;overflow:hidden;
+}
+.fighter.enemy .fighter-head{flex-direction:row-reverse;text-align:right;}
+.fighter.enemy .support-row{justify-content:flex-end;}
+.fighter.shake{animation:shake 0.35s ease;}
+@keyframes shake{
+  0%,100%{transform:translateX(0);}
+  20%{transform:translateX(-6px);}
+  40%{transform:translateX(6px);}
+  60%{transform:translateX(-4px);}
+  80%{transform:translateX(4px);}
+}
+.fighter.flash::after{
+  content:"";position:absolute;inset:0;background:var(--coral);opacity:0;
+  animation:flashfx 0.35s ease;pointer-events:none;
+}
+@keyframes flashfx{0%{opacity:0.35;}100%{opacity:0;}}
+
+.fighter-head{display:flex;align-items:center;gap:12px;}
+.fighter-emoji-wrap{
+  width:64px;height:64px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:38px;
+  background:radial-gradient(circle, rgba(77,232,216,0.2), transparent 70%);
+  filter:var(--tint,none);
+  transition:transform 0.25s ease;
+}
+.fighter-emoji-wrap.pop{transform:scale(1.18);}
+.fighter-name{font-family:'Kaisei Decol',serif;font-size:19px;margin:0;}
+.fighter-meta{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--seafoam);margin-top:2px;}
+.fighter-status{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--bio-amber);min-height:14px;}
+
+.bar-block{margin-top:12px;}
+.bar-label{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--seafoam);margin-bottom:3px;}
+.bar-track{height:10px;border-radius:6px;background:rgba(255,255,255,0.07);overflow:hidden;position:relative;}
+.bar-fill{height:100%;border-radius:6px;transition:width 0.4s cubic-bezier(.3,1,.4,1);}
+.hp-fill{background:linear-gradient(90deg,#3ee6c0,#4de8d8);}
+.hp-fill.low{background:linear-gradient(90deg,#ff6b5c,#ff9a3d);}
+.sp-fill{background:linear-gradient(90deg,#ffb454,#ffd98a);}
+
+.support-row{display:flex;gap:8px;margin-top:12px;}
+.support-chip{
+  width:32px;height:32px;border-radius:9px;background:var(--deep2);display:flex;align-items:center;justify-content:center;
+  font-size:15px;position:relative;border:1px solid var(--line);
+}
+.support-chip.cooling{opacity:0.35;}
+.support-cd{
+  position:absolute;bottom:-5px;right:-5px;background:var(--coral);color:#fff;font-size:9px;border-radius:50%;
+  width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;
+}
+
+.dmg-pop{
+  position:absolute;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:20px;
+  color:var(--coral);pointer-events:none;animation:pop 0.9s ease forwards;
+  right:16px;top:16px;
+}
+@keyframes pop{0%{opacity:0;transform:translateY(0) scale(0.8);}20%{opacity:1;transform:translateY(-6px) scale(1.1);}100%{opacity:0;transform:translateY(-34px) scale(1);}}
+
+/* ---------- control deck ---------- */
+.control-deck{
+  background:linear-gradient(160deg, var(--panel), var(--deep));
+  border:1px solid var(--line);border-radius:16px;padding:18px;text-align:center;
+}
+.timer-track{height:6px;border-radius:4px;background:rgba(255,255,255,0.08);overflow:hidden;margin-bottom:14px;}
+.timer-fill{height:100%;background:linear-gradient(90deg,var(--bio-cyan),var(--coral));width:100%;}
+.log-line{font-size:13px;color:var(--seafoam);min-height:20px;margin-bottom:14px;font-family:'JetBrains Mono',monospace;}
+.log-line b{color:var(--pearl);}
+.hands{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;}
+.hand-btn{
+  width:84px;height:84px;border-radius:20px;border:1px solid var(--line);
+  background:var(--deep2);color:var(--pearl);font-size:30px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  transition:transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+.hand-btn span.lbl{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--seafoam);}
+.hand-btn:hover:not(:disabled){transform:translateY(-3px);border-color:var(--bio-cyan);background:var(--panel);}
+.hand-btn:disabled{opacity:0.3;cursor:not-allowed;}
+
+.special-prompt{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;}
+.sp-btn{
+  padding:14px 22px;border-radius:12px;border:1px solid var(--line);cursor:pointer;
+  font-family:'Zen Kaku Gothic New',sans-serif;font-weight:700;font-size:14px;color:var(--pearl);
+  background:var(--deep2);transition:transform 0.12s ease,border-color .12s ease;
+}
+.sp-btn:hover{transform:translateY(-2px);}
+.sp-btn.special{border-color:var(--coral);color:var(--coral);}
+.sp-btn.special:hover{box-shadow:0 0 18px rgba(255,107,92,0.4);}
+
+/* ---------- special move overlay ---------- */
+.ultimate-overlay{
+  position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 50%, rgba(10,30,45,0.92), rgba(2,6,10,0.97));
+}
+.ultimate-overlay.show{display:flex;animation:ufade 0.25s ease;}
+@keyframes ufade{from{opacity:0;}to{opacity:1;}}
+.ring{
+  position:absolute;border:2px solid var(--bio-cyan);border-radius:50%;opacity:0;
+  animation:ringpulse 1.6s ease-out infinite;
+}
+@keyframes ringpulse{
+  0%{width:60px;height:60px;opacity:0.9;}
+  100%{width:640px;height:640px;opacity:0;}
+}
+.ultimate-content{position:relative;text-align:center;padding:20px;}
+.ultimate-emoji{font-size:90px;filter:drop-shadow(0 0 30px rgba(77,232,216,0.6));animation:uspin 0.9s ease;}
+@keyframes uspin{0%{transform:scale(0.4) rotate(-15deg);opacity:0;}60%{transform:scale(1.15) rotate(4deg);opacity:1;}100%{transform:scale(1) rotate(0);}}
+.ultimate-name{font-family:'Kaisei Decol',serif;font-size:clamp(26px,5vw,44px);margin-top:10px;color:var(--pearl);text-shadow:0 0 24px rgba(77,232,216,0.6);}
+.ultimate-desc{font-size:13px;color:var(--seafoam);margin-top:6px;font-family:'JetBrains Mono',monospace;}
+
+/* ---------- evolution banner ---------- */
+.evo-banner{
+  position:fixed;left:50%;top:18%;transform:translate(-50%,-10px);z-index:60;
+  background:linear-gradient(120deg, var(--bio-amber), var(--coral));
+  color:#2a1200;font-family:'Kaisei Decol',serif;font-size:22px;font-weight:700;
+  padding:14px 30px;border-radius:14px;box-shadow:0 10px 40px rgba(255,180,84,0.5);
+  display:none;opacity:0;text-align:center;max-width:90vw;
+}
+.evo-banner.show{display:block;animation:evoin 1.8s ease forwards;}
+@keyframes evoin{
+  0%{opacity:0;transform:translate(-50%,10px) scale(0.8);}
+  15%{opacity:1;transform:translate(-50%,-10px) scale(1.05);}
+  25%{transform:translate(-50%,-10px) scale(1);}
+  85%{opacity:1;}
+  100%{opacity:0;transform:translate(-50%,-24px) scale(1);}
+}
+
+/* ---------- result screen ---------- */
+.result-panel{
+  max-width:460px;margin:60px auto 0;text-align:center;
+  background:linear-gradient(160deg, var(--panel), var(--deep));
+  border:1px solid var(--line);border-radius:18px;padding:36px 24px;
+}
+.result-title{font-family:'Kaisei Decol',serif;font-size:38px;margin:0 0 8px;}
+.result-title.win{color:var(--bio-cyan);text-shadow:0 0 30px rgba(77,232,216,0.5);}
+.result-title.lose{color:var(--coral);}
+.result-sub{color:var(--seafoam);font-size:13px;margin-bottom:22px;font-family:'JetBrains Mono',monospace;line-height:1.7;}
+.result-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+
+/* ---------- rules modal ---------- */
+.modal-overlay{
+  position:fixed;inset:0;z-index:70;background:rgba(2,6,10,0.85);display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.show{display:flex;}
+.modal-panel{
+  max-width:640px;max-height:80vh;overflow-y:auto;
+  background:linear-gradient(160deg,var(--panel),var(--deep));border:1px solid var(--line);border-radius:18px;
+  padding:30px;position:relative;
+}
+.modal-close{
+  position:absolute;top:16px;right:18px;background:none;border:none;color:var(--pearl);font-size:20px;cursor:pointer;
+}
+.modal-panel h2{font-family:'Kaisei Decol',serif;margin:0 0 18px;font-size:24px;}
+.modal-panel h3{color:var(--bio-cyan);font-size:14px;margin:0 0 6px;font-family:'Zen Kaku Gothic New',sans-serif;}
+.modal-panel p{font-size:12.5px;color:var(--seafoam);line-height:1.75;margin:0 0 18px;}
+.element-chart{
+  font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--pearl);background:rgba(255,255,255,0.04);
+  padding:12px 14px;border-radius:10px;margin-bottom:18px;line-height:2;
+}
+
+footer.credit{text-align:center;color:var(--seafoam);opacity:0.5;font-size:11px;margin-top:40px;font-family:'JetBrains Mono',monospace;}
+
+@media (max-width:760px){
+  .arena{grid-template-columns:1fr;}
+  .vs-mark{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div id="particles"></div>
+
+<div class="app">
+  <div class="brand">
+    <div class="brand-eyebrow">2D×3D REALTIME JANKEN BATTLE</div>
+    <h1 class="brand-title">FISH KING</h1>
+    <div class="brand-sub">世界の海から選び、育て、じゃんけんで勝ち抜け。</div>
+    <button class="rules-btn" id="btn-rules">📖 攻略ガイドを見る</button>
+  </div>
+
+  <!-- SELECT SCREEN -->
+  <section id="screen-select" class="screen active">
+    <div class="select-hint">▼ バトルに連れていく1匹をタップして選択してください</div>
+    <div class="roster" id="roster"></div>
+
+    <div class="support-section">
+      <div class="select-hint">▼ サポートデッキを編成（各カテゴリから1枚ずつ）</div>
+      <div class="support-cats" id="support-cats"></div>
+    </div>
+
+    <div class="cta-bar">
+      <button class="btn btn-primary" id="btn-to-stage" disabled>ステージを選んでバトルへ</button>
+    </div>
+  </section>
+
+  <!-- STAGE SCREEN -->
+  <section id="screen-stage" class="screen">
+    <div class="select-hint">▼ バトルするステージを選択してください（ホームステージだとボーナスが入る魚もいます）</div>
+    <div class="stage-grid" id="stage-grid"></div>
+    <div class="cta-bar">
+      <button class="btn btn-ghost" id="btn-stage-back">戻る</button>
+      <button class="btn btn-primary" id="btn-to-battle" disabled>このステージでバトル開始</button>
+    </div>
+  </section>
+
+  <!-- BATTLE SCREEN -->
+  <section id="screen-battle" class="screen">
+    <div class="battle-wrap">
+      <div class="turn-strip">
+        <div>TURN <b id="turn-count">1</b> / 10</div>
+        <div id="stage-label"></div>
+        <div id="round-label">ラウンド開始</div>
+      </div>
+      <div class="arena">
+        <div class="fighter player" id="fighter-player">
+          <div class="fighter-head">
+            <div class="fighter-emoji-wrap" id="p-emoji"></div>
+            <div>
+              <p class="fighter-name" id="p-name"></p>
+              <div class="fighter-meta" id="p-meta"></div>
+              <div class="fighter-status" id="p-status"></div>
+            </div>
+          </div>
+          <div class="bar-block">
+            <div class="bar-label"><span>HP</span><span id="p-hp-num"></span></div>
+            <div class="bar-track"><div class="bar-fill hp-fill" id="p-hp-fill"></div></div>
+          </div>
+          <div class="bar-block">
+            <div class="bar-label"><span>SP</span><span id="p-sp-num"></span></div>
+            <div class="bar-track"><div class="bar-fill sp-fill" id="p-sp-fill"></div></div>
+          </div>
+          <div class="support-row" id="p-support-row"></div>
+        </div>
+        <div class="vs-mark">VS</div>
+        <div class="fighter enemy" id="fighter-cpu">
+          <div class="fighter-head">
+            <div class="fighter-emoji-wrap" id="c-emoji"></div>
+            <div>
+              <p class="fighter-name" id="c-name"></p>
+              <div class="fighter-meta" id="c-meta"></div>
+              <div class="fighter-status" id="c-status"></div>
+            </div>
+          </div>
+          <div class="bar-block">
+            <div class="bar-label"><span>HP</span><span id="c-hp-num"></span></div>
+            <div class="bar-track"><div class="bar-fill hp-fill" id="c-hp-fill"></div></div>
+          </div>
+          <div class="bar-block">
+            <div class="bar-label"><span>SP</span><span id="c-sp-num"></span></div>
+            <div class="bar-track"><div class="bar-fill sp-fill" id="c-sp-fill"></div></div>
+          </div>
+          <div class="support-row" id="c-support-row"></div>
+        </div>
+      </div>
+
+      <div class="control-deck">
+        <div class="timer-track"><div class="timer-fill" id="timer-fill"></div></div>
+        <div class="log-line" id="log-line">戦いの始まりだ…</div>
+
+        <div class="hands" id="hands-ui">
+          <button class="hand-btn" data-hand="gu">✊<span class="lbl">グー</span></button>
+          <button class="hand-btn" data-hand="choki">✌️<span class="lbl">チョキ</span></button>
+          <button class="hand-btn" data-hand="pa">✋<span class="lbl">パー</span></button>
+        </div>
+
+        <div class="special-prompt" id="special-ui" style="display:none;">
+          <button class="sp-btn" id="btn-normal">通常攻撃でいく</button>
+          <button class="sp-btn special" id="btn-special">⚡ 必殺技を発動！</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULT SCREEN -->
+  <section id="screen-result" class="screen">
+    <div class="result-panel">
+      <div class="result-title" id="result-title"></div>
+      <div class="result-sub" id="result-sub"></div>
+      <div class="result-actions">
+        <button class="btn btn-primary" id="btn-rematch">もう一度戦う</button>
+        <button class="btn btn-ghost" id="btn-back">図鑑に戻る</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="credit">FISH KING — Battle Prototype</footer>
+</div>
+
+<div class="evo-banner" id="evo-banner">🧬 生態進化！ 覚醒した！</div>
+
+<div class="ultimate-overlay" id="ultimate-overlay">
+  <div class="ring" style="animation-delay:0s;"></div>
+  <div class="ring" style="animation-delay:0.4s;"></div>
+  <div class="ring" style="animation-delay:0.8s;"></div>
+  <div class="ultimate-content">
+    <div class="ultimate-emoji" id="ult-emoji"></div>
+    <div class="ultimate-name" id="ult-name"></div>
+    <div class="ultimate-desc" id="ult-desc"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="rules-modal">
+  <div class="modal-panel">
+    <button class="modal-close" id="btn-rules-close">✕</button>
+    <h2>攻略ガイド</h2>
+
+    <h3>① じゃんけんバトル</h3>
+    <p>制限時間内にグー・チョキ・パーを選択。勝った側が攻撃、あいこならもう一度。時間切れになると自動でランダムな手が出される。魚のスピードが速いほど、考える時間が長くもらえる。</p>
+
+    <h3>② SPと必殺技</h3>
+    <p>勝利・敗北・あいこでSPが少しずつ貯まる。SPが100の状態で勝利すると、通常攻撃か必殺技かをその場で選べる。必殺技はSPを全て消費するが、大きなダメージと専用演出が発生する。</p>
+
+    <h3>③ 生態進化</h3>
+    <p>連続で勝利すると、その魚は「覚醒」して攻撃力が20%上昇する。覚醒に必要な連勝数は魚によって異なる（多くは3連勝、一部は2連勝で覚醒）。</p>
+
+    <h3>④ サポートデッキ</h3>
+    <p>軟体動物（防御）・節足動物（状態異常）・藻類（支援）の3カテゴリから1枚ずつ編成する。条件を満たすと自動で発動し、発動後は3ターンのクールタイムに入る。</p>
+
+    <h3>⑤ 属性相性</h3>
+    <div class="element-chart">
+      海水 → 淡水 → 深海 → 海水…<br>
+      熱帯 → 寒冷 → 古代 → 特殊 → 汽水 → 熱帯…<br>
+      矢印の先の属性を攻撃すると有利（ダメージ+15%）。同じ属性同士がぶつかると+10%。
+    </div>
+
+    <h3>⑥ 生息地ボーナス</h3>
+    <p>魚にはそれぞれ生まれ育ったホームステージがある。そのステージでバトルすると、攻撃力・HP・回避率などにボーナスが入る。ステージ選択画面で自分の魚のホームが分かる。</p>
+
+    <h3>⑦ ライバルAI</h3>
+    <p>対戦相手はこちらが出した手のクセを覚えていき、よく出す手に対応する手を選びやすくなる。同じ手ばかり出すのはだんだん危険になっていく。</p>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   ELEMENT / STAGE / SUPPORT SYSTEMS
+========================================================= */
+const ELEMENT_LABEL = {kaisui:'海水', tansui:'淡水', shinkai:'深海', kisui:'汽水', nettai:'熱帯', kanrei:'寒冷', kodai:'古代', tokushu:'特殊'};
+const ELEMENT_EMOJI = {kaisui:'🌊', tansui:'💧', shinkai:'🕳️', kisui:'🌫️', nettai:'🌴', kanrei:'❄️', kodai:'🦴', tokushu:'✨'};
+// a beats b (two closed cycles, per doc's given triangle + a designed extension)
+const ELEMENT_BEATS = {
+  kaisui:'tansui', tansui:'shinkai', shinkai:'kaisui',
+  nettai:'kanrei', kanrei:'kodai', kodai:'tokushu', tokushu:'kisui', kisui:'nettai'
+};
+function getElementMultiplier(atkEl, defEl){
+  if(atkEl===defEl) return {mult:1.10, note:'属性一致 +10%'};
+  if(ELEMENT_BEATS[atkEl]===defEl) return {mult:1.15, note:'属性相性 有利 +15%'};
+  if(ELEMENT_BEATS[defEl]===atkEl) return {mult:0.85, note:'属性相性 不利 -15%'};
+  return {mult:1.0, note:null};
+}
+
+const STAGE_DB = [
+  {id:'kasen', name:'河川', emoji:'🏞️', desc:'清らかな流れが育む生命', theme:{bg1:'#0a2a1f', bg2:'#0f3d2c', accent:'#6be0a0'}},
+  {id:'mizuumi', name:'湖', emoji:'🏔️', desc:'静かな水面の下の世界', theme:{bg1:'#0a1f2e', bg2:'#123a4f', accent:'#5cc2e8'}},
+  {id:'sango', name:'サンゴ礁', emoji:'🪸', desc:'極彩色が広がる楽園', theme:{bg1:'#0f1f2e', bg2:'#123045', accent:'#ff8fb3'}},
+  {id:'gaiyou', name:'外洋', emoji:'🌊', desc:'果てなき青の世界', theme:{bg1:'#0c2233', bg2:'#123049', accent:'#4de8d8'}},
+  {id:'higata', name:'干潟', emoji:'🐚', desc:'潮の満ち引きが作る境界', theme:{bg1:'#241d0f', bg2:'#3a2e14', accent:'#ffcf7a'}},
+  {id:'mangrove', name:'マングローブ', emoji:'🌿', desc:'汽水域の入り組んだ根', theme:{bg1:'#152414', bg2:'#1f3a1c', accent:'#8fd85a'}},
+  {id:'shinkai', name:'深海', emoji:'🕳️', desc:'光の届かない静寂', theme:{bg1:'#03060a', bg2:'#081420', accent:'#4de8d8'}},
+  {id:'nankyoku', name:'南極', emoji:'🧊', desc:'凍える海の果て', theme:{bg1:'#0e1f2b', bg2:'#1b3a4a', accent:'#c9f2ff'}},
+  {id:'kaiteikazan', name:'海底火山', emoji:'🌋', desc:'灼熱と海水がせめぎ合う', theme:{bg1:'#210c0a', bg2:'#3a140e', accent:'#ff8a5c'}},
+  {id:'kodaikai', name:'古代海', emoji:'🦴', desc:'太古から眠る記憶の海', theme:{bg1:'#1c1428', bg2:'#2c1f3f', accent:'#c79aff'}}
+];
+
+const CAT_LABEL = {mollusk:'軟体動物', arthropod:'節足動物', algae:'藻類'};
+const SUPPORT_DB = [
+  {id:'tako', name:'タコ', cat:'mollusk', emoji:'🐙', desc:'被弾時、高確率で相手の攻撃を完全に回避する。', proc:0.30, cd:3},
+  {id:'ika', name:'イカ', cat:'mollusk', emoji:'🦑', desc:'被弾時、ダメージを抑えつつカウンター攻撃を返す。', proc:0.30, cd:3},
+  {id:'oumugai', name:'オウムガイ', cat:'mollusk', emoji:'🐚', desc:'被弾時、シールドで被ダメージを半減させる。', proc:0.30, cd:3},
+  {id:'ebi', name:'エビ', cat:'arthropod', emoji:'🦐', desc:'勝利時、相手を毒状態にして継続ダメージを与える。', proc:0.30, cd:3},
+  {id:'kani', name:'カニ', cat:'arthropod', emoji:'🦀', desc:'勝利時、相手を防御ダウンさせ被ダメージを増やす。', proc:0.30, cd:3},
+  {id:'shako', name:'シャコ', cat:'arthropod', emoji:'🦞', desc:'勝利時、相手をスタンさせ次のターンを封じる。', proc:0.25, cd:3},
+  {id:'konbu', name:'昆布', cat:'algae', emoji:'🌿', desc:'勝利時、自分のHPを回復する。', proc:0.30, cd:3},
+  {id:'wakame', name:'ワカメ', cat:'algae', emoji:'🍃', desc:'勝利時、自分の攻撃力を一時的に上げる。', proc:0.30, cd:3},
+  {id:'aosa', name:'アオサ', cat:'algae', emoji:'🟢', desc:'勝利時、SPを追加で回復する。', proc:0.35, cd:3}
+];
+
+/* =========================================================
+   FISH DATABASE (19種)
+========================================================= */
+const FISH_DB = [
+  {
+    id:'jinbei', name:'ジンベエザメ', kana:'Whale Shark', type:'gu', rarity:5,
+    hp:150, atk:105, spd:65, emoji:'🦈', tint:'hue-rotate(0deg)',
+    element:'nettai', habitat:'gaiyou',
+    eco:{name:'ろ過摂食', desc:'毎ターン、SPを多く獲得する。'},
+    special:{name:'大渦潮ブレス', desc:'巨大な渦を巻き起こし防御を無視して薙ぎ払う。', mult:2.2},
+    habitatBonus:{type:'dmg', value:0.15}
+  },
+  {
+    id:'maguro', name:'マグロ', kana:'Bluefin Tuna', type:'gu', rarity:4,
+    hp:115, atk:98, spd:105, emoji:'🐟', tint:'hue-rotate(190deg) saturate(1.4)',
+    element:'kaisui', habitat:'gaiyou',
+    eco:{name:'回遊魚', desc:'一度も泳ぎを止めないため、麻痺やスタンを受け付けない。'},
+    special:{name:'高速突進', desc:'海流に乗った全速の体当たり。', mult:1.9},
+    habitatBonus:{type:'dmg', value:0.15}
+  },
+  {
+    id:'unagi', name:'デンキウナギ', kana:'Electric Eel', type:'choki', rarity:4,
+    hp:92, atk:88, spd:92, emoji:'🐟', tint:'hue-rotate(45deg) saturate(1.6)',
+    element:'tansui', habitat:'kasen',
+    eco:{name:'電気器官', desc:'チョキで勝利した時、30%の確率で相手を麻痺させる。'},
+    special:{name:'放電スパーク', desc:'高圧の電撃で神経を焼き尽くす。', mult:2.0},
+    habitatBonus:{type:'dmg', value:0.15}
+  },
+  {
+    id:'katsuo', name:'カツオ', kana:'Bonito', type:'choki', rarity:3,
+    hp:96, atk:90, spd:112, emoji:'🐟', tint:'hue-rotate(210deg)',
+    element:'kaisui', habitat:'gaiyou',
+    eco:{name:'群れ', desc:'仲間との連携で、勝利時20%の確率で追撃が発生する。'},
+    special:{name:'三連バイト', desc:'俊敏な連続噛みつきで畳みかける。', mult:1.85},
+    habitatBonus:{type:'dmg', value:0.15}
+  },
+  {
+    id:'manbo', name:'マンボウ', kana:'Ocean Sunfish', type:'choki', rarity:3,
+    hp:120, atk:75, spd:80, emoji:'🐠', tint:'grayscale(0.4) brightness(1.2)',
+    element:'kaisui', habitat:'gaiyou',
+    eco:{name:'悠々自適', desc:'毎ターン開始時、自身のHPを少し回復する。'},
+    special:{name:'体重プレス', desc:'巨体をそのまま叩きつける渾身の一撃。', mult:1.9},
+    habitatBonus:{type:'dmg', value:0.15}
+  },
+  {
+    id:'iwashi', name:'イワシ', kana:'Sardine', type:'pa', rarity:1,
+    hp:62, atk:56, spd:150, emoji:'🐟', tint:'hue-rotate(170deg) saturate(1.8)',
+    element:'kaisui', habitat:'gaiyou',
+    eco:{name:'群泳', desc:'群れで泳ぐことで回避率が上がる。'},
+    special:{name:'銀鱗乱舞', desc:'無数の群れが閃光のように駆け抜ける。', mult:1.8},
+    habitatBonus:{type:'dmg', value:0.15}
+  },
+  {
+    id:'harisen', name:'ハリセンボン', kana:'Pufferfish', type:'pa', rarity:2,
+    hp:72, atk:60, spd:130, emoji:'🐡', tint:'hue-rotate(20deg) saturate(1.3)',
+    element:'nettai', habitat:'sango',
+    eco:{name:'膨張', desc:'HPが0になる一撃を、一度だけHP1で耐える。'},
+    special:{name:'針弾丸', desc:'膨らんだ体から無数の針を撃ち出す。', mult:1.85},
+    habitatBonus:{type:'dmg', value:0.15}
+  },
+  {
+    id:'shumoku', name:'シュモクザメ', kana:'Hammerhead Shark', type:'gu', rarity:4,
+    hp:108, atk:100, spd:95, emoji:'🦈', tint:'hue-rotate(260deg) saturate(1.3)',
+    element:'kaisui', habitat:'gaiyou',
+    eco:{name:'電気受容感覚', desc:'独特の頭部で気配を察知し、最初に受ける必殺技のダメージを軽減する。'},
+    special:{name:'ハンマーヘッドスマッシュ', desc:'特殊な頭部を武器に側面から強烈な一撃を叩き込む。', mult:2.0},
+    habitatBonus:{type:'dmg', value:0.15}
+  },
+  {
+    id:'kumanomi', name:'カクレクマノミ', kana:'Clownfish', type:'pa', rarity:2,
+    hp:70, atk:58, spd:120, emoji:'🐠', tint:'hue-rotate(-20deg) saturate(1.6) brightness(1.05)',
+    element:'nettai', habitat:'sango',
+    eco:{name:'イソギンチャクの守り', desc:'戦闘開始から3ターンの間、受けるダメージが軽減される。'},
+    special:{name:'共生カウンター', desc:'イソギンチャクの陰から飛び出し鋭く反撃する。', mult:1.8},
+    habitatBonus:{type:'dmg', value:0.20}
+  },
+  {
+    id:'chinanago', name:'チンアナゴ', kana:'Garden Eel', type:'pa', rarity:2,
+    hp:65, atk:54, spd:140, emoji:'🐟', tint:'hue-rotate(80deg) saturate(1.4)',
+    element:'kisui', habitat:'higata',
+    eco:{name:'砂地の住人', desc:'干潟のステージでは、砂に隠れて回避率が大きく上がる。'},
+    special:{name:'砂中ローリングアタック', desc:'砂の中から飛び出し回転しながら突き刺す。', mult:1.8},
+    habitatBonus:null
+  },
+  {
+    id:'sake', name:'サケ', kana:'Salmon', type:'choki', rarity:3,
+    hp:100, atk:82, spd:98, emoji:'🐟', tint:'hue-rotate(320deg) saturate(1.3)',
+    element:'tansui', habitat:'kasen',
+    eco:{name:'母川回帰', desc:'HPが30%を下回った時、一度だけ闘志が高まり攻撃力が上がる。'},
+    special:{name:'滝登りアタック', desc:'激流をものともせず体当たりで押し切る。', mult:1.9},
+    habitatBonus:{type:'hp', value:0.15}
+  },
+  {
+    id:'anko', name:'チョウチンアンコウ', kana:'Anglerfish', type:'gu', rarity:4,
+    hp:118, atk:96, spd:60, emoji:'🐡', tint:'hue-rotate(250deg) brightness(0.85)',
+    element:'shinkai', habitat:'shinkai',
+    eco:{name:'光る誘い', desc:'ルアーで相手を引きつけ、10%の確率で相手のSP獲得を無効化する。'},
+    special:{name:'深海の誘引爆光', desc:'光る疑似餌で誘い込み、闇の中から強襲する。', mult:2.1},
+    habitatBonus:{type:'dmg', value:0.30}
+  },
+  {
+    id:'clione', name:'クリオネ', kana:'Sea Angel', type:'pa', rarity:3,
+    hp:68, atk:58, spd:110, emoji:'🫧', tint:'hue-rotate(180deg) saturate(1.2) brightness(1.1)',
+    element:'kanrei', habitat:'nankyoku',
+    eco:{name:'透明な体', desc:'透き通った体で、常に回避率が上がっている。'},
+    special:{name:'流氷のワルツ', desc:'透明な体をひらめかせ、氷の海で幻惑の舞を見せる。', mult:1.8},
+    habitatBonus:{type:'evasion', value:0.25}
+  },
+  {
+    id:'mekajiki', name:'メカジキ', kana:'Swordfish', type:'gu', rarity:4,
+    hp:112, atk:102, spd:108, emoji:'🐟', tint:'hue-rotate(200deg) saturate(1.5) brightness(0.95)',
+    element:'kaisui', habitat:'gaiyou',
+    eco:{name:'先制の剣', desc:'この試合で最初に勝った時、必ず会心の一撃になる。'},
+    special:{name:'ソードラッシュ', desc:'長い吻を剣のように振り抜き一気に切り裂く。', mult:2.0},
+    habitatBonus:{type:'dmg', value:0.15}
+  },
+  {
+    id:'shiira', name:'シイラ', kana:'Mahi-mahi', type:'choki', rarity:3,
+    hp:94, atk:86, spd:118, emoji:'🐟', tint:'hue-rotate(140deg) saturate(1.7)',
+    element:'nettai', habitat:'gaiyou',
+    eco:{name:'追い込み漁', desc:'相手が回避した時でも、50%の確率で半分のダメージを与える。'},
+    special:{name:'虹色ジャンプアタック', desc:'水面から高々と跳び上がりそのまま体当たりする。', mult:1.85},
+    habitatBonus:{type:'dmg', value:0.15}
+  },
+  {
+    id:'kamasu', name:'カマス', kana:'Barracuda', type:'choki', rarity:3,
+    hp:90, atk:92, spd:105, emoji:'🐟', tint:'hue-rotate(230deg) saturate(1.2) brightness(0.9)',
+    element:'kisui', habitat:'mangrove',
+    eco:{name:'奇襲', desc:'戦闘の1ターン目、勝利した時のダメージが大きく上がる。'},
+    special:{name:'サイレントダッシュ', desc:'音もなく距離を詰め一瞬で急所を貫く。', mult:1.9},
+    habitatBonus:{type:'dmg', value:0.15}
+  },
+  {
+    id:'koi', name:'コイ', kana:'Koi', type:'choki', rarity:2,
+    hp:88, atk:68, spd:90, emoji:'🐟', tint:'hue-rotate(350deg) saturate(1.8)',
+    element:'tansui', habitat:'mizuumi',
+    eco:{name:'滝登り', desc:'2連勝するだけで、他の魚より早く生態進化を起こす。'},
+    special:{name:'昇竜アタック', desc:'滝を登る勢いのまま竜のごとく舞い上がって落ちる。', mult:1.85},
+    habitatBonus:{type:'dmg', value:0.15}
+  },
+  {
+    id:'yougan', name:'ヨウガンウナギ', kana:'Lava Eel', type:'gu', rarity:5,
+    hp:130, atk:108, spd:75, emoji:'🐍', tint:'hue-rotate(0deg) saturate(1.6) brightness(0.9)',
+    element:'tokushu', habitat:'kaiteikazan',
+    eco:{name:'灼熱の鱗', desc:'勝利すると灼熱の鱗が相手を焼き、2ターンの間じわじわダメージを与える。'},
+    special:{name:'マグマイート', desc:'海底の熱水を纏い灼熱の一撃で相手を焼き尽くす。', mult:2.1},
+    habitatBonus:{type:'dmg', value:0.25}
+  },
+  {
+    id:'shirakansu', name:'シーラカンス', kana:'Coelacanth', type:'gu', rarity:5,
+    hp:145, atk:100, spd:58, emoji:'🐟', tint:'grayscale(0.3) hue-rotate(190deg) brightness(0.85)',
+    element:'kodai', habitat:'kodaikai',
+    eco:{name:'生きた化石', desc:'HPが50%を下回った時、一度だけ古代の底力で攻撃力が上がる。'},
+    special:{name:'太古の一撃', desc:'何億年も生き抜いた古の力を解き放つ。', mult:2.15},
+    habitatBonus:{type:'dmg', value:0.25}
+  }
+];
+
+const TYPE_LABEL = {gu:'グー・大型', choki:'チョキ・中型', pa:'パー・小型'};
+const BEATS = {gu:'choki', choki:'pa', pa:'gu'};
+const BEATEN_BY = {gu:'pa', choki:'gu', pa:'choki'};
+const HAND_LABEL = {gu:'グー', choki:'チョキ', pa:'パー'};
+const HAND_EMOJI = {gu:'✊', choki:'✌️', pa:'✋'};
+
+function rand(min,max){ return Math.random()*(max-min)+min; }
+function randomFrom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function sleep(ms){ return new Promise(res=>setTimeout(res, ms)); }
+function habitatStageOf(fish){ return STAGE_DB.find(s=>s.id===fish.habitat); }
+function habitatBonusLine(fish){
+  if(!fish.habitatBonus) return '';
+  const typeLabel = {dmg:'攻撃', hp:'HP', evasion:'回避率'}[fish.habitatBonus.type];
+  const stageName = habitatStageOf(fish).name;
+  return `🎯 生息地ボーナス（${stageName}）：${typeLabel}+${Math.round(fish.habitatBonus.value*100)}%`;
+}
+
+/* =========================================================
+   TOP-LEVEL STATE
+========================================================= */
+let selectedFishId = null;
+let selectedSupports = {mollusk:null, arthropod:null, algae:null};
+let pendingConfig = {stage:null};
+let lastConfig = null;
+
+let P = null, C = null;
+let currentStage = null;
+let turnCount = 1;
+const MAX_TURNS = 10;
+let timerHandle = null;
+let timerStart = 0, timerDur = 0;
+let acceptingInput = false;
+let playerHandHistory = {gu:0, choki:0, pa:0};
+
+/* =========================================================
+   AMBIENT PARTICLES (signature motif — retints per stage)
+========================================================= */
+function spawnParticles(){
+  const wrap = document.getElementById('particles');
+  const n = 26;
+  for(let i=0;i<n;i++){
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = 2 + Math.random()*4;
+    p.style.setProperty('--s', size+'px');
+    p.style.left = (Math.random()*100)+'vw';
+    p.style.setProperty('--dx', (Math.random()*60-30)+'px');
+    const dur = 10 + Math.random()*14;
+    p.style.animationDuration = dur+'s';
+    p.style.animationDelay = (-Math.random()*dur)+'s';
+    wrap.appendChild(p);
+  }
+}
+spawnParticles();
+
+function applyStageTheme(stage){
+  const root = document.documentElement;
+  root.style.setProperty('--stage-bg1', stage.theme.bg1);
+  root.style.setProperty('--stage-bg2', stage.theme.bg2);
+  root.style.setProperty('--stage-accent', stage.theme.accent);
+}
+function resetStageTheme(){
+  const root = document.documentElement;
+  root.style.removeProperty('--stage-bg1');
+  root.style.removeProperty('--stage-bg2');
+  root.style.removeProperty('--stage-accent');
+}
+
+/* =========================================================
+   SCREEN HELPERS
+========================================================= */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* =========================================================
+   RULES MODAL
+========================================================= */
+document.getElementById('btn-rules').addEventListener('click', ()=>{
+  document.getElementById('rules-modal').classList.add('show');
+});
+document.getElementById('btn-rules-close').addEventListener('click', ()=>{
+  document.getElementById('rules-modal').classList.remove('show');
+});
+document.getElementById('rules-modal').addEventListener('click', (e)=>{
+  if(e.target.id==='rules-modal'){ document.getElementById('rules-modal').classList.remove('show'); }
+});
+
+/* =========================================================
+   SELECT SCREEN: ROSTER
+========================================================= */
+function statPct(val, max){ return Math.min(100, Math.round(val/max*100)); }
+
+function renderRoster(){
+  const el = document.getElementById('roster');
+  el.innerHTML = '';
+  FISH_DB.forEach(f=>{
+    const hs = habitatStageOf(f);
+    const card = document.createElement('div');
+    card.className = 'fish-card';
+    card.dataset.id = f.id;
+    card.innerHTML = `
+      <div class="fish-card-top">
+        <div class="fish-emoji" style="--tint:${f.tint}">${f.emoji}</div>
+        <div>
+          <p class="fish-name">${f.name}</p>
+          <p class="fish-kana">${f.kana}</p>
+          <div class="meta-tags">
+            <span class="type-tag type-${f.type}">${TYPE_LABEL[f.type]}</span>
+            <span class="tag-chip">${ELEMENT_EMOJI[f.element]} ${ELEMENT_LABEL[f.element]}</span>
+            <span class="tag-chip">${hs.emoji} ${hs.name}</span>
+          </div>
+        </div>
+      </div>
+      <div class="rarity">${'★'.repeat(f.rarity)}${'☆'.repeat(5-f.rarity)}</div>
+      <div class="stat-bars">
+        <div class="stat-bar-line"><span class="stat-bar-label">HP</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width:${statPct(f.hp,150)}%;background:#4de8d8"></div></div></div>
+        <div class="stat-bar-line"><span class="stat-bar-label">ATK</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width:${statPct(f.atk,110)}%;background:#ff6b5c"></div></div></div>
+        <div class="stat-bar-line"><span class="stat-bar-label">SPD</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width:${statPct(f.spd,150)}%;background:#ffb454"></div></div></div>
+      </div>
+      <div class="eco-line"><span class="eco-label">生態スキル｜${f.eco.name}</span><br>${f.eco.desc}</div>
+      <div class="special-line"><span class="special-label">必殺技｜${f.special.name}</span><br>${f.special.desc}</div>
+      ${f.habitatBonus ? `<div class="habitat-line">${habitatBonusLine(f)}</div>` : ''}
+    `;
+    card.addEventListener('click', ()=>{
+      document.querySelectorAll('.fish-card').forEach(c=>c.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedFishId = f.id;
+      refreshStartButton();
+    });
+    if(f.id===selectedFishId) card.classList.add('selected');
+    el.appendChild(card);
+  });
+}
+renderRoster();
+
+/* =========================================================
+   SELECT SCREEN: SUPPORT PICKER
+========================================================= */
+function renderSupportPicker(){
+  const el = document.getElementById('support-cats');
+  el.innerHTML = '';
+  ['mollusk','arthropod','algae'].forEach(cat=>{
+    const col = document.createElement('div');
+    col.className = 'support-cat-col';
+    col.innerHTML = `<div class="support-cat-title">${CAT_LABEL[cat]}</div>`;
+    const list = document.createElement('div');
+    list.className = 'support-cat-list';
+    SUPPORT_DB.filter(s=>s.cat===cat).forEach(s=>{
+      const chip = document.createElement('div');
+      chip.className = 'support-pick-card';
+      chip.dataset.id = s.id;
+      chip.innerHTML = `<div class="support-pick-emoji">${s.emoji}</div><div class="support-pick-name">${s.name}</div><div class="support-pick-desc">${s.desc}</div>`;
+      chip.addEventListener('click', ()=>{
+        list.querySelectorAll('.support-pick-card').forEach(c=>c.classList.remove('selected'));
+        chip.classList.add('selected');
+        selectedSupports[cat] = s;
+        refreshStartButton();
+      });
+      if(selectedSupports[cat] && selectedSupports[cat].id===s.id) chip.classList.add('selected');
+      list.appendChild(chip);
+    });
+    col.appendChild(list);
+    el.appendChild(col);
+  });
+}
+renderSupportPicker();
+
+function refreshStartButton(){
+  const ok = selectedFishId && selectedSupports.mollusk && selectedSupports.arthropod && selectedSupports.algae;
+  document.getElementById('btn-to-stage').disabled = !ok;
+}
+
+document.getElementById('btn-to-stage').addEventListener('click', ()=>{
+  if(!selectedFishId || !selectedSupports.mollusk || !selectedSupports.arthropod || !selectedSupports.algae) return;
+  const playerFish = FISH_DB.find(f=>f.id===selectedFishId);
+  const pool = FISH_DB.filter(f=>f.id!==selectedFishId);
+  const cpuFish = randomFrom(pool);
+  const cpuSupports = {
+    mollusk: randomFrom(SUPPORT_DB.filter(s=>s.cat==='mollusk')),
+    arthropod: randomFrom(SUPPORT_DB.filter(s=>s.cat==='arthropod')),
+    algae: randomFrom(SUPPORT_DB.filter(s=>s.cat==='algae'))
+  };
+  pendingConfig = {
+    playerFish, playerSupports:{...selectedSupports},
+    cpuFish, cpuSupports, stage:null
+  };
+  renderStageGrid(playerFish);
+  showScreen('screen-stage');
+});
+
+/* =========================================================
+   STAGE SCREEN
+========================================================= */
+function renderStageGrid(playerFish){
+  const el = document.getElementById('stage-grid');
+  el.innerHTML = '';
+  document.getElementById('btn-to-battle').disabled = true;
+  STAGE_DB.forEach(st=>{
+    const card = document.createElement('div');
+    card.className = 'stage-card';
+    const isHome = playerFish.habitat===st.id;
+    card.innerHTML = `
+      <div class="stage-emoji">${st.emoji}</div>
+      <p class="stage-name">${st.name}</p>
+      <p class="stage-desc">${st.desc}</p>
+      ${isHome ? `<div class="stage-badge">🎯 ${playerFish.name}のホーム！</div>` : ''}
+    `;
+    card.addEventListener('click', ()=>{
+      document.querySelectorAll('.stage-card').forEach(c=>c.classList.remove('selected'));
+      card.classList.add('selected');
+      pendingConfig.stage = st.id;
+      document.getElementById('btn-to-battle').disabled = false;
+      applyStageTheme(st);
+    });
+    el.appendChild(card);
+  });
+}
+
+document.getElementById('btn-stage-back').addEventListener('click', ()=>{
+  resetStageTheme();
+  showScreen('screen-select');
+});
+
+document.getElementById('btn-to-battle').addEventListener('click', ()=>{
+  if(!pendingConfig.stage) return;
+  lastConfig = {...pendingConfig};
+  startBattle(lastConfig);
+});
+
+/* =========================================================
+   BATTLE STATE SETUP
+========================================================= */
+function makeState(fish, supportChoice){
+  return {
+    fish, maxHp:fish.hp, hp:fish.hp, sp:0,
+    evolved:false, winStreak:0,
+    paralyzedNext:false, revived:false,
+    firstStrikeUsed:false, specialShieldUsed:false, thresholdUsed:false,
+    permAtkMult:1, atkUpTurns:0, vulnerableTurns:0, poisonTurns:0, burnTurns:0,
+    spLocked:false,
+    supports:['mollusk','arthropod','algae'].map(cat=>({ def:supportChoice[cat], cooldown:0 }))
+  };
+}
+
+function applyHabitatHpBonus(state, stage){
+  const hb = state.fish.habitatBonus;
+  if(hb && hb.type==='hp' && state.fish.habitat===stage.id){
+    const bonus = Math.round(state.maxHp*hb.value);
+    state.maxHp += bonus;
+    state.hp += bonus;
+  }
+}
+
+function canBeParalyzed(state){ return state.fish.id!=='maguro'; }
+function getActiveSupportOfCategory(state, cat){
+  return state.supports.find(s=>s.def.cat===cat) || null;
+}
+
+function startBattle(config){
+  P = makeState(config.playerFish, config.playerSupports);
+  C = makeState(config.cpuFish, config.cpuSupports);
+  currentStage = STAGE_DB.find(s=>s.id===config.stage);
+  turnCount = 1;
+  playerHandHistory = {gu:0, choki:0, pa:0};
+
+  applyHabitatHpBonus(P, currentStage);
+  applyHabitatHpBonus(C, currentStage);
+  applyStageTheme(currentStage);
+
+  const pHs = habitatStageOf(P.fish), cHs = habitatStageOf(C.fish);
+  document.getElementById('p-name').textContent = P.fish.name;
+  document.getElementById('c-name').textContent = C.fish.name;
+  document.getElementById('p-emoji').textContent = P.fish.emoji;
+  document.getElementById('c-emoji').textContent = C.fish.emoji;
+  document.getElementById('p-emoji').style.setProperty('--tint', P.fish.tint);
+  document.getElementById('c-emoji').style.setProperty('--tint', C.fish.tint);
+  document.getElementById('p-meta').textContent = `${ELEMENT_EMOJI[P.fish.element]}${ELEMENT_LABEL[P.fish.element]}｜${pHs.name}出身`;
+  document.getElementById('c-meta').textContent = `${ELEMENT_EMOJI[C.fish.element]}${ELEMENT_LABEL[C.fish.element]}｜${cHs.name}出身`;
+  document.getElementById('p-status').textContent = '';
+  document.getElementById('c-status').textContent = '';
+  document.getElementById('stage-label').textContent = `${currentStage.emoji} ${currentStage.name}`;
+
+  updateBars();
+  renderSupportRow('p'); renderSupportRow('c');
+  setLog(`${C.fish.name} が現れた！ ${currentStage.name}での戦闘開始！`);
+  showScreen('screen-battle');
+  document.getElementById('round-label').textContent = 'ラウンド開始';
+
+  setTimeout(()=>beginTurn(), 700);
+}
+
+/* =========================================================
+   RENDERING HELPERS
+========================================================= */
+function updateBars(){
+  document.getElementById('turn-count').textContent = Math.min(turnCount, MAX_TURNS);
+  [['p',P],['c',C]].forEach(([pfx, st])=>{
+    const hpPct = Math.max(0, Math.round(st.hp/st.maxHp*100));
+    const spPct = Math.max(0, Math.min(100, Math.round(st.sp)));
+    const hpFill = document.getElementById(pfx+'-hp-fill');
+    hpFill.style.width = hpPct+'%';
+    hpFill.classList.toggle('low', hpPct<=25);
+    document.getElementById(pfx+'-hp-num').textContent = `${Math.max(0,Math.round(st.hp))} / ${st.maxHp}`;
+    document.getElementById(pfx+'-sp-fill').style.width = spPct+'%';
+    document.getElementById(pfx+'-sp-num').textContent = `${spPct} / 100`;
+  });
+}
+
+function setLog(text){ document.getElementById('log-line').innerHTML = text; }
+function setStatus(side, text){ document.getElementById(side+'-status').textContent = text || ''; }
+
+function renderSupportRow(tag){
+  const state = tag==='p' ? P : C;
+  const el = document.getElementById(tag+'-support-row');
+  el.innerHTML = state.supports.map(s=>{
+    const ready = s.cooldown<=0;
+    return `<div class="support-chip ${ready?'ready':'cooling'}" title="${s.def.name}：${s.def.desc}">
+      <span class="support-emoji">${s.def.emoji}</span>
+      ${ready ? '' : `<span class="support-cd">${s.cooldown}</span>`}
+    </div>`;
+  }).join('');
+}
+
+/* =========================================================
+   TURN FLOW
+========================================================= */
+function inputTimeFor(spd){
+  const t = 8 + (spd-55)/(150-55)*4;
+  return Math.max(8, Math.min(12, t));
+}
+
+function tickStartOfTurn(state, opp, tag){
+  let msg = null;
+  state.spLocked = false;
+
+  // cooldown ticks
+  state.supports.forEach(s=>{ if(s.cooldown>0) s.cooldown--; });
+
+  // manbou heal
+  if(state.fish.id==='manbo' && state.hp>0){
+    state.hp = Math.min(state.maxHp, state.hp + Math.round(state.maxHp*0.05));
+  }
+
+  // poison / burn ticks
+  if(state.poisonTurns>0 && state.hp>0){
+    state.hp = Math.max(0, state.hp - Math.round(state.maxHp*0.06));
+    state.poisonTurns--;
+  }
+  if(state.burnTurns>0 && state.hp>0){
+    state.hp = Math.max(0, state.hp - Math.round(state.maxHp*0.05));
+    state.burnTurns--;
+  }
+  if(state.vulnerableTurns>0) state.vulnerableTurns--;
+  if(state.atkUpTurns>0) state.atkUpTurns--;
+
+  // threshold-triggered ecology
+  if(state.fish.id==='sake' && !state.thresholdUsed && state.hp>0 && state.hp/state.maxHp<0.3){
+    state.thresholdUsed = true;
+    state.permAtkMult = 1.25;
+    msg = `🐟 ${state.fish.name}の「母川回帰」発動！ 攻撃力が上がった！`;
+  }
+  if(state.fish.id==='shirakansu' && !state.thresholdUsed && state.hp>0 && state.hp/state.maxHp<0.5){
+    state.thresholdUsed = true;
+    state.permAtkMult = 1.3;
+    msg = `🐟 ${state.fish.name}の「生きた化石」発動！ 古代の底力が漲る！`;
+  }
+
+  // anko lure: 10% chance to lock opponent's SP gain this turn
+  if(state.fish.id==='anko' && state.hp>0 && Math.random()<0.10){
+    opp.spLocked = true;
+    msg = `🏮 ${state.fish.name}の光る誘いに気を取られている…（相手のSP獲得が無効化）`;
+  }
+
+  return msg;
+}
+
+async function beginTurn(){
+  document.getElementById('round-label').textContent = `ターン ${Math.min(turnCount, MAX_TURNS)}`;
+
+  const msgP = tickStartOfTurn(P, C, 'p');
+  const msgC = tickStartOfTurn(C, P, 'c');
+  updateBars();
+  renderSupportRow('p'); renderSupportRow('c');
+
+  if(P.hp<=0 || C.hp<=0){ endBattle(); return; }
+
+  const preMsgs = [msgP, msgC].filter(Boolean);
+  if(preMsgs.length){
+    setLog(preMsgs.join('　'));
+    await sleep(1100);
+  }
+  if(P.hp<=0 || C.hp<=0){ endBattle(); return; }
+
+  if(P.paralyzedNext){
+    P.paralyzedNext = false;
+    setStatus('p','');
+    setLog(`${P.fish.name} は麻痺していて動けない…`);
+    await sleep(700);
+    applyDamage(C, P, false, false);
+    await sleep(1100);
+    nextTurnOrEnd();
+    return;
+  }
+  if(C.paralyzedNext){
+    C.paralyzedNext = false;
+    setStatus('c','');
+    setLog(`${C.fish.name} は麻痺していて動けない…`);
+    await sleep(700);
+    applyDamage(P, C, true, false);
+    await sleep(1100);
+    nextTurnOrEnd();
+    return;
+  }
+
+  setLog('手を選べ！ ジャンケン開始！');
+  enableHands(true);
+  startTimer(inputTimeFor(P.fish.spd));
+}
+
+function enableHands(on){
+  acceptingInput = on;
+  document.querySelectorAll('.hand-btn').forEach(b=> b.disabled = !on);
+}
+
+function startTimer(seconds){
+  clearInterval(timerHandle);
+  timerStart = Date.now();
+  timerDur = seconds*1000;
+  const fill = document.getElementById('timer-fill');
+  fill.style.transition = 'none';
+  fill.style.width = '100%';
+  requestAnimationFrame(()=>{ fill.style.transition = `width ${seconds}s linear`; fill.style.width='0%'; });
+
+  timerHandle = setInterval(()=>{
+    if(Date.now() - timerStart >= timerDur){
+      clearInterval(timerHandle);
+      if(acceptingInput){
+        const hands=['gu','choki','pa'];
+        const rnd = hands[Math.floor(Math.random()*3)];
+        setLog('時間切れ… ランダムな手が繰り出された！');
+        handlePlayerHand(rnd);
+      }
+    }
+  }, 100);
+}
+
+document.querySelectorAll('.hand-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    if(!acceptingInput) return;
+    handlePlayerHand(btn.dataset.hand);
+  });
+});
+
+/* =========================================================
+   CPU AI: reads player's hand frequency and counters it
+========================================================= */
+function pickCpuHand(){
+  const hands = ['gu','choki','pa'];
+  const total = playerHandHistory.gu + playerHandHistory.choki + playerHandHistory.pa;
+  if(total<1) return randomFrom(hands);
+
+  let maxHand=null, maxCount=-1, tie=false;
+  hands.forEach(h=>{
+    if(playerHandHistory[h]>maxCount){ maxCount=playerHandHistory[h]; maxHand=h; tie=false; }
+    else if(playerHandHistory[h]===maxCount){ tie=true; }
+  });
+  if(tie) return randomFrom(hands);
+
+  const counter = BEATEN_BY[maxHand];
+  if(Math.random()<0.5) return counter;
+  return randomFrom(hands.filter(h=>h!==counter));
+}
+
+function handlePlayerHand(hand){
+  if(!acceptingInput) return;
+  acceptingInput = false;
+  clearInterval(timerHandle);
+  enableHands(false);
+
+  playerHandHistory[hand]++;
+  const cHand = pickCpuHand();
+  resolveRound(hand, cHand);
+}
+
+/* =========================================================
+   RESOLUTION (async for clean sequencing)
+========================================================= */
+async function resolveRound(pHand, cHand){
+  setLog(`${P.fish.name}：<b>${HAND_LABEL[pHand]}</b>${HAND_EMOJI[pHand]}　/　${C.fish.name}：<b>${HAND_LABEL[cHand]}</b>${HAND_EMOJI[cHand]}`);
+  await sleep(700);
+
+  if(pHand===cHand){
+    P.sp = Math.min(100, P.sp + (P.spLocked?0:8));
+    C.sp = Math.min(100, C.sp + (C.spLocked?0:8));
+    P.winStreak = 0; C.winStreak = 0;
+    updateBars();
+    setLog('あいこ！ もう一度！');
+    await sleep(900);
+    nextTurnOrEnd();
+    return;
+  }
+
+  const playerWins = BEATS[pHand]===cHand;
+  const winner = playerWins ? P : C;
+  const loser  = playerWins ? C : P;
+  const winnerSide = playerWins ? 'p' : 'c';
+  const winHand = playerWins ? pHand : cHand;
+
+  winner.winStreak++;
+  loser.winStreak = 0;
+  if(!winner.spLocked) winner.sp = Math.min(100, winner.sp + 25 + (winner.fish.id==='jinbei'?8:0));
+  if(!loser.spLocked) loser.sp = Math.min(100, loser.sp + 10);
+  updateBars();
+
+  setLog(`${winner.fish.name} の勝ち！`);
+  checkEvolution(winner, winnerSide);
+  await sleep(600);
+
+  const supportMsgs = processWinnerSupports(winner, loser);
+  renderSupportRow('p'); renderSupportRow('c');
+  updateBars();
+  if(supportMsgs.length){
+    setLog(supportMsgs.join('　'));
+    await sleep(1000);
+  }
+
+  if(P.hp<=0 || C.hp<=0){ endBattle(); return; }
+
+  if(winner===P){
+    if(P.sp>=100){ await promptSpecialChoiceAsync(winHand); }
+    else { await executeAttackAsync(P, C, 'p', winHand, false); }
+  } else {
+    const useSpecial = C.sp>=100;
+    await executeAttackAsync(C, P, 'c', winHand, useSpecial);
+  }
+
+  await sleep(900);
+  nextTurnOrEnd();
+}
+
+function checkEvolution(side, sideTag){
+  const needed = side.fish.id==='koi' ? 2 : 3;
+  if(!side.evolved && side.winStreak>=needed){
+    side.evolved = true;
+    const banner = document.getElementById('evo-banner');
+    banner.textContent = `🧬 ${side.fish.name} が生態進化！覚醒した！`;
+    banner.classList.remove('show'); void banner.offsetWidth;
+    banner.classList.add('show');
+    setStatus(sideTag, '🧬 覚醒中');
+  }
+}
+
+/* ---------- support procs (arthropod debuff + algae buff, on the winner's side) ---------- */
+function processWinnerSupports(winner, loser){
+  const msgs = [];
+
+  const arthCard = getActiveSupportOfCategory(winner, 'arthropod');
+  if(arthCard && arthCard.cooldown<=0 && Math.random()<arthCard.def.proc){
+    arthCard.cooldown = arthCard.def.cd;
+    if(arthCard.def.id==='ebi'){
+      loser.poisonTurns = 3;
+      msgs.push(`🦐 エビの「毒」発動！ ${loser.fish.name}は毒状態になった！`);
+    } else if(arthCard.def.id==='kani'){
+      loser.vulnerableTurns = 3;
+      msgs.push(`🦀 カニの「防御ダウン」発動！ ${loser.fish.name}は防御が下がった！`);
+    } else if(arthCard.def.id==='shako'){
+      if(canBeParalyzed(loser)){
+        loser.paralyzedNext = true;
+        setStatus(loser===P?'p':'c', '⚡ 次ターンスタン');
+        msgs.push(`🦞 シャコの「スタン」発動！ ${loser.fish.name}はスタンした！`);
+      }
+    }
+  }
+
+  const algCard = getActiveSupportOfCategory(winner, 'algae');
+  if(algCard && algCard.cooldown<=0 && Math.random()<algCard.def.proc){
+    algCard.cooldown = algCard.def.cd;
+    if(algCard.def.id==='konbu'){
+      winner.hp = Math.min(winner.maxHp, winner.hp + Math.round(winner.maxHp*0.15));
+      msgs.push(`🌿 昆布の「回復」発動！ ${winner.fish.name}のHPが回復した！`);
+    } else if(algCard.def.id==='wakame'){
+      winner.atkUpTurns = 3;
+      msgs.push(`🍃 ワカメの「攻撃UP」発動！ ${winner.fish.name}の攻撃力が上がった！`);
+    } else if(algCard.def.id==='aosa'){
+      winner.sp = Math.min(100, winner.sp+20);
+      msgs.push(`🟢 アオサの「SP回復」発動！ ${winner.fish.name}のSPが回復した！`);
+    }
+  }
+
+  return msgs;
+}
+
+/* ---------- special-move choice (player only) ---------- */
+function promptSpecialChoiceAsync(winHand){
+  return new Promise(resolve=>{
+    document.getElementById('hands-ui').style.display = 'none';
+    document.getElementById('special-ui').style.display = 'flex';
+    const normalBtn = document.getElementById('btn-normal');
+    const specialBtn = document.getElementById('btn-special');
+    const cleanup = ()=>{
+      document.getElementById('special-ui').style.display = 'none';
+      document.getElementById('hands-ui').style.display = 'flex';
+      normalBtn.onclick = null; specialBtn.onclick = null;
+    };
+    normalBtn.onclick = async ()=>{ cleanup(); await executeAttackAsync(P,C,'p',winHand,false); resolve(); };
+    specialBtn.onclick = async ()=>{ cleanup(); await executeAttackAsync(P,C,'p',winHand,true); resolve(); };
+  });
+}
+
+async function executeAttackAsync(atkSide, defSide, atkTagStr, winHand, useSpecial){
+  const atkIsPlayer = atkTagStr==='p';
+  if(useSpecial){
+    atkSide.sp = 0; updateBars();
+    await playUltimateAsync(atkSide);
+    applyDamage(atkSide, defSide, atkIsPlayer, true, winHand);
+    await sleep(600);
+    return;
+  }
+  applyDamage(atkSide, defSide, atkIsPlayer, false, winHand);
+  await sleep(600);
+}
+
+function playUltimateAsync(side){
+  return new Promise(resolve=>{
+    const ov = document.getElementById('ultimate-overlay');
+    document.getElementById('ult-emoji').textContent = side.fish.emoji;
+    document.getElementById('ult-name').textContent = side.fish.special.name;
+    document.getElementById('ult-desc').textContent = side.fish.special.desc;
+    ov.classList.add('show');
+    setTimeout(()=>{ ov.classList.remove('show'); resolve(); }, 2200);
+  });
+}
+
+/* =========================================================
+   DAMAGE RESOLUTION
+========================================================= */
+function applyDamage(atkSide, defSide, atkIsPlayer, isSpecial, winHand){
+  const atkTag = atkIsPlayer ? 'p' : 'c';
+  const defTag = atkIsPlayer ? 'c' : 'p';
+  const notes = [];
+
+  let dmg = isSpecial
+    ? atkSide.fish.atk * atkSide.fish.special.mult * rand(0.9,1.1)
+    : atkSide.fish.atk * rand(0.85,1.15);
+
+  if(atkSide.evolved){ dmg*=1.2; notes.push('覚醒+20%'); }
+  if(atkSide.atkUpTurns>0){ dmg*=1.2; notes.push('攻撃UP+20%'); }
+  if(atkSide.permAtkMult && atkSide.permAtkMult>1){ dmg*=atkSide.permAtkMult; notes.push('底力覚醒'); }
+
+  if(!isSpecial && atkSide.fish.id==='katsuo' && Math.random()<0.2){ dmg*=1.3; notes.push('群れの追撃'); }
+  if(atkSide.fish.id==='mekajiki' && !atkSide.firstStrikeUsed){
+    atkSide.firstStrikeUsed = true; dmg*=1.5; notes.push('先制会心+50%');
+  }
+  if(atkSide.fish.id==='kamasu' && turnCount===1){ dmg*=1.4; notes.push('奇襲+40%'); }
+
+  const eInfo = getElementMultiplier(atkSide.fish.element, defSide.fish.element);
+  dmg *= eInfo.mult;
+  if(eInfo.note) notes.push(eInfo.note);
+
+  if(atkSide.fish.habitatBonus && atkSide.fish.habitatBonus.type==='dmg' && atkSide.fish.habitat===currentStage.id){
+    dmg *= (1+atkSide.fish.habitatBonus.value);
+    notes.push(`生息地補正+${Math.round(atkSide.fish.habitatBonus.value*100)}%`);
+  }
+
+  if(isSpecial && defSide.fish.id==='shumoku' && !defSide.specialShieldUsed){
+    defSide.specialShieldUsed = true; dmg*=0.7; notes.push('電気受容感覚で軽減');
+  }
+  if(defSide.fish.id==='kumanomi' && turnCount<=3){ dmg*=0.7; notes.push('イソギンチャクの守り'); }
+  if(defSide.vulnerableTurns>0){ dmg*=1.2; notes.push('防御ダウン中'); }
+
+  dmg = Math.max(1, Math.round(dmg));
+
+  // evasion
+  let evadeChance = 0;
+  if(defSide.fish.id==='iwashi') evadeChance += 0.20;
+  if(defSide.fish.id==='clione') evadeChance += 0.15;
+  if(defSide.fish.id==='chinanago' && currentStage.id==='higata') evadeChance += 0.30;
+  if(defSide.fish.habitatBonus && defSide.fish.habitatBonus.type==='evasion' && defSide.fish.habitat===currentStage.id){
+    evadeChance += defSide.fish.habitatBonus.value;
+  }
+  let evaded = evadeChance>0 && Math.random()<evadeChance;
+  if(evaded && atkSide.fish.id==='shiira' && Math.random()<0.5){
+    evaded = false;
+    dmg = Math.round(dmg*0.5);
+    notes.push('回避を追い込み半減ヒット');
+  }
+  if(evaded){
+    flashHit(defTag, false);
+    setLog(`${defSide.fish.name} は攻撃をかわした！`);
+    return;
+  }
+
+  // mollusk defense proc
+  const molCard = getActiveSupportOfCategory(defSide, 'mollusk');
+  if(molCard && molCard.cooldown<=0 && Math.random()<molCard.def.proc){
+    molCard.cooldown = molCard.def.cd;
+    if(molCard.def.id==='tako'){
+      renderSupportRow(defTag);
+      flashHit(defTag, false);
+      setLog(`🐙 タコの「回避」発動！ ${defSide.fish.name} は攻撃を完全に見切った！`);
+      return;
+    } else if(molCard.def.id==='ika'){
+      const reduced = Math.round(dmg*0.5);
+      const counter = Math.round(defSide.fish.atk*0.4*rand(0.9,1.1));
+      defSide.hp = Math.max(0, defSide.hp-reduced);
+      atkSide.hp = Math.max(0, atkSide.hp-counter);
+      flashHit(defTag, true); showDmgPop(defTag, reduced);
+      flashHit(atkTag, true); showDmgPop(atkTag, counter);
+      renderSupportRow(defTag);
+      updateBars();
+      setLog(`🦑 イカの「カウンター」発動！ ${defSide.fish.name}は${reduced}ダメージ、反撃で${atkSide.fish.name}に${counter}ダメージ！`);
+      return;
+    } else if(molCard.def.id==='oumugai'){
+      dmg = Math.round(dmg*0.5);
+      notes.push('🐚 オウムガイの防壁で半減');
+      renderSupportRow(defTag);
+    }
+  }
+
+  // harisen revive
+  if(defSide.fish.id==='harisen' && !defSide.revived && dmg>=defSide.hp){
+    defSide.revived = true;
+    defSide.hp = 1;
+    flashHit(defTag, true); showDmgPop(defTag, dmg);
+    setLog(`🐡 ${defSide.fish.name} は膨張して耐えた！`);
+    updateBars();
+    return;
+  }
+
+  defSide.hp = Math.max(0, defSide.hp - dmg);
+  flashHit(defTag, true); showDmgPop(defTag, dmg);
+  updateBars();
+
+  const verb = isSpecial ? `必殺技「${atkSide.fish.special.name}」が炸裂！` : '攻撃がヒット！';
+  const noteStr = notes.length ? `（${notes.join(' / ')}）` : '';
+  setLog(`${verb} ${defSide.fish.name} に ${dmg} ダメージ！${noteStr}`);
+
+  // yougan burn
+  if(atkSide.fish.id==='yougan'){ defSide.burnTurns = 2; }
+
+  // unagi paralyze (choki-hand win, normal attack only)
+  if(!isSpecial && atkSide.fish.id==='unagi' && winHand==='choki' && Math.random()<0.3 && canBeParalyzed(defSide)){
+    defSide.paralyzedNext = true;
+    setStatus(defTag, '⚡ 次ターン麻痺');
+  }
+}
+
+function flashHit(tag, isDamage){
+  const el = document.getElementById('fighter-'+(tag==='p'?'player':'cpu'));
+  const emo = document.getElementById(tag+'-emoji');
+  if(isDamage){ el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); el.classList.add('flash'); }
+  emo.classList.add('pop');
+  setTimeout(()=>{ el.classList.remove('flash'); emo.classList.remove('pop'); }, 350);
+}
+
+function showDmgPop(tag, dmg){
+  const el = document.getElementById('fighter-'+(tag==='p'?'player':'cpu'));
+  const pop = document.createElement('div');
+  pop.className = 'dmg-pop';
+  pop.textContent = '-'+dmg;
+  el.appendChild(pop);
+  setTimeout(()=> pop.remove(), 900);
+}
+
+/* =========================================================
+   TURN / BATTLE END
+========================================================= */
+function nextTurnOrEnd(){
+  if(P.hp<=0 || C.hp<=0){ endBattle(); return; }
+  turnCount++;
+  if(turnCount > MAX_TURNS){ endBattle(true); return; }
+  beginTurn();
+}
+
+function endBattle(byTimeout){
+  let playerWon;
+  let subtext;
+  if(byTimeout){
+    const pPct = P.hp/P.maxHp, cPct = C.hp/C.maxHp;
+    playerWon = pPct >= cPct;
+    subtext = `ターン上限に到達。HP残量で判定 — ${P.fish.name} ${Math.round(pPct*100)}% ／ ${C.fish.name} ${Math.round(cPct*100)}%`;
+  } else {
+    playerWon = C.hp<=0 && P.hp>0;
+    if(P.hp<=0 && C.hp<=0){ playerWon = false; }
+    subtext = playerWon
+      ? `${C.fish.name} を撃破した！ 全 ${Math.min(turnCount,MAX_TURNS)} ターンの死闘だった。`
+      : `${P.fish.name} は力尽きた… 全 ${Math.min(turnCount,MAX_TURNS)} ターンの戦い。`;
+  }
+  subtext += `　｜　舞台：${currentStage.emoji}${currentStage.name}`;
+
+  const title = document.getElementById('result-title');
+  title.textContent = playerWon ? 'VICTORY' : 'DEFEAT';
+  title.className = 'result-title ' + (playerWon ? 'win' : 'lose');
+  document.getElementById('result-sub').textContent = subtext;
+
+  setTimeout(()=> showScreen('screen-result'), 400);
+}
+
+document.getElementById('btn-rematch').addEventListener('click', ()=>{
+  if(lastConfig) startBattle(lastConfig);
+});
+document.getElementById('btn-back').addEventListener('click', ()=>{
+  resetStageTheme();
+  showScreen('screen-select');
+});
+</script>
+</body>
+</html>
