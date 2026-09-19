@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ぶんぶんホイホイ (BunBun Hoi-Hoi) v2.0</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+  body {
+    background-color: #111217;
+    color: #fff;
+    font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  #game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    max-width: 480px;
+    max-height: 850px;
+    background: #88c958;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(0,0,0,0.6);
+  }
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  /* UI Layer */
+  #ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 14px;
+  }
+  .hud-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  }
+  .left-hud {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .hearts-container {
+    display: flex;
+    gap: 4px;
+  }
+  .heart-icon {
+    font-size: 24px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+    transition: transform 0.2s ease;
+  }
+  .sound-btn {
+    pointer-events: auto;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.6);
+    color: #fff;
+    font-size: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    outline: none;
+  }
+  .score-box {
+    text-align: center;
+  }
+  .score-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #f7e04a;
+  }
+  .score-val {
+    font-size: 26px;
+    font-weight: 900;
+    color: #ffffff;
+  }
+  .multiplier-badge {
+    display: inline-block;
+    background: #ff4757;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 12px;
+    transition: transform 0.1s ease;
+  }
+  .meter-container {
+    width: 95px;
+    text-align: right;
+  }
+  .meter-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 3px;
+  }
+  .meter-bar-bg {
+    width: 100%;
+    height: 12px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 6px;
+    border: 2px solid #fff;
+    overflow: hidden;
+  }
+  .meter-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #2ed573, #ffa502, #ff4757);
+    transition: width 0.1s ease;
+  }
+  .meter-text {
+    font-size: 10px;
+    font-weight: 900;
+    margin-top: 2px;
+  }
+
+  /* Warning banner */
+  #warning-banner {
+    position: absolute;
+    top: 15%;
+    left: 0;
+    width: 100%;
+    background: #ff4757;
+    color: #fff;
+    font-weight: 900;
+    font-size: 17px;
+    text-align: center;
+    padding: 7px 0;
+    letter-spacing: 2px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    display: none;
+    transform: rotate(-2deg) scale(1.05);
+    animation: flash-banner 0.25s infinite alternate;
+  }
+  @keyframes flash-banner {
+    from { background: #ff4757; }
+    to { background: #ffa502; }
+  }
+
+  /* Bottom Controls */
+  .hud-bottom {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+    pointer-events: auto;
+  }
+  .peel-btn {
+    width: 82px;
+    height: 82px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffa502, #e67e22);
+    border: 4px solid #fff;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.6);
+    color: #fff;
+    font-weight: 900;
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    outline: none;
+    transition: transform 0.08s ease;
+  }
+  .peel-btn:active {
+    transform: translateY(4px) scale(0.95);
+  }
+  .peel-btn span.sub {
+    font-size: 9px;
+    opacity: 0.9;
+  }
+
+  /* Modals */
+  .modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 20, 30, 0.88);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    text-align: center;
+    z-index: 100;
+    pointer-events: auto;
+  }
+  .modal-title {
+    font-size: 32px;
+    font-weight: 900;
+    color: #f7e04a;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.8), 0 0 15px rgba(247,224,74,0.5);
+    margin-bottom: 10px;
+  }
+  .modal-desc {
+    font-size: 12px;
+    color: #e0e0e0;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    background: rgba(255,255,255,0.08);
+    padding: 12px;
+    border-radius: 12px;
+    max-width: 330px;
+    text-align: left;
+  }
+  .start-btn {
+    padding: 13px 38px;
+    font-size: 18px;
+    font-weight: 900;
+    color: #1a1a24;
+    background: linear-gradient(180deg, #f7e04a, #ffa502);
+    border: 3px solid #fff;
+    border-radius: 30px;
+    box-shadow: 0 6px 20px rgba(255,165,2,0.6);
+    cursor: pointer;
+  }
+  .start-btn:active {
+    transform: scale(0.96);
+  }
+  .item-toast {
+    position: absolute;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    color: #f7e04a;
+    font-weight: 800;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid #f7e04a;
+    display: none;
+    z-index: 50;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="warning-banner">⚠️ DANGER: オオスズメバチ襲来 ⚠️</div>
+  <div id="itemToast" class="item-toast">アイテム発動！</div>
+
+  <div id="ui-layer">
+    <div class="hud-top">
+      <div class="left-hud">
+        <div class="hearts-container" id="heartsContainer">
+          <div class="heart-icon">⬡</div>
+          <div class="heart-icon">⬡</div>
+          <div class="heart-icon">⬡</div>
+        </div>
+        <button class="sound-btn" id="soundBtn">🔊</button>
+      </div>
+      <div class="score-box">
+        <div class="score-label">SCORE</div>
+        <div class="score-val" id="scoreDisplay">0</div>
+        <div class="multiplier-badge" id="multDisplay">x 1.0</div>
+      </div>
+      <div class="meter-container">
+        <div class="meter-title">ペタ盛り</div>
+        <div class="meter-bar-bg">
+          <div class="meter-bar-fill" id="meterFill"></div>
+        </div>
+        <div class="meter-text" id="meterText">0 / 10</div>
+      </div>
+    </div>
+
+    <div class="hud-bottom">
+      <button class="peel-btn" id="peelBtn">
+        PEEL!
+        <span class="sub">シート剥がし</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Title Screen -->
+  <div class="modal-overlay" id="titleModal">
+    <div class="modal-title">ぶんぶん<br>ホイホイ <span style="font-size:18px;color:#fff;">v2.0</span></div>
+    <div class="modal-desc">
+      🐝 <b>スワイプで粘着棒をスイング！</b><br>
+      ・害蜂をペタペタ貼り付けて倍率UP（最大3.0倍）<br>
+      ・10匹を超えると破裂ダメージ！<br>
+      ・『PEEL』でスコア確定＆シート交換！<br>
+      <br>
+      👑 <b>新要素・特殊ハチ</b><br>
+      ・👑 <b>女王蜂</b>: 全体を5秒間黄金フリーズ(+2,000点)<br>
+      ・🟤 <b>ドロバチ</b>: パッドが泥まみれで縮小！<br>
+      ・⚡ <b>メタルハチ</b>: 高速反射する難敵(+500点)<br>
+      ・💊 <b>回復ハチミツ</b> / ❄️ <b>フリーズスプレー</b>登場！
+    </div>
+    <button class="start-btn" id="startBtn">GAME START</button>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div class="modal-overlay" id="gameOverModal" style="display: none;">
+    <div class="modal-title" style="color: #ff4757;">GAME OVER</div>
+    <div class="modal-desc" id="gameOverStats" style="text-align:center;">
+      防護服がパンクしてしまった！<br><br>
+      FINAL SCORE: <b style="font-size: 22px; color:#f7e04a;">0</b>
+    </div>
+    <button class="start-btn" id="retryBtn">RETRY</button>
+  </div>
+</div>
+
+<script>
+/* ==========================================================================
+   Sound Synth & BGM Engine (Web Audio API)
+   ========================================================================== */
+class SoundEngine {
+  constructor() {
+    this.ctx = null;
+    this.bgmPlaying = false;
+    this.isMuted = false;
+    this.nextNoteTime = 0;
+    this.step = 0;
+    this.bgmTimer = null;
+
+    // 8-bit Chiptune Melody & Bass
+    this.bassFreqs = [110, 110, 130.8, 146.8, 110, 110, 164.8, 146.8];
+    this.leadFreqs = [440, 523.2, 659.2, 587.3, 523.2, 440, 392, 523.2];
+  }
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AudioCtx();
+    }
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+    if (!this.bgmPlaying && !this.isMuted) {
+      this.startBGM();
+    }
+  }
+  toggleMute() {
+    this.isMuted = !this.isMuted;
+    if (this.isMuted) {
+      this.stopBGM();
+    } else {
+      this.init();
+      this.startBGM();
+    }
+    return this.isMuted;
+  }
+  startBGM() {
+    if (this.bgmPlaying || !this.ctx || this.isMuted) return;
+    this.bgmPlaying = true;
+    this.nextNoteTime = this.ctx.currentTime + 0.05;
+    this.scheduleNotes();
+  }
+  stopBGM() {
+    this.bgmPlaying = false;
+    if (this.bgmTimer) clearTimeout(this.bgmTimer);
+  }
+  scheduleNotes() {
+    if (!this.bgmPlaying || !this.ctx || this.isMuted) return;
+    while (this.nextNoteTime < this.ctx.currentTime + 0.2) {
+      this.playBGMStep(this.nextNoteTime, this.step);
+      this.nextNoteTime += 0.15; // テンポ (約100 BPM)
+      this.step = (this.step + 1) % 16;
+    }
+    this.bgmTimer = setTimeout(() => this.scheduleNotes(), 50);
+  }
+  playBGMStep(time, step) {
+    if (this.isMuted || !this.ctx) return;
+
+    // Bass
+    const bassOsc = this.ctx.createOscillator();
+    const bassGain = this.ctx.createGain();
+    bassOsc.type = 'triangle';
+    bassOsc.frequency.value = this.bassFreqs[step % 8];
+    bassGain.gain.setValueAtTime(0.08, time);
+    bassGain.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
+    bassOsc.connect(bassGain);
+    bassGain.connect(this.ctx.destination);
+    bassOsc.start(time);
+    bassOsc.stop(time + 0.13);
+
+    // Lead (偶数ステップで軽快に演奏)
+    if (step % 2 === 0) {
+      const leadOsc = this.ctx.createOscillator();
+      const leadGain = this.ctx.createGain();
+      leadOsc.type = 'square';
+      leadOsc.frequency.value = this.leadFreqs[(step / 2) % 8];
+      leadGain.gain.setValueAtTime(0.03, time);
+      leadGain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+      leadOsc.connect(leadGain);
+      leadGain.connect(this.ctx.destination);
+      leadOsc.start(time);
+      leadOsc.stop(time + 0.11);
+    }
+  }
+
+  // SE
+  playSticky() {
+    if (!this.ctx || this.isMuted) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(340, t);
+    osc.frequency.exponentialRampToValueAtTime(60, t + 0.12);
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(800, t);
+    filter.frequency.linearRampToValueAtTime(120, t + 0.12);
+    gain.gain.setValueAtTime(0.35, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.13);
+  }
+  playPeel() {
+    if (!this.ctx || this.isMuted) return;
+    const t = this.ctx.currentTime;
+    const bufferSize = this.ctx.sampleRate * 0.18;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1300, t);
+    filter.frequency.exponentialRampToValueAtTime(4500, t + 0.18);
+    filter.Q.value = 4.0;
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.4, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+    noise.start(t);
+    noise.stop(t + 0.19);
+  }
+  playParry() {
+    if (!this.ctx || this.isMuted) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(1400, t);
+    osc.frequency.setValueAtTime(1900, t + 0.05);
+    gain.gain.setValueAtTime(0.5, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.36);
+  }
+  playQueenFever() {
+    if (!this.ctx || this.isMuted) return;
+    const t = this.ctx.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, t + i * 0.06);
+      gain.gain.setValueAtTime(0.2, t + i * 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.06 + 0.3);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t + i * 0.06);
+      osc.stop(t + i * 0.06 + 0.31);
+    });
+  }
+  playHeal() {
+    if (!this.ctx || this.isMuted) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(330, t);
+    osc.frequency.exponentialRampToValueAtTime(660, t + 0.2);
+    gain.gain.setValueAtTime(0.3, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.26);
+  }
+  playDamage() {
+    if (!this.ctx || this.isMuted) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(140, t);
+    osc.frequency.exponentialRampToValueAtTime(30, t + 0.25);
+    gain.gain.setValueAtTime(0.6, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.26);
+  }
+  playOverload() {
+    if (!this.ctx || this.isMuted) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(260, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t + 0.35);
+    gain.gain.setValueAtTime(0.6, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.36);
+  }
+  playSiren() {
+    if (!this.ctx || this.isMuted) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, t);
+    osc.frequency.linearRampToValueAtTime(900, t + 0.2);
+    osc.frequency.linearRampToValueAtTime(600, t + 0.4);
+    gain.gain.setValueAtTime(0.3, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.45);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.46);
+  }
+}
+
+/* ==========================================================================
+   Main Game Engine & State
+   ========================================================================== */
+const sound = new SoundEngine();
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const container = document.getElementById('game-container');
+
+// UI
+const scoreDisplay = document.getElementById('scoreDisplay');
+const multDisplay = document.getElementById('multDisplay');
+const meterFill = document.getElementById('meterFill');
+const meterText = document.getElementById('meterText');
+const heartsContainer = document.getElementById('heartsContainer');
+const soundBtn = document.getElementById('soundBtn');
+const peelBtn = document.getElementById('peelBtn');
+const warningBanner = document.getElementById('warning-banner');
+const itemToast = document.getElementById('itemToast');
+const titleModal = document.getElementById('titleModal');
+const gameOverModal = document.getElementById('gameOverModal');
+const gameOverStats = document.getElementById('gameOverStats');
+const startBtn = document.getElementById('startBtn');
+const retryBtn = document.getElementById('retryBtn');
+
+let width = 0;
+let height = 0;
+
+function resize() {
+  const rect = container.getBoundingClientRect();
+  width = rect.width;
+  height = rect.height;
+  canvas.width = width * window.devicePixelRatio;
+  canvas.height = height * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+}
+window.addEventListener('resize', resize);
+resize();
+
+const STATE = { TITLE: 0, PLAYING: 1, GAMEOVER: 2 };
+let gameState = STATE.TITLE;
+
+let score = 0;
+let pendingScore = 0;
+let lives = 3;
+let invulnerableTimer = 0;
+let shakeTimer = 0;
+let hitstopTimer = 0;
+
+// Buffs & Debuffs
+let powerSheetTimer = 0; // 強力シート (面積2倍 & ミツバチ弾き)
+let honeyTrapTimer = 0;  // ハチミツトラップ (中心へ吸引)
+let mudDebuffTimer = 0;  // 泥まみれ (パッド40%縮小)
+let freezeTimer = 0;     // 敵全体フリーズ・スロー
+let queenFeverTimer = 0; // 女王蜂フィーバー (金硬直)
+
+// Pad & Stick
+const pad = {
+  x: width / 2,
+  y: height * 0.75,
+  targetX: width / 2,
+  targetY: height * 0.75,
+  radius: 36,
+  attachedBees: [],
+  vx: 0,
+  vy: 0,
+  speed: 0
+};
+
+// Input
+let isPointerDown = false;
+let activePointerId = null;
+
+// Pools
+let bees = [];
+let items = [];
+let particles = [];
+let floatingTexts = [];
+
+let spawnTimer = 0;
+let giantHornetTimer = 400;
+let queenSpawnTimer = 650;
+let itemSpawnTimer = 300;
+
+/* ==========================================================================
+   Bee Class Hierarchy & Logic
+   ========================================================================== */
+class Bee {
+  constructor(type) {
+    this.type = type; // wasp, paper, carpenter, honey, giant, mud, metal, queen
+    this.radius = 16;
+    this.scoreVal = 100;
+    this.attached = false;
+    this.dead = false;
+    this.attachOffsetX = 0;
+    this.attachOffsetY = 0;
+    this.attachAngle = 0;
+    this.wingAnim = Math.random() * Math.PI;
+
+    this.initType(type);
+  }
+
+  initType(type) {
+    this.x = Math.random() * (width - 60) + 30;
+    this.y = -30;
+    this.vx = (Math.random() - 0.5) * 1.6;
+    this.vy = 1.2 + Math.random() * 1.0;
+    // 動的難易度: スコアが高いほど攻撃準備が早い
+    const heat = Math.min(200, Math.floor(score / 200));
+    this.attackTimer = Math.max(120, 360 - heat + Math.random() * 100);
+
+    if (type === 'wasp') { // スズメバチ
+      this.radius = 16;
+      this.scoreVal = 100;
+      this.color = '#ffa502';
+      this.vy = 1.8;
+    } else if (type === 'paper') { // アシナガバチ
+      this.radius = 20;
+      this.scoreVal = 150;
+      this.color = '#ff7f50';
+      this.zigzag = 0;
+    } else if (type === 'carpenter') { // クマバチ
+      this.radius = 26;
+      this.scoreVal = 300;
+      this.color = '#2f3542';
+      this.vy = 0.8;
+      this.weight = 3;
+    } else if (type === 'honey') { // ミツバチ
+      this.radius = 14;
+      this.scoreVal = -200;
+      this.color = '#ffd32a';
+      this.x = (Math.random() > 0.5 ? -20 : width + 20);
+      this.y = 100 + Math.random() * (height * 0.4);
+      this.vx = this.x < 0 ? 1.4 : -1.4;
+      this.vy = 0.2;
+    } else if (type === 'mud') { // ドロバチ (泥トラップ)
+      this.radius = 18;
+      this.scoreVal = 80;
+      this.color = '#795548';
+      this.vy = 1.4;
+    } else if (type === 'metal') { // メタルハチ (反射)
+      this.radius = 15;
+      this.scoreVal = 500;
+      this.color = '#bdc3c7';
+      this.vx = (Math.random() > 0.5 ? 4.5 : -4.5);
+      this.vy = 3.5;
+    } else if (type === 'queen') { // 女王蜂
+      this.radius = 28;
+      this.scoreVal = 2000;
+      this.color = '#f1c40f';
+      this.x = (Math.random() > 0.5 ? -40 : width + 40);
+      this.y = 90 + Math.random() * 120;
+      this.vx = this.x < 0 ? 0.9 : -0.9;
+      this.vy = 0.3;
+    } else if (type === 'giant') { // オオスズメバチ
+      this.radius = 32;
+      this.scoreVal = 1500;
+      this.color = '#eb2f06';
+      this.x = width / 2;
+      this.y = -60;
+      this.vy = 0.5;
+      this.state = 'hover';
+      this.stateTimer = 180;
+      this.warningLine = null;
+      this.parryable = false;
+    }
+  }
+
+  update() {
+    if (this.attached) return;
+
+    this.wingAnim += 0.5;
+
+    // フリーズ / クイーンフィーバー中は完全停止 or スロー
+    if (queenFeverTimer > 0) return;
+    const speedMult = freezeTimer > 0 ? 0.25 : 1.0;
+
+    // ハチミツトラップ引力
+    if (honeyTrapTimer > 0 && this.type !== 'giant') {
+      const dx = width / 2 - this.x;
+      const dy = height * 0.45 - this.y;
+      this.x += dx * 0.04 * speedMult;
+      this.y += dy * 0.04 * speedMult;
+      return;
+    }
+
+    if (this.type === 'giant') {
+      this.updateGiant(speedMult);
+      return;
+    }
+
+    if (this.type === 'metal') {
+      this.x += this.vx * speedMult;
+      this.y += this.vy * speedMult;
+      if (this.x < this.radius || this.x > width - this.radius) this.vx *= -1;
+      if (this.y < this.radius || this.y > height * 0.7) this.vy *= -1;
+      return;
+    }
+
+    if (this.type === 'paper') {
+      this.zigzag += 0.08 * speedMult;
+      this.x += Math.sin(this.zigzag) * 2.5 * speedMult;
+      this.y += this.vy * speedMult;
+    } else {
+      this.x += this.vx * speedMult;
+      this.y += this.vy * speedMult;
+    }
+
+    if (this.type !== 'honey' && this.type !== 'queen') {
+      if (this.x < this.radius || this.x > width - this.radius) this.vx *= -1;
+    }
+
+    // 攻撃タイマー
+    if (this.type !== 'honey' && this.type !== 'queen') {
+      this.attackTimer -= speedMult;
+      if (this.attackTimer <= 0) {
+        const dx = pad.x - this.x;
+        const dy = pad.y - this.y;
+        const dist = Math.hypot(dx, dy);
+        this.vx = (dx / dist) * 4.8;
+        this.vy = (dy / dist) * 4.8;
+      }
+    }
+
+    // 画面外脱出
+    if (this.y > height + 40) {
+      this.dead = true;
+      if (this.type !== 'honey' && this.type !== 'queen') {
+        takeDamage("ハチの接近を許した！");
+      }
+    }
+  }
+
+  updateGiant(speedMult) {
+    this.stateTimer -= speedMult;
+
+    if (this.state === 'hover') {
+      this.y += (120 - this.y) * 0.05 * speedMult;
+      this.x = width / 2 + Math.sin(Date.now() * 0.005) * 80;
+      if (this.stateTimer <= 0) {
+        this.state = 'warning';
+        this.stateTimer = 50;
+        this.warningLine = { x1: this.x, y1: this.y, x2: pad.x, y2: pad.y };
+        sound.playSiren();
+      }
+    } else if (this.state === 'warning') {
+      this.warningLine.x2 = pad.x;
+      this.warningLine.y2 = pad.y;
+      if (this.stateTimer <= 0) {
+        this.state = 'rush';
+        this.stateTimer = 40;
+        this.parryable = true;
+        const dx = this.warningLine.x2 - this.x;
+        const dy = this.warningLine.y2 - this.y;
+        const dist = Math.hypot(dx, dy);
+        this.vx = (dx / dist) * 14 * speedMult;
+        this.vy = (dy / dist) * 14 * speedMult;
+      }
+    } else if (this.state === 'rush') {
+      this.x += this.vx;
+      this.y += this.vy;
+      if (this.y > height + 50 || this.stateTimer <= 0) {
+        this.state = 'hover';
+        this.stateTimer = 100;
+        this.y = -40;
+        this.parryable = false;
+        takeDamage("オオスズメバチの一撃！");
+      }
+    } else if (this.state === 'stunned') {
+      this.y += 0.5 * speedMult;
+      if (this.stateTimer <= 0) {
+        this.state = 'hover';
+        this.stateTimer = 60;
+      }
+    }
+  }
+
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+
+    const angle = this.attached ? this.attachAngle : Math.atan2(this.vy, this.vx) + Math.PI / 2;
+    ctx.rotate(angle);
+
+    const r = this.radius;
+
+    // 予兆ライン (オオスズメバチ)
+    if (this.type === 'giant' && this.state === 'warning' && this.warningLine) {
+      ctx.restore();
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 71, 87, ${Math.sin(Date.now() * 0.03) > 0 ? 0.9 : 0.2})`;
+      ctx.lineWidth = 6;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(this.warningLine.x1, this.warningLine.y1);
+      ctx.lineTo(this.warningLine.x2, this.warningLine.y2);
+      ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(angle);
+    }
+
+    // 女王蜂オーラ
+    if (this.type === 'queen') {
+      ctx.save();
+      ctx.strokeStyle = `rgba(241, 196, 15, ${0.5 + Math.sin(Date.now() * 0.01) * 0.3})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 1.3, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 羽
+    const wingFlap = (queenFeverTimer > 0 || freezeTimer > 0) ? 0 : Math.sin(this.wingAnim) * 0.6;
+    ctx.fillStyle = this.type === 'metal' ? 'rgba(200, 230, 255, 0.8)' : 'rgba(255, 255, 255, 0.7)';
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.7, -r * 0.3, r * 0.6, r * 0.3, -0.4 + wingFlap, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(r * 0.7, -r * 0.3, r * 0.6, r * 0.3, 0.4 - wingFlap, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 胴体
+    ctx.fillStyle = queenFeverTimer > 0 ? '#f1c40f' : (freezeTimer > 0 ? '#74b9ff' : this.color);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.75, r, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#1e272e';
+    ctx.stroke();
+
+    // 縞模様
+    ctx.fillStyle = '#1e272e';
+    ctx.fillRect(-r * 0.65, -r * 0.3, r * 1.3, r * 0.3);
+    ctx.fillRect(-r * 0.6, r * 0.2, r * 1.2, r * 0.3);
+
+    // 針
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.2, r * 0.9);
+    ctx.lineTo(r * 0.2, r * 0.9);
+    ctx.lineTo(0, r * 1.4);
+    ctx.closePath();
+    ctx.fill();
+
+    // 目
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-r * 0.3, -r * 0.45, r * 0.25, 0, Math.PI * 2);
+    ctx.arc(r * 0.3, -r * 0.45, r * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(-r * 0.25, -r * 0.45, r * 0.12, 0, Math.PI * 2);
+    ctx.arc(r * 0.25, -r * 0.45, r * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 特殊装飾
+    if (this.type === 'queen') { // 王冠
+      ctx.fillStyle = '#f39c12';
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.5, -r * 0.8);
+      ctx.lineTo(-r * 0.3, -r * 1.3);
+      ctx.lineTo(0, -r * 0.9);
+      ctx.lineTo(r * 0.3, -r * 1.3);
+      ctx.lineTo(r * 0.5, -r * 0.8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else if (this.type === 'mud') { // 泥玉
+      ctx.fillStyle = '#5d4037';
+      ctx.beginPath();
+      ctx.arc(0, r * 0.4, r * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (this.type === 'honey') { // 花粉
+      ctx.fillStyle = '#fffa65';
+      ctx.beginPath();
+      ctx.arc(-r * 0.7, r * 0.3, r * 0.3, 0, Math.PI * 2);
+      ctx.arc(r * 0.7, r * 0.3, r * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+}
+
+/* ==========================================================================
+   Item Class (4種類)
+   ========================================================================== */
+class DropItem {
+  constructor(type) {
+    this.type = type; // nest, spray, heal, freeze
+    this.x = (Math.random() > 0.5 ? -30 : width + 30);
+    this.y = 80 + Math.random() * (height * 0.35);
+    this.vx = this.x < 0 ? 1.8 : -1.8;
+    this.vy = Math.sin(Math.random() * 10) * 0.4;
+    this.radius = 22;
+    this.dead = false;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    if (this.x < -50 || this.x > width + 50) this.dead = true;
+  }
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#fff';
+
+    if (this.type === 'nest') { // 🍯 トラップ
+      ctx.fillStyle = '#e67e22';
+      ctx.beginPath();
+      ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillText('🍯', 0, 1);
+    } else if (this.type === 'spray') { // ⚡ 強力シート
+      ctx.fillStyle = '#3498db';
+      ctx.fillRect(-14, -18, 28, 36);
+      ctx.strokeRect(-14, -18, 28, 36);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('⚡', 0, 0);
+    } else if (this.type === 'heal') { // 💊 回復ポーション
+      ctx.fillStyle = '#ff4757';
+      ctx.beginPath();
+      ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('❤️', 0, 1);
+    } else if (this.type === 'freeze') { // ❄️ 凍結スプレー
+      ctx.fillStyle = '#00d2d3';
+      ctx.fillRect(-14, -18, 28, 36);
+      ctx.strokeRect(-14, -18, 28, 36);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('❄️', 0, 0);
+    }
+    ctx.restore();
+  }
+}
+
+/* ==========================================================================
+   Effects, Damage & Overload
+   ========================================================================== */
+function spawnParticles(x, y, color, count = 12) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const spd = 2 + Math.random() * 5;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd,
+      radius: 3 + Math.random() * 4,
+      color,
+      life: 1.0,
+      decay: 0.03 + Math.random() * 0.03
+    });
+  }
+}
+
+function spawnFloatingText(text, x, y, color = '#fff', size = 18) {
+  floatingTexts.push({
+    text, x, y, color, size, life: 1.0, vy: -1.8
+  });
+}
+
+function showToast(msg) {
+  itemToast.innerText = msg;
+  itemToast.style.display = 'block';
+  setTimeout(() => { itemToast.style.display = 'none'; }, 2200);
+}
+
+function takeDamage(reason = "") {
+  if (invulnerableTimer > 0 || gameState !== STATE.PLAYING) return;
+
+  lives--;
+  invulnerableTimer = 90;
+  shakeTimer = 20;
+  sound.playDamage();
+  if (navigator.vibrate) navigator.vibrate(200);
+
+  updateHeartsUI();
+  if (reason) spawnFloatingText(reason, width / 2, height * 0.5, '#ff4757', 16);
+
+  if (lives <= 0) triggerGameOver();
+}
+
+function triggerOverload() {
+  sound.playOverload();
+  if (navigator.vibrate) navigator.vibrate([100, 50, 200]);
+
+  shakeTimer = 30;
+  spawnParticles(pad.x, pad.y, '#2ed573', 30);
+  spawnFloatingText("OVERLOAD! 破裂！", pad.x, pad.y - 30, '#ff4757', 22);
+
+  pad.attachedBees.forEach(b => { b.dead = true; });
+  pad.attachedBees = [];
+  pendingScore = 0;
+
+  takeDamage("ペタ盛り限界突破！");
+  updateHUD();
+}
+
+function triggerGameOver() {
+  gameState = STATE.GAMEOVER;
+  warningBanner.style.display = 'none';
+  sound.stopBGM();
+  gameOverStats.innerHTML = `防護服がパンクしてしまった！<br><br>FINAL SCORE: <b style="font-size: 24px; color:#f7e04a;">${score.toLocaleString()}</b>`;
+  gameOverModal.style.display = 'flex';
+}
+
+function resetGame() {
+  score = 0;
+  pendingScore = 0;
+  lives = 3;
+  invulnerableTimer = 0;
+  powerSheetTimer = 0;
+  honeyTrapTimer = 0;
+  mudDebuffTimer = 0;
+  freezeTimer = 0;
+  queenFeverTimer = 0;
+  bees = [];
+  items = [];
+  particles = [];
+  floatingTexts = [];
+  pad.attachedBees = [];
+  pad.x = width / 2;
+  pad.y = height * 0.75;
+  pad.targetX = width / 2;
+  pad.targetY = height * 0.75;
+  giantHornetTimer = 450;
+  queenSpawnTimer = 700;
+
+  updateHeartsUI();
+  updateHUD();
+
+  titleModal.style.display = 'none';
+  gameOverModal.style.display = 'none';
+  warningBanner.style.display = 'none';
+
+  gameState = STATE.PLAYING;
+  sound.startBGM();
+}
+
+function updateHeartsUI() {
+  const hearts = heartsContainer.children;
+  for (let i = 0; i < 3; i++) {
+    if (i < lives) {
+      hearts[i].style.opacity = '1';
+      hearts[i].style.color = '#f7e04a';
+      hearts[i].innerText = '⬡';
+    } else {
+      hearts[i].style.opacity = '0.3';
+      hearts[i].style.color = '#ff4757';
+      hearts[i].innerText = '✕';
+    }
+  }
+}
+
+function getComboMultiplier() {
+  const count = pad.attachedBees.length;
+  return Math.min(3.0, 1.0 + count * 0.2);
+}
+
+function updateHUD() {
+  const mult = getComboMultiplier();
+  scoreDisplay.innerText = score.toLocaleString();
+  multDisplay.innerText = `x ${mult.toFixed(1)}`;
+  multDisplay.style.transform = pad.attachedBees.length > 0 ? 'scale(1.15)' : 'scale(1)';
+
+  const count = pad.attachedBees.length;
+  const pct = Math.min(100, (count / 10) * 100);
+  meterFill.style.width = `${pct}%`;
+  meterText.innerText = `${count} / 10`;
+
+  if (count >= 10) {
+    meterFill.style.background = '#ff4757';
+  } else if (count >= 7) {
+    meterFill.style.background = '#ffa502';
+  } else {
+    meterFill.style.background = '#2ed573';
+  }
+}
+
+/* ==========================================================================
+   Peel Action (シート剥がし)
+   ========================================================================== */
+function peelSheet() {
+  if (pad.attachedBees.length === 0 || gameState !== STATE.PLAYING) return;
+
+  sound.playPeel();
+  const mult = getComboMultiplier();
+  const gained = Math.round(pendingScore * mult);
+  score += gained;
+
+  spawnFloatingText(`+${gained.toLocaleString()}!`, pad.x, pad.y - 40, '#f7e04a', 24);
+  spawnParticles(pad.x, pad.y, '#ffffff', 16);
+
+  pad.attachedBees.forEach(b => { b.dead = true; });
+  pad.attachedBees = [];
+  pendingScore = 0;
+
+  updateHUD();
+}
+
+/* ==========================================================================
+   Input Handling
+   ========================================================================== */
+container.addEventListener('pointerdown', e => {
+  if (e.target.closest('#peelBtn') || e.target.closest('.start-btn') || e.target.closest('#soundBtn')) return;
+  sound.init();
+  isPointerDown = true;
+  activePointerId = e.pointerId;
+  const rect = container.getBoundingClientRect();
+  pad.targetX = e.clientX - rect.left;
+  pad.targetY = e.clientY - rect.top;
+});
+
+container.addEventListener('pointermove', e => {
+  if (!isPointerDown || e.pointerId !== activePointerId) return;
+  const rect = container.getBoundingClientRect();
+  pad.targetX = e.clientX - rect.left;
+  pad.targetY = e.clientY - rect.top;
+});
+
+window.addEventListener('pointerup', e => {
+  if (e.pointerId === activePointerId) {
+    isPointerDown = false;
+    activePointerId = null;
+  }
+});
+
+peelBtn.addEventListener('pointerdown', e => {
+  e.stopPropagation();
+  sound.init();
+  peelSheet();
+});
+
+soundBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  const muted = sound.toggleMute();
+  soundBtn.innerText = muted ? '🔇' : '🔊';
+});
+
+startBtn.addEventListener('click', () => {
+  sound.init();
+  resetGame();
+});
+retryBtn.addEventListener('click', () => {
+  sound.init();
+  resetGame();
+});
+
+/* ==========================================================================
+   Main Game Loop
+   ========================================================================== */
+let lastTime = performance.now();
+
+function gameLoop(now) {
+  requestAnimationFrame(gameLoop);
+  const dt = Math.min(32, now - lastTime) / 1000;
+  lastTime = now;
+
+  if (hitstopTimer > 0) {
+    hitstopTimer--;
+    render();
+    return;
+  }
+
+  update(dt);
+  render();
+}
+
+function update(dt) {
+  if (gameState !== STATE.PLAYING) return;
+
+  if (invulnerableTimer > 0) invulnerableTimer--;
+  if (shakeTimer > 0) shakeTimer--;
+  if (powerSheetTimer > 0) powerSheetTimer--;
+  if (honeyTrapTimer > 0) honeyTrapTimer--;
+  if (mudDebuffTimer > 0) mudDebuffTimer--;
+  if (freezeTimer > 0) freezeTimer--;
+  if (queenFeverTimer > 0) queenFeverTimer--;
+
+  // パッド追従物理
+  const weightPenalty = pad.attachedBees.reduce((sum, b) => sum + (b.weight || 1), 0);
+  const baseFollow = 0.32;
+  const followFactor = Math.max(0.08, baseFollow - weightPenalty * 0.018);
+
+  const prevX = pad.x;
+  const prevY = pad.y;
+  pad.x += (pad.targetX - pad.x) * followFactor;
+  pad.y += (pad.targetY - pad.y) * followFactor;
+  pad.vx = pad.x - prevX;
+  pad.vy = pad.y - prevY;
+  pad.speed = Math.hypot(pad.vx, pad.vy);
+
+  // パッド半径の計算
+  let currentPadRadius = pad.radius;
+  if (powerSheetTimer > 0) currentPadRadius *= 1.8;
+  if (mudDebuffTimer > 0) currentPadRadius *= 0.6;
+
+  // スポーン制御 (難易度スケーリング)
+  spawnTimer++;
+  const spawnThreshold = Math.max(28, 70 - Math.floor(score / 2500));
+  if (spawnTimer > spawnThreshold) {
+    spawnTimer = 0;
+    const r = Math.random();
+    let type = 'wasp';
+    if (r < 0.30) type = 'wasp';
+    else if (r < 0.50) type = 'paper';
+    else if (r < 0.65) type = 'mud';      // ドロバチ
+    else if (r < 0.78) type = 'metal';    // メタルハチ
+    else if (r < 0.90) type = 'honey';    // ミツバチ
+    else type = 'carpenter';              // クマバチ
+    bees.push(new Bee(type));
+  }
+
+  // 女王蜂出現
+  queenSpawnTimer--;
+  if (queenSpawnTimer <= 0) {
+    queenSpawnTimer = 900 + Math.random() * 400;
+    bees.push(new Bee('queen'));
+    showToast("👑 女王蜂が飛来！捕獲でフィーバー！");
+  }
+
+  // オオスズメバチ出現
+  giantHornetTimer--;
+  if (giantHornetTimer <= 0) {
+    giantHornetTimer = 650 + Math.random() * 300;
+    bees.push(new Bee('giant'));
+    warningBanner.style.display = 'block';
+  }
+
+  // アイテム出現
+  itemSpawnTimer--;
+  if (itemSpawnTimer <= 0) {
+    itemSpawnTimer = 400 + Math.random() * 200;
+    const itemTypes = ['nest', 'spray', 'heal', 'freeze'];
+    items.push(new DropItem(itemTypes[Math.floor(Math.random() * itemTypes.length)]));
+  }
+
+  // ハチ更新 & 接触判定
+  let giantAlive = false;
+  bees.forEach(bee => {
+    bee.update();
+    if (bee.type === 'giant') giantAlive = true;
+
+    if (!bee.attached && !bee.dead) {
+      const dist = Math.hypot(pad.x - bee.x, pad.y - bee.y);
+
+      // オオスズメバチ ジャストパリィ
+      if (bee.type === 'giant' && bee.parryable) {
+        if (dist < currentPadRadius + bee.radius + 15 && pad.speed > 8) {
+          bee.parryable = false;
+          bee.state = 'stunned';
+          bee.stateTimer = 120;
+          bee.vy = 0;
+          bee.vx = 0;
+          sound.playParry();
+          if (navigator.vibrate) navigator.vibrate([80, 40, 150]);
+          hitstopTimer = 8;
+          shakeTimer = 25;
+          spawnParticles(bee.x, bee.y, '#ffd32a', 30);
+          spawnFloatingText("JUST SMASH! 迎撃成功!", bee.x, bee.y - 30, '#f7e04a', 22);
+          attachBee(bee);
+          return;
+        }
+      }
+
+      // 通常捕獲
+      if (dist < currentPadRadius + bee.radius && bee.type !== 'giant') {
+        if (bee.type === 'honey' && powerSheetTimer > 0) {
+          bee.vx = (bee.x - pad.x) * 0.3;
+          bee.vy = -4;
+          spawnParticles(bee.x, bee.y, '#fff', 6);
+          return;
+        }
+        attachBee(bee);
+      }
+    }
+  });
+
+  if (!giantAlive) warningBanner.style.display = 'none';
+
+  // アイテム接触判定
+  items.forEach(item => {
+    item.update();
+    if (!item.dead) {
+      const dist = Math.hypot(pad.x - item.x, pad.y - item.y);
+      if (dist < currentPadRadius + item.radius) {
+        item.dead = true;
+        sound.playParry();
+        spawnParticles(item.x, item.y, '#fff', 20);
+
+        if (item.type === 'nest') {
+          honeyTrapTimer = 300;
+          showToast("🍯 ハチミツトラップ！ハチを吸引！");
+        } else if (item.type === 'spray') {
+          powerSheetTimer = 400;
+          showToast("⚡ 強力粘着シート！パッド拡大＆ミツバチ無効！");
+        } else if (item.type === 'heal') {
+          lives = Math.min(3, lives + 1);
+          sound.playHeal();
+          updateHeartsUI();
+          showToast("❤️ ライフが1回復！");
+        } else if (item.type === 'freeze') {
+          freezeTimer = 300;
+          showToast("❄️ 凍結スプレー！エネミー激減速！");
+        }
+      }
+    }
+  });
+
+  // クリーンアップ
+  bees = bees.filter(b => !b.dead);
+  items = items.filter(i => !i.dead);
+
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= p.decay;
+  });
+  particles = particles.filter(p => p.life > 0);
+
+  floatingTexts.forEach(ft => {
+    ft.y += ft.vy;
+    ft.life -= 0.02;
+  });
+  floatingTexts = floatingTexts.filter(ft => ft.life > 0);
+}
+
+function attachBee(bee) {
+  bee.attached = true;
+  bee.attachOffsetX = (bee.x - pad.x) * 0.7;
+  bee.attachOffsetY = (bee.y - pad.y) * 0.7;
+  bee.attachAngle = Math.random() * Math.PI * 2;
+
+  sound.playSticky();
+  if (navigator.vibrate) navigator.vibrate(40);
+
+  pad.attachedBees.push(bee);
+  pendingScore += bee.scoreVal;
+  spawnParticles(bee.x, bee.y, '#2ed573', 8);
+
+  if (bee.type === 'queen') {
+    queenFeverTimer = 300; // 5秒黄金フリーズ
+    sound.playQueenFever();
+    shakeTimer = 20;
+    spawnFloatingText("QUEEN FEVER! 黄金硬直!", pad.x, pad.y - 45, '#f1c40f', 24);
+  } else if (bee.type === 'mud') {
+    mudDebuffTimer = 360; // 6秒泥付着
+    spawnFloatingText("泥まみれ！パッド縮小！", bee.x, bee.y, '#795548', 16);
+  } else if (bee.type === 'honey') {
+    spawnFloatingText("-200 (ミツバチ誤捕獲!)", bee.x, bee.y, '#ff4757', 16);
+  } else {
+    spawnFloatingText(`+${bee.scoreVal}`, bee.x, bee.y, '#2ed573', 16);
+  }
+
+  if (pad.attachedBees.length > 10) {
+    triggerOverload();
+  } else {
+    updateHUD();
+  }
+}
+
+/* ==========================================================================
+   Render Function
+   ========================================================================== */
+function render() {
+  ctx.save();
+
+  if (shakeTimer > 0) {
+    const s = shakeTimer * 0.6;
+    ctx.translate((Math.random() - 0.5) * s, (Math.random() - 0.5) * s);
+  }
+
+  // 背景
+  ctx.fillStyle = queenFeverTimer > 0 ? '#b8860b' : '#78b849';
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.fillStyle = queenFeverTimer > 0 ? '#996515' : '#6ea940';
+  for (let i = 0; i < width; i += 40) {
+    ctx.fillRect(i, 0, 20, height);
+  }
+
+  // ハチミツトラップ吸引
+  if (honeyTrapTimer > 0) {
+    ctx.save();
+    ctx.strokeStyle = `rgba(241, 196, 15, ${0.4 + Math.sin(Date.now() * 0.01) * 0.2})`;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(width / 2, height * 0.45, 60 + Math.sin(Date.now() * 0.01) * 20, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 凍結エフェクト
+  if (freezeTimer > 0) {
+    ctx.fillStyle = 'rgba(116, 185, 255, 0.2)';
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  // 無敵点滅
+  if (invulnerableTimer > 0 && Math.floor(invulnerableTimer / 4) % 2 === 0) {
+    ctx.fillStyle = 'rgba(255, 71, 87, 0.25)';
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  items.forEach(i => i.draw(ctx));
+
+  bees.forEach(b => {
+    if (!b.attached) b.draw(ctx);
+  });
+
+  renderStickAndPad();
+
+  pad.attachedBees.forEach(b => {
+    b.x = pad.x + b.attachOffsetX;
+    b.y = pad.y + b.attachOffsetY;
+    b.draw(ctx);
+  });
+
+  particles.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  floatingTexts.forEach(ft => {
+    ctx.save();
+    ctx.globalAlpha = ft.life;
+    ctx.fillStyle = ft.color;
+    ctx.font = `900 ${ft.size}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 4;
+    ctx.fillText(ft.text, ft.x, ft.y);
+    ctx.restore();
+  });
+
+  ctx.restore();
+}
+
+function renderStickAndPad() {
+  let currentPadRadius = pad.radius;
+  if (powerSheetTimer > 0) currentPadRadius *= 1.8;
+  if (mudDebuffTimer > 0) currentPadRadius *= 0.6;
+
+  ctx.save();
+
+  // 棒
+  ctx.strokeStyle = '#d2dae2';
+  ctx.lineWidth = 14;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(pad.x, pad.y);
+  ctx.lineTo(pad.x * 0.5 + width * 0.25, height + 40);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#808e9b';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(pad.x, pad.y);
+  ctx.lineTo(pad.x * 0.5 + width * 0.25, height + 40);
+  ctx.stroke();
+
+  // パッドベース
+  ctx.fillStyle = mudDebuffTimer > 0 ? '#795548' : (powerSheetTimer > 0 ? '#3498db' : '#f1f2f6');
+  ctx.beginPath();
+  ctx.arc(pad.x, pad.y, currentPadRadius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = '#2f3542';
+  ctx.stroke();
+
+  // ゲル
+  ctx.fillStyle = mudDebuffTimer > 0 ? 'rgba(93, 64, 55, 0.85)' : (powerSheetTimer > 0 ? 'rgba(52, 152, 219, 0.7)' : 'rgba(46, 213, 115, 0.75)');
+  ctx.beginPath();
+  ctx.arc(pad.x, pad.y, currentPadRadius * 0.88, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>

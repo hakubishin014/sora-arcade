@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>盤上算術戦『チェスト！』(CHEST!) 完全調整版</title>
+  <style>
+    :root {
+      --bg-color: #0d0f17;
+      --panel-bg: rgba(22, 27, 46, 0.9);
+      --neon-blue: #00f0ff;
+      --neon-red: #ff0055;
+      --neon-gold: #ffd700;
+      --text-color: #e0e6ed;
+    }
+    body {
+      margin: 0; padding: 15px; background: var(--bg-color); color: var(--text-color);
+      font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center;
+    }
+    h1 { margin: 0 0 10px 0; text-shadow: 0 0 10px var(--neon-blue); letter-spacing: 2px; }
+    .main-layout { display: flex; gap: 20px; max-width: 1300px; width: 100%; justify-content: center; flex-wrap: wrap; }
+    
+    .panel {
+      background: var(--panel-bg); border: 1px solid var(--neon-blue);
+      border-radius: 10px; padding: 15px; width: 300px; box-shadow: 0 0 15px rgba(0,240,255,0.15);
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    
+    #board {
+      display: grid; grid-template-columns: repeat(9, 52px); grid-template-rows: repeat(9, 52px);
+      gap: 2px; background: #1a2035; border: 3px solid var(--neon-blue);
+      box-shadow: 0 0 25px rgba(0,240,255,0.3); border-radius: 5px;
+    }
+    .cell {
+      width: 52px; height: 52px; background: #121626; display: flex;
+      flex-direction: column; align-items: center; justify-content: center;
+      position: relative; cursor: pointer; user-select: none; transition: 0.2s;
+    }
+    .cell:hover { background: #1e2640; }
+    .cell.selected { border: 2px solid var(--neon-gold); box-shadow: inset 0 0 10px var(--neon-gold); }
+    .operator-label { position: absolute; top: 2px; right: 2px; font-size: 10px; color: #8a99ad; font-weight: bold; }
+    
+    .piece { font-weight: bold; font-size: 17px; display: flex; flex-direction: column; align-items: center; }
+    .piece.P1 { color: var(--neon-blue); text-shadow: 0 0 8px var(--neon-blue); }
+    .piece.P2 { color: var(--neon-red); text-shadow: 0 0 8px var(--neon-red); }
+    .piece-val { font-size: 11px; background: rgba(0,0,0,0.75); border-radius: 3px; padding: 0 3px; margin-top: -2px; }
+    
+    .btn { width: 100%; padding: 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    .btn-main { background: var(--neon-blue); color: #000; }
+    .btn-main:hover { box-shadow: 0 0 15px var(--neon-blue); }
+    .btn-chest {
+      background: linear-gradient(45deg, #ff8c00, var(--neon-gold)); color: #000;
+      font-size: 18px; display: none; animation: pulse 0.8s infinite alternate;
+    }
+    @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+    
+    .guide-box {
+      font-size: 12px; line-height: 1.5; background: #080a10; padding: 10px; border-radius: 5px;
+      border: 1px solid #2a3550; max-height: 280px; overflow-y: auto;
+    }
+    .guide-box h4 { margin: 5px 0; color: var(--neon-gold); }
+    #log { height: 120px; overflow-y: auto; font-size: 11px; background: #080a10; padding: 6px; border-radius: 5px; border: 1px solid #2a3550; }
+    
+    .cutin {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9); display: flex; flex-direction: column;
+      align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.5s;
+    }
+    .cutin.active { opacity: 1; pointer-events: auto; }
+    .cutin h2 { font-size: 44px; color: var(--neon-gold); text-shadow: 0 0 20px var(--neon-gold); margin: 0; }
+  </style>
+</head>
+<body>
+
+  <h1>盤上算術戦『チェスト！』(CHEST!)</h1>
+
+  <div class="main-layout">
+    <!-- 左パネル: ステータス & 操作 -->
+    <div class="panel">
+      <h3>対戦ステータス</h3>
+      <div>モード: 
+        <select id="modeSelect" onchange="resetGame()">
+          <option value="CPU">vs CPU (AI対戦)</option>
+          <option value="PVP">2P対戦 (ローカル)</option>
+          <option value="PUZZLE">詰チェスト！ (パズル)</option>
+        </select>
+      </div>
+      <div>手番: <span id="turnPlayer" style="font-weight:bold;">PLAYER 1</span></div>
+      <div>ターン数: <span id="turnCount">1</span> / 50</div>
+      <div>P1 (青) 盤面合計: <span id="p1Sum">0</span></div>
+      <div>P2 (赤) 盤面合計: <span id="p2Sum">0</span></div>
+      
+      <button id="chestBtn" class="btn btn-chest" onclick="declareChest()">💥 CHEST! 宣言 💥</button>
+      <button class="btn btn-main" onclick="resetGame()">リセット / 再スタート</button>
+      
+      <h4>ログ</h4>
+      <div id="log"></div>
+    </div>
+
+    <!-- 中央: 9x9 ボード -->
+    <div style="position:relative;">
+      <div id="board"></div>
+      <div id="cutin" class="cutin">
+        <h2 id="cutinText">CHEST!</h2>
+        <p id="cutinSub" style="font-size:18px; color:#fff;"></p>
+        <button class="btn btn-main" style="width:140px; margin-top:15px;" onclick="closeCutin()">閉じる</button>
+      </div>
+    </div>
+
+    <!-- 右パネル: 明記された遊び方ガイド -->
+    <div class="panel">
+      <h3>📖 遊び方・ルール解説</h3>
+      <div class="guide-box">
+        <h4>【1. 勝利条件】</h4>
+        ・<b>チェックメイト</b>: 相手の「王(K)」を取れば即勝利！<br>
+        ・<b>特殊勝利『チェスト！』</b>: 自ターンの開始時、盤面の自分の駒の数字の合計が<b>【41以上の素数】</b>(例: 41, 43, 47...)であれば宣言して即勝利！<br>
+        
+        <h4>【2. 算術キャプチャ（撃破）】</h4>
+        ・<b>移動先の相手の駒の数字 $\le$ 自分の移動する駒の数字</b> の場合のみ相手の駒を取ることができます。（※王は数字に関わらず撃破可能）
+        
+        <h4>【3. マージ（合体）】</h4>
+        ・味方の駒がいるマスに重ねると<b>「数字が足し合わされ」</b>強力になります！
+        
+        <h4>【4. 演算マス（中央エリア）】</h4>
+        ・中央3段の記号マスに止まると数字が変化！<br>
+        （`+2`, `-1`, `*2`, `/2`, `^2`(2乗), `√`(ルート)）
+        
+        <h4>【5. バースト（爆発）】</h4>
+        ・マージや演算で数字が<b>10以上</b>になると駒が爆発消滅し、相手の持ち駒になります！無闇な足し算に注意！
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- 駒の初期値バランス（低数値スタートで即上がり防止） ---
+    const PIECE_TYPES = {
+      K: { name: '王', val: Infinity }, 
+      Q: { name: '妃', val: 5 },  // 旧8 -> 5へ変更
+      R: { name: '飛', val: 3 },  // 旧5 -> 3へ変更
+      B: { name: '角', val: 3 },  // 旧5 -> 3へ変更
+      G: { name: '金', val: 2 },  // 旧4 -> 2へ変更
+      N: { name: '桂', val: 2 },  // 旧3 -> 2へ変更
+      P: { name: '歩', val: 1 }
+    };
+
+    let board = [];
+    let turnPlayer = 'P1';
+    let turnCount = 1;
+    let selectedCell = null;
+    let gameOver = false;
+
+    const OPERATORS = {
+      '3,3': '+2', '3,5': '*2', '4,4': '^2', '4,2': '-1', '4,6': '/2', '5,3': '*2', '5,5': '√'
+    };
+
+    function isPrime(n) {
+      if (n < 2) return false;
+      for (let i = 2; i <= Math.sqrt(n); i++) if (n % i === 0) return false;
+      return true;
+    }
+
+    function initBoard() {
+      board = Array(9).fill(null).map(() => Array(9).fill(null));
+      const setupLine = ['R','N','B','Q','K','G','B','N','R'];
+      setupLine.forEach((p, x) => {
+        board[0][x] = { type: p, owner: 'P2', val: PIECE_TYPES[p].val };
+        board[1][x] = { type: 'P', owner: 'P2', val: 1 };
+        board[7][x] = { type: 'P', owner: 'P1', val: 1 };
+        board[8][x] = { type: p, owner: 'P1', val: PIECE_TYPES[p].val };
+      });
+
+      if (document.getElementById('modeSelect').value === 'PUZZLE') {
+        board = Array(9).fill(null).map(() => Array(9).fill(null));
+        board[4][3] = { type: 'R', owner: 'P1', val: 6 }; // (4,4)の^2マスへ移動して36にし合計を育てる問題
+        board[4][1] = { type: 'Q', owner: 'P1', val: 5 };
+        board[8][4] = { type: 'K', owner: 'P1', val: Infinity };
+        board[0][4] = { type: 'K', owner: 'P2', val: Infinity };
+        log("【詰チェスト！】「^2」マスを利用して合計値を素数41以上に伸ばせ！");
+      }
+    }
+
+    function render() {
+      const boardEl = document.getElementById('board');
+      boardEl.innerHTML = '';
+      let p1Sum = 0, p2Sum = 0;
+
+      for (let y = 0; y < 9; y++) {
+        for (let x = 0; x < 9; x++) {
+          const cellEl = document.createElement('div');
+          cellEl.className = 'cell';
+          cellEl.onclick = () => onCellClick(x, y);
+
+          const opKey = `${y},${x}`;
+          if (OPERATORS[opKey]) {
+            const opEl = document.createElement('div');
+            opEl.className = 'operator-label';
+            opEl.innerText = OPERATORS[opKey];
+            cellEl.appendChild(opEl);
+          }
+
+          const piece = board[y][x];
+          if (piece) {
+            if (piece.val !== Infinity) {
+              if (piece.owner === 'P1') p1Sum += piece.val;
+              if (piece.owner === 'P2') p2Sum += piece.val;
+            }
+            const pieceEl = document.createElement('div');
+            pieceEl.className = `piece ${piece.owner}`;
+            pieceEl.innerHTML = `<div>${PIECE_TYPES[piece.type].name}</div><div class="piece-val">${piece.val === Infinity ? '∞' : piece.val}</div>`;
+            cellEl.appendChild(pieceEl);
+          }
+
+          if (selectedCell && selectedCell.x === x && selectedCell.y === y) {
+            cellEl.classList.add('selected');
+          }
+          boardEl.appendChild(cellEl);
+        }
+      }
+
+      document.getElementById('p1Sum').innerText = p1Sum;
+      document.getElementById('p2Sum').innerText = p2Sum;
+      document.getElementById('turnCount').innerText = turnCount;
+      document.getElementById('turnPlayer').innerText = turnPlayer === 'P1' ? 'PLAYER 1 (青)' : 'PLAYER 2 (赤)';
+      document.getElementById('turnPlayer').style.color = turnPlayer === 'P1' ? 'var(--neon-blue)' : 'var(--neon-red)';
+
+      const currentSum = turnPlayer === 'P1' ? p1Sum : p2Sum;
+      const chestBtn = document.getElementById('chestBtn');
+      if (currentSum >= 41 && isPrime(currentSum)) {
+        chestBtn.style.display = 'block';
+      } else {
+        chestBtn.style.display = 'none';
+      }
+    }
+
+    function onCellClick(x, y) {
+      if (gameOver) return;
+      const piece = board[y][x];
+
+      if (!selectedCell) {
+        if (piece && piece.owner === turnPlayer) selectedCell = { x, y };
+      } else {
+        if (selectedCell.x === x && selectedCell.y === y) {
+          selectedCell = null;
+        } else {
+          movePiece(selectedCell.x, selectedCell.y, x, y);
+          selectedCell = null;
+        }
+      }
+      render();
+    }
+
+    function movePiece(fromX, fromY, toX, toY) {
+      const p = board[fromY][fromX];
+      const target = board[toY][toX];
+
+      if (target && target.owner === p.owner) {
+        p.val += target.val;
+        log(`${p.owner}がマージ！数値: ${p.val}`);
+      } else if (target && target.owner !== p.owner) {
+        if (p.val < target.val && target.type !== 'K') {
+          log(`数値不足で撃破不可！(${p.val} < ${target.val})`);
+          return;
+        }
+        log(`${p.owner}が相手の${PIECE_TYPES[target.type].name}を撃破！`);
+        if (target.type === 'K') {
+          triggerWin(p.owner, "チェックメイト (王撃破) 勝利！");
+          return;
+        }
+      }
+
+      board[toY][toX] = p;
+      board[fromY][fromX] = null;
+
+      const opKey = `${toY},${toX}`;
+      if (OPERATORS[opKey]) {
+        const op = OPERATORS[opKey];
+        if (op === '+2') p.val += 2;
+        if (op === '-1') p.val = Math.max(1, p.val - 1);
+        if (op === '*2') p.val *= 2;
+        if (op === '/2') p.val = Math.floor(p.val / 2);
+        if (op === '^2') p.val = p.val * p.val;
+        if (op === '√') p.val = Math.floor(Math.sqrt(p.val));
+        log(`演算マス [${op}] 適用 $\\rightarrow$ 数値: ${p.val}`);
+      }
+
+      if (p.val >= 10 && p.type !== 'K') {
+        log(`💥 【バースト！】数値 ${p.val} (10以上) 到達のため駒が爆発消滅！`);
+        board[toY][toX] = null;
+      }
+
+      turnPlayer = turnPlayer === 'P1' ? 'P2' : 'P1';
+      turnCount++;
+
+      if (turnCount > 50) {
+        const p1S = parseInt(document.getElementById('p1Sum').innerText);
+        const p2S = parseInt(document.getElementById('p2Sum').innerText);
+        const winner = p1S > p2S ? 'P1' : (p2S > p1S ? 'P2' : null);
+        triggerWin(winner, "50ターン到達！ポイント判定勝利！");
+        return;
+      }
+
+      if (turnPlayer === 'P2' && document.getElementById('modeSelect').value === 'CPU' && !gameOver) {
+        setTimeout(cpuTurn, 500);
+      }
+    }
+
+    function cpuTurn() {
+      let pieces = [];
+      for (let y = 0; y < 9; y++) {
+        for (let x = 0; x < 9; x++) {
+          if (board[y][x] && board[y][x].owner === 'P2') pieces.push({x, y});
+        }
+      }
+      if (pieces.length === 0) return;
+      const choice = pieces[Math.floor(Math.random() * pieces.length)];
+      const targetY = Math.min(8, choice.y + 1);
+      movePiece(choice.x, choice.y, choice.x, targetY);
+      render();
+    }
+
+    function declareChest() {
+      const sum = turnPlayer === 'P1' ? document.getElementById('p1Sum').innerText : document.getElementById('p2Sum').innerText;
+      triggerWin(turnPlayer, `特殊勝利『チェスト！』達成！！ (盤面合計: ${sum} = 素数)`);
+    }
+
+    function triggerWin(winner, msg) {
+      gameOver = true;
+      const cutin = document.getElementById('cutin');
+      document.getElementById('cutinText').innerText = winner ? `${winner} 勝利！` : "引き分け！";
+      document.getElementById('cutinSub').innerText = msg;
+      cutin.classList.add('active');
+    }
+
+    function closeCutin() {
+      document.getElementById('cutin').classList.remove('active');
+    }
+
+    function log(msg) {
+      const logEl = document.getElementById('log');
+      logEl.innerHTML = `<div>・${msg}</div>` + logEl.innerHTML;
+    }
+
+    function resetGame() {
+      turnPlayer = 'P1';
+      turnCount = 1;
+      selectedCell = null;
+      gameOver = false;
+      document.getElementById('log').innerHTML = '';
+      initBoard();
+      render();
+      log("ゲームを開始しました。");
+    }
+
+    resetGame();
+  </script>
+</body>
+</html>

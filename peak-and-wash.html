@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ピーク&amp;ウォッシュ | Peak &amp; Wash</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ===== RESET & BASE ===== */
+*,*::before,*::after{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  margin:0;
+  font-family:'Noto Sans JP','Hiragino Sans','Yu Gothic',Meiryo,-apple-system,BlinkMacSystemFont,sans-serif;
+  background:#141210;
+  color:#1a1a1f;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font-family:inherit;border:none;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+h1,h2{margin:0;font-family:'Dela Gothic One','Noto Sans JP',sans-serif;font-weight:400;}
+p{margin:0;}
+:focus-visible{outline:3px solid #8fd8ff;outline-offset:2px;}
+@media (prefers-reduced-motion:reduce){*{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;}}
+
+#app{max-width:480px;margin:0 auto;min-height:100vh;background:#141210;position:relative;}
+.screen{min-height:100vh;padding:24px 20px 40px;display:flex;flex-direction:column;}
+
+/* ===== BUTTONS ===== */
+.btn{display:inline-block;padding:14px 20px;border-radius:10px;font-weight:700;font-size:0.95rem;text-align:center;transition:transform 0.08s ease;}
+.btn:active{transform:scale(0.97);}
+.btn-big{width:100%;padding:16px 20px;font-size:1.05rem;}
+.btn-tiny{padding:8px 14px;font-size:0.82rem;border-radius:8px;}
+.btn-camp{background:#ff9d4d;color:#2b2013;}
+.btn-alpine{background:#8fd8ff;color:#0d1b2a;}
+.btn-wash{background:#ff7a59;color:#fff3dd;}
+.btn-disabled{background:#3a352d;color:#7a7264;cursor:not-allowed;}
+.btn-retreat{margin-top:14px;width:100%;padding:12px;border-radius:8px;background:transparent;color:#cbd8e3;border:1px solid rgba(255,255,255,0.25);font-weight:500;font-size:0.85rem;}
+
+/* ===== TITLE ===== */
+.title-screen{padding:0;justify-content:center;position:relative;min-height:100vh;overflow:hidden;}
+.title-split{position:absolute;inset:0;}
+.split-climb{position:absolute;inset:0;background:linear-gradient(160deg,#0d1b2a,#24425c 80%);clip-path:polygon(0 0,100% 0,100% 55%,0 68%);}
+.split-wash{position:absolute;inset:0;background:linear-gradient(160deg,#ffb648,#fff3dd 85%);clip-path:polygon(0 68%,100% 55%,100% 100%,0 100%);}
+.title-body{position:relative;z-index:1;padding:0 28px;text-align:center;margin-top:34vh;}
+.title-logo{font-size:clamp(2rem,9vw,2.6rem);color:#fff3dd;line-height:1.35;text-shadow:0 2px 18px rgba(0,0,0,0.5);}
+.title-en{margin:6px 0 18px;letter-spacing:0.18em;font-size:0.8rem;color:#cfe9f2;font-weight:700;}
+.title-tagline{color:#eaf6fb;font-size:0.92rem;line-height:1.7;margin-bottom:28px;text-shadow:0 1px 8px rgba(0,0,0,0.4);}
+.title-genre{margin-top:16px;font-size:0.78rem;color:#c8d3da;opacity:0.85;}
+
+/* ===== CAMP (basecamp canvas theme) ===== */
+.camp-screen{background:linear-gradient(180deg,#e4d6b8,#d8c69f);color:#2b2013;}
+.camp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+.camp-header h1{font-size:1.4rem;}
+.sp-badge{background:#2b2013;color:#e8b84b;font-weight:700;font-size:0.82rem;padding:7px 12px;border-radius:20px;}
+.camp-section{margin-bottom:26px;}
+.camp-section h2{font-size:1.02rem;margin-bottom:12px;color:#42331f;font-family:'Noto Sans JP',sans-serif;font-weight:700;}
+.camp-empty{font-size:0.85rem;color:#6b5a3f;line-height:1.6;}
+.passive-list{display:flex;flex-wrap:wrap;gap:8px;}
+.passive-chip{background:#fff3dd;border:1px solid #c9a86a;padding:8px 12px;border-radius:8px;font-size:0.8rem;font-weight:500;color:#4a3220;}
+.upgrade-list{display:flex;flex-direction:column;gap:10px;}
+.upgrade-row{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.45);border-radius:10px;padding:12px 14px;gap:10px;}
+.upgrade-label{font-weight:700;font-size:0.9rem;display:flex;align-items:center;gap:8px;}
+.upgrade-level{font-size:0.72rem;font-weight:500;color:#7a6a4a;}
+.upgrade-desc{font-size:0.76rem;color:#6b5a3f;margin-top:2px;}
+.tier-list{display:flex;flex-direction:column;gap:12px;}
+.tier-card{display:block;width:100%;text-align:left;background:#2b2013;color:#f3ead4;border-radius:12px;padding:16px;border-left:4px solid #ff9d4d;}
+.tier-card.locked{background:rgba(43,32,19,0.35);color:#7a6a52;border-left:4px solid #7a6a52;}
+.tier-name{font-weight:700;font-size:1rem;margin-bottom:2px;}
+.tier-sub{font-size:0.74rem;opacity:0.75;margin-bottom:8px;}
+.tier-flavor{font-size:0.8rem;line-height:1.5;opacity:0.9;margin-bottom:10px;}
+.tier-cta{font-size:0.82rem;font-weight:700;color:#ff9d4d;}
+.locked .tier-cta{display:none;}
+
+/* ===== CLIMB (alpine theme) ===== */
+.climb-screen{background:radial-gradient(circle at 50% 0%,#1d3550,#0d1b2a 70%);color:#eaf6fb;}
+.climb-hud{background:rgba(13,27,42,0.55);border:1px solid rgba(143,216,255,0.25);border-radius:14px;padding:14px 16px;margin-bottom:18px;}
+.hud-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;}
+.hud-tier{font-weight:700;font-size:0.88rem;color:#8fd8ff;}
+.hud-progress{font-size:0.78rem;color:#9fb8cc;}
+.hud-face{font-size:1.3rem;}
+.stat-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.stat-row:last-child{margin-bottom:0;}
+.stat-label{width:52px;flex-shrink:0;font-size:0.68rem;color:#9fb8cc;}
+.stat-track{flex:1;height:7px;background:rgba(255,255,255,0.12);border-radius:4px;overflow:hidden;}
+.stat-fill{height:100%;border-radius:4px;transition:width 0.3s ease;}
+.fill-hp{background:#5fbf7a;}
+.fill-stamina{background:#ffcf5c;}
+.fill-dirt{background:#a9764f;}
+.fill-moisture{background:#5b9fe0;}
+.fill-frost{background:#a6e6ef;}
+.stat-value{width:34px;text-align:right;font-size:0.7rem;color:#cbd8e3;flex-shrink:0;}
+
+.event-card{background:rgba(20,37,56,0.7);border:1px solid rgba(143,216,255,0.2);border-radius:16px;padding:22px 18px;flex:1;display:flex;flex-direction:column;}
+.event-icon{font-size:2.2rem;margin-bottom:10px;}
+.event-title{font-family:'Dela Gothic One',sans-serif;font-size:1.15rem;margin-bottom:10px;color:#fff;}
+.event-desc{font-size:0.88rem;line-height:1.7;color:#cbd8e3;margin-bottom:20px;}
+.event-choices{display:flex;flex-direction:column;gap:10px;margin-top:auto;}
+.choice-btn{text-align:left;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:13px 15px;}
+.choice-btn:active{background:rgba(143,216,255,0.18);}
+.choice-label{font-weight:700;font-size:0.92rem;color:#eaf6fb;}
+.choice-flavor{font-size:0.74rem;color:#9fb8cc;margin-top:3px;}
+
+.summit-card{align-items:center;text-align:center;justify-content:center;}
+.summit-card .event-title{font-size:1.3rem;}
+.summit-card .btn{margin-top:10px;}
+
+.result-card{align-items:center;text-align:center;justify-content:center;}
+.result-card.risk-hit{border-color:rgba(255,107,90,0.5);}
+.result-card.fail-hit{border-color:rgba(255,107,90,0.8);}
+.result-text{font-size:1rem;line-height:1.8;margin-bottom:16px;}
+.result-deltas{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:14px;}
+.delta{font-size:0.78rem;font-weight:700;padding:4px 10px;border-radius:20px;}
+.delta-good{background:rgba(95,191,122,0.2);color:#8fe0a5;}
+.delta-bad{background:rgba(255,107,90,0.2);color:#ff9a8f;}
+.tag-gained{font-size:0.82rem;color:#ffcf5c;margin-bottom:16px;}
+.result-card .btn{margin-top:8px;width:100%;}
+
+/* ===== RUN END ===== */
+.run-end-screen{align-items:center;text-align:center;justify-content:center;color:#eaf6fb;background:radial-gradient(circle at 50% 20%,#1d3550,#0d1b2a 75%);}
+.run-end-screen.outcome-summit{background:radial-gradient(circle at 50% 15%,#3a5a3a,#0d1b2a 75%);}
+.run-end-screen.outcome-fail{background:radial-gradient(circle at 50% 15%,#4a2020,#0d1b2a 75%);}
+.run-end-icon{font-size:3rem;margin-bottom:8px;}
+.run-end-screen h1{font-size:1.4rem;margin-bottom:12px;}
+.run-end-desc{font-size:0.9rem;line-height:1.8;color:#cbd8e3;margin-bottom:22px;}
+.run-end-stats{background:rgba(255,255,255,0.06);border-radius:10px;padding:14px 16px;margin-bottom:26px;width:100%;}
+.run-end-row{font-size:0.82rem;color:#cbd8e3;margin-bottom:6px;}
+.run-end-row:last-child{margin-bottom:0;}
+.tag-chip{display:inline-block;background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:6px;font-size:0.75rem;margin:2px;}
+
+/* ===== LAUNDRY (soap theme) ===== */
+.laundry-screen{background:linear-gradient(180deg,#fff3dd,#ffe4b0);color:#4a3220;}
+.laundry-header{display:flex;align-items:center;gap:8px;font-family:'Dela Gothic One',sans-serif;font-size:1.15rem;margin-bottom:6px;color:#c74f2e;}
+.laundry-sub{font-size:0.84rem;line-height:1.7;color:#7a5c3a;margin-bottom:20px;}
+.laundry-prompt{font-size:0.9rem;font-weight:700;margin-bottom:12px;}
+
+.focus-options{display:flex;flex-direction:column;gap:10px;}
+.focus-card{text-align:left;background:#fffaf0;border:1px solid #f0cf9a;border-radius:14px;padding:15px 16px;}
+.focus-card:active{background:#fff1d6;}
+.focus-name{font-weight:700;font-size:0.94rem;margin-bottom:4px;}
+.focus-desc{font-size:0.78rem;color:#8a6f4a;}
+
+.option-group{margin-bottom:18px;}
+.option-group-label{font-size:0.82rem;font-weight:700;margin-bottom:8px;color:#7a5c3a;}
+.segmented{display:flex;background:#fff3dd;border:1px solid #f0cf9a;border-radius:10px;padding:3px;gap:3px;}
+.seg-btn{flex:1;padding:10px 6px;border-radius:8px;font-size:0.82rem;font-weight:700;color:#a4835a;}
+.seg-btn.active{background:#ff7a59;color:#fff3dd;}
+.risk-preview{background:#fffaf0;border-radius:10px;padding:12px 14px;margin-bottom:20px;}
+.risk-row{font-size:0.82rem;color:#7a5c3a;margin-bottom:4px;}
+.risk-row:last-child{margin-bottom:0;}
+.risk-row.risk-warn strong{color:#c74f2e;}
+
+.round-label{text-align:center;font-size:0.78rem;font-weight:700;color:#a4835a;margin-bottom:14px;}
+.spin-dial{position:relative;width:200px;height:200px;margin:0 auto 16px;border-radius:50%;background:radial-gradient(circle,#fffaf0,#ffe4b0);border:6px solid #fff;box-shadow:0 6px 20px rgba(150,100,40,0.25);}
+.spin-marker{position:absolute;top:50%;left:50%;width:5px;height:88px;background:#ff7a59;margin-left:-2.5px;margin-top:-88px;transform-origin:50% 100%;border-radius:3px 3px 0 0;}
+.spin-needle{position:absolute;top:50%;left:50%;width:4px;height:80px;background:#4a3220;margin-left:-2px;margin-top:-80px;transform-origin:50% 100%;border-radius:2px 2px 0 0;}
+.spin-center{position:absolute;top:50%;left:50%;width:16px;height:16px;margin:-8px;border-radius:50%;background:#4a3220;z-index:2;}
+.mini-feedback{text-align:center;font-weight:700;font-size:0.9rem;height:1.4rem;margin-bottom:14px;}
+.fb-great{color:#2f9e4f;}
+.fb-good{color:#5fa83f;}
+.fb-ok{color:#d69a2f;}
+.fb-bad{color:#c74f2e;}
+
+.press-track{position:relative;height:36px;width:240px;max-width:100%;background:#fffaf0;border:1px solid #f0cf9a;border-radius:18px;margin:0 auto 14px;overflow:hidden;}
+.press-zone{position:absolute;top:3px;bottom:3px;background:rgba(95,191,122,0.45);border-radius:14px;}
+.press-marker{position:absolute;top:3px;bottom:3px;width:6px;background:#4a3220;border-radius:3px;margin-left:-3px;}
+
+.result-screen{align-items:center;text-align:center;}
+.clean-summary{background:#fffaf0;border-radius:12px;padding:16px;width:100%;margin-bottom:16px;}
+.clean-row{font-size:0.86rem;color:#6b5233;margin-bottom:6px;}
+.clean-row:last-child{margin-bottom:0;}
+.clean-row strong{color:#2f9e4f;}
+.shrink-warn{font-size:0.8rem;color:#c74f2e;background:rgba(199,79,46,0.12);padding:10px 12px;border-radius:8px;margin-bottom:14px;width:100%;}
+.new-passive{font-size:0.85rem;color:#c9861a;background:rgba(255,182,72,0.2);padding:12px 14px;border-radius:8px;margin-bottom:14px;width:100%;line-height:1.6;}
+.sp-gain{font-weight:700;color:#c74f2e;margin-bottom:20px;font-size:0.95rem;}
+
+@keyframes cleanFlash{0%{box-shadow:0 0 0 0 rgba(255,255,255,0);}15%{box-shadow:0 0 50px 20px rgba(255,255,255,0.8);}100%{box-shadow:0 0 0 0 rgba(255,255,255,0);}}
+.clean-flash{animation:cleanFlash 1s ease-out;}
+
+@media (min-width:480px){
+  #app{border-left:1px solid rgba(255,255,255,0.08);border-right:1px solid rgba(255,255,255,0.08);}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+
+/* =========================================================
+   CONFIG DATA
+   ========================================================= */
+
+var TIER_DEFS = [
+  { id:0, name:'富士山', subtitle:'標高 3,776m', theme:'fuji', baseNodes:7, summitThreshold:0.42, flavor:'登山の基礎を学ぶ、すべての始まりの山。泥と火山灰が行く手を阻む。' },
+  { id:1, name:'K2 / エベレスト', subtitle:'標高 8,611m・デスゾーン', theme:'k2', baseNodes:8, summitThreshold:0.50, flavor:'酸素も逃げ場もない極限の高み。含水率の管理が生死を分ける。' },
+  { id:2, name:'成層圏', subtitle:'標高 10,000m+・大気圏外', theme:'strato', baseNodes:9, summitThreshold:0.56, flavor:'大気を抜け、宇宙放射線に汚染された未知の領域へ。' },
+  { id:3, name:'無限峰', subtitle:'標高 ∞・Procedural Infinite Peak', theme:'infinite', baseNodes:9, summitThreshold:0.56, flavor:'酸性雨、マグマ、洗剤の泡——環境がランダムに複合する終わりなき山。' }
+];
+
+var DIRT_TAGS = {
+  mud:     { label:'泥', icon:'🟤', enchant:'lightStep' },
+  ash:     { label:'火山灰', icon:'⬛', enchant:'rockArmor' },
+  fat:     { label:'獣脂', icon:'🟡', enchant:'windCoat' },
+  ice:     { label:'絶対零度氷', icon:'🔵', enchant:'coldCore' },
+  yeti:    { label:'雪男の体毛', icon:'⚪', enchant:'frostImmune' },
+  thunder: { label:'雷雲のスス', icon:'🟣', enchant:'lightningPick' }
+};
+
+var ENCHANTMENTS = {
+  lightStep:     { name:'軽量化コーティング', desc:'汚れ度の蓄積が20%軽くなる' },
+  rockArmor:     { name:'対岩石装甲', desc:'転倒・落石系イベントのHPダメージが30%軽減される' },
+  windCoat:      { name:'天然防風コート', desc:'悪天候イベントのスタミナ消費が15%軽くなる' },
+  coldCore:      { name:'コールドコア', desc:'凍結度の蓄積が20%軽くなる' },
+  frostImmune:   { name:'極寒無効パッシブ', desc:'凍結度が80%を超えて上昇しなくなる' },
+  lightningPick: { name:'雷ピッケル', desc:'山頂アタックの成功判定が有利になる' }
+};
+
+var FOCUS_DEFS = {
+  mud:   { name:'泥汚れ特化', desc:'汚れ度の除去率を大きく高める調合', bonus:{dirt:0.20} },
+  repel: { name:'撥水修復', desc:'含水率の除去を高め、シェルの撥水性を回復する調合', bonus:{moisture:0.20} },
+  cold:  { name:'極寒耐性付与', desc:'凍結度の除去を高める調合', bonus:{frost:0.20} }
+};
+
+var EVENT_TEMPLATES = {
+  TERRAIN: [
+    { key:'muddySlope', minTier:0, icon:'🥾', title:'泥濘の斜面', desc:'ぬかるんだ急斜面が延々と続いている。慎重に進むか、一気に駆け抜けるか。',
+      choices:[
+        { label:'慎重に迂回する', flavor:'時間はかかるが安全', effects:{stamina:-10, dirt:8, moisture:5} },
+        { label:'一気に駆け抜ける', flavor:'速いが転倒の危険がある', effects:{stamina:-5, dirt:15}, riskChance:0.25, riskEffects:{dirt:20, hp:-12}, riskText:'足を滑らせ、泥の中に盛大に転倒した。', safeText:'なんとか駆け抜けた。' }
+      ] },
+    { key:'rockfall', minTier:0, icon:'🪨', title:'落石地帯', desc:'頭上から小石がぱらぱらと落ちてくる危険なガレ場。',
+      choices:[
+        { label:'ヘルメットを頼りにゆっくり進む', flavor:'安全第一', effects:{stamina:-12} },
+        { label:'一気に走り抜ける', flavor:'リスクを取る', effects:{stamina:-6}, riskChance:0.3, riskEffects:{hp:-15}, riskText:'岩が直撃し、強い衝撃を受けた。', safeText:'間一髪で走り抜けた。' }
+      ] },
+    { key:'ashValley', minTier:0, icon:'🌋', title:'火山灰の谷', desc:'細かい火山灰が視界を灰色に染める。呼吸もしづらい。',
+      choices:[
+        { label:'マスクをして進む', flavor:'安全だが灰まみれになる', effects:{stamina:-8, dirt:12}, grantTag:'ash' },
+        { label:'息を止めて一気に走る', flavor:'速いがより汚れる', effects:{stamina:-14, dirt:22}, grantTag:'ash' }
+      ] },
+    { key:'deepSnow', minTier:1, icon:'❄️', title:'深い雪原', desc:'膝まで沈む新雪が延々と続く。',
+      choices:[
+        { label:'かんじきを装着する', flavor:'安全だが体力を使う', effects:{stamina:-15} },
+        { label:'そのまま直進する', flavor:'早いが服が濡れる', effects:{moisture:15, frost:8, stamina:-8} }
+      ] },
+    { key:'iceCliff', minTier:1, icon:'🧊', title:'氷の断崖', desc:'垂直に切り立った氷壁が行く手を阻む。',
+      choices:[
+        { label:'アイゼンで慎重に登る', flavor:'時間がかかる', effects:{stamina:-18}, riskChance:0.25, riskEffects:{hp:-12}, riskText:'氷が砕け、体勢を崩した。', safeText:'慎重に登り切った。' },
+        { label:'山頂ドライで即席ピッケルを作る', flavor:'濡れた手ぬぐいを振り回し瞬時に凍らせる（含水率25%以上で使用可）', requires:function(run){ return run.moisture>=25; }, effects:{moisture:-25, stamina:-8}, resultLine:'手ぬぐいが瞬時に凍りつき、頑丈な即席ピッケルになった。迷いなく登り切った。' }
+      ] }
+  ],
+  WEATHER: [
+    { key:'heavyRain', minTier:0, icon:'🌧️', title:'豪雨', desc:'叩きつけるような雨が全身を濡らしていく。',
+      choices:[
+        { label:'レインカバーを張って進む', flavor:'', effects:{stamina:-10, moisture:10} },
+        { label:'構わず進む', flavor:'', effects:{moisture:22, stamina:-4} }
+      ] },
+    { key:'strongWind', minTier:0, icon:'💨', title:'強風', desc:'体ごと持っていかれそうな突風が吹き荒れている。',
+      choices:[
+        { label:'姿勢を低くして耐える', flavor:'', effects:{stamina:-12} },
+        { label:'押し切って進む', flavor:'', effects:{stamina:-6}, riskChance:0.25, riskEffects:{hp:-12, dirt:10}, riskText:'突風に足を取られ、地面に叩きつけられた。', safeText:'なんとか耐えきった。' }
+      ] },
+    { key:'blizzard', minTier:1, icon:'🌨️', title:'吹雪', desc:'視界ゼロの猛吹雪。前も後ろもわからない。',
+      choices:[
+        { label:'岩陰で停滞し天候を待つ', flavor:'時間を失うが安全', effects:{stamina:-20} },
+        { label:'構わず前進する', flavor:'', effects:{frost:22, moisture:15, stamina:-10} }
+      ] },
+    { key:'freezingFog', minTier:1, icon:'🌫️', title:'着氷霧', desc:'霧が装備の上で瞬時に凍りつく特殊な気象現象。',
+      choices:[
+        { label:'こまめに氷を払い落としながら進む', flavor:'', effects:{stamina:-14, frost:5} },
+        { label:'構わず進む', flavor:'', effects:{frost:20} }
+      ] },
+    { key:'radiationStorm', minTier:2, icon:'☢️', title:'放射線嵐', desc:'大気圏外特有の宇宙放射線が吹き荒れる区間。',
+      choices:[
+        { label:'簡易シェルターで待避する', flavor:'', effects:{stamina:-15} },
+        { label:'強行突破する', flavor:'', effects:{stamina:-8, hp:-8} }
+      ] }
+  ],
+  RESOURCE: [
+    { key:'mineralOutcrop', minTier:0, icon:'💎', title:'鉱物の露頭', desc:'岩肌に、洗剤の原料になりそうな鉱物脈を見つけた。',
+      choices:[
+        { label:'採取する', flavor:'少し体力を使う', effects:{stamina:-6}, grantMinerals:2 },
+        { label:'見送って進む', flavor:'', effects:{} }
+      ] },
+    { key:'alpinePlants', minTier:0, icon:'🌿', title:'高山植物の群生', desc:'洗剤の香りづけにも使えそうな植物が群生している。',
+      choices:[
+        { label:'採取する', flavor:'', effects:{stamina:-5}, grantPlants:2 },
+        { label:'見送って進む', flavor:'', effects:{} }
+      ] },
+    { key:'wildlifeTerritory', minTier:0, icon:'🐾', title:'野生動物の縄張り', desc:'獣の毛と脂らしきものが茂みに付着している。',
+      choices:[
+        { label:'そっと採取する', flavor:'獣脂が付着するかもしれない', effects:{stamina:-6, dirt:8}, grantTag:'fat' },
+        { label:'刺激せず通り過ぎる', flavor:'', effects:{stamina:-4} }
+      ] },
+    { key:'frozenWaterfall', minTier:1, icon:'🧊', title:'凍結した滝', desc:'絶対零度で凍りついた滝。触れれば凍傷の危険がある特殊な氷だ。',
+      choices:[
+        { label:'慎重に絶対零度氷を採取する', flavor:'危険だが貴重', effects:{stamina:-10, hp:-6}, grantTag:'ice' },
+        { label:'見送って進む', flavor:'', effects:{} }
+      ] },
+    { key:'yetiTracks', minTier:1, icon:'🦶', title:'雪男の痕跡', desc:'巨大な足跡と、体毛らしきものが雪の上に落ちている。',
+      choices:[
+        { label:'体毛を回収する', flavor:'', effects:{stamina:-8}, grantTag:'yeti' },
+        { label:'関わらず進む', flavor:'', effects:{} }
+      ] },
+    { key:'lightningAftermath', minTier:1, icon:'⚡', title:'落雷の痕跡', desc:'焼け焦げた岩と、帯電したような黒いススが残っている。',
+      choices:[
+        { label:'雷雲のススを採取する', flavor:'', effects:{stamina:-8}, grantTag:'thunder' },
+        { label:'関わらず進む', flavor:'', effects:{} }
+      ] }
+  ],
+  REST: [
+    { key:'mountainHut1', minTier:0, icon:'🛖', title:'山小屋', desc:'ベースキャンプに繋がる避難小屋に到着した。少し休んでいくか？',
+      choices:[
+        { label:'休憩する', flavor:'体力が回復する', effects:{stamina:25, hp:10} },
+        { label:'休まず先へ進む', flavor:'時間を節約する', effects:{} }
+      ] },
+    { key:'mountainHut2', minTier:1, icon:'🏚️', title:'避難小屋', desc:'風雪をしのげる小さな小屋を見つけた。',
+      choices:[
+        { label:'休憩する', flavor:'体力が回復する', effects:{stamina:20, hp:8} },
+        { label:'休まず先へ進む', flavor:'', effects:{} }
+      ] }
+  ],
+  HAZARD: [
+    { key:'wildEncounter', minTier:0, icon:'🐺', title:'野生動物との遭遇', desc:'汚れの匂いに誘われたのか、獣がこちらを警戒している。',
+      choices:[
+        { label:'大声で威嚇する', flavor:'', effects:{stamina:-15} },
+        { label:'そっと後退し迂回する', flavor:'', effects:{stamina:-8}, riskChance:0.15, riskEffects:{hp:-10}, riskText:'興奮した獣に襲われかけた。', safeText:'無事にやり過ごした。' }
+      ] },
+    { key:'gearStrain', minTier:0, icon:'🧵', title:'装備の消耗', desc:'長時間の行動でウェアの縫い目に負荷がかかっている。',
+      choices:[
+        { label:'応急処置をする', flavor:'', effects:{stamina:-10} },
+        { label:'そのまま進む', flavor:'', effects:{dirt:10, moisture:10} }
+      ] },
+    { key:'crevasse', minTier:1, icon:'🕳️', title:'クレバス', desc:'雪に隠れた深い亀裂。一歩間違えれば転落する。',
+      choices:[
+        { label:'迂回する', flavor:'', effects:{stamina:-16} },
+        { label:'飛び越える', flavor:'', effects:{stamina:-8}, riskChance:0.3, riskEffects:{hp:-20}, riskText:'踏み外し、クレバスの縁で強く体を打った。', safeText:'見事に飛び越えた。' }
+      ] },
+    { key:'meteorShower', minTier:2, icon:'☄️', title:'微小隕石群', desc:'成層圏特有の微小な隕石が周囲に降り注ぐ。',
+      choices:[
+        { label:'岩陰に隠れてやり過ごす', flavor:'', effects:{stamina:-14} },
+        { label:'走って突破する', flavor:'', effects:{stamina:-8}, riskChance:0.25, riskEffects:{hp:-14}, riskText:'小さな破片が装備をかすめ、鋭い痛みが走った。', safeText:'間一髪で突破した。' }
+      ] }
+  ]
+};
+
+/* =========================================================
+   STATE
+   ========================================================= */
+
+var state = {
+  screen: 'TITLE',
+  unlockedTier: 0,
+  infiniteLevel: 0,
+  sp: 0,
+  upgrades: { hp:0, stamina:0, resist:0 },
+  passives: [],
+  run: null,
+  laundrySummary: null
+};
+
+var laundryUI = { temp:'normal', drum:'mid' };
+var spinGame = null;
+var pressGame = null;
+
+/* =========================================================
+   UTILS
+   ========================================================= */
+
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+function clamp01(v){ return clamp(v,0,1); }
+
+function hasPassive(id){
+  return state.passives.some(function(p){ return p.id===id; });
+}
+
+function tierMultiplier(tierId){
+  var extra = (tierId === TIER_DEFS.length-1) ? state.infiniteLevel*0.05 : 0;
+  return 1 + tierId*0.18 + extra;
+}
+
+function statsSnapshot(run){
+  return { hp:run.hp, stamina:run.stamina, dirt:run.dirt, moisture:run.moisture, frost:run.frost };
+}
+
+function tagChipsHtml(tagSet){
+  if (!tagSet || tagSet.size===0) return '';
+  var out = [];
+  tagSet.forEach(function(t){
+    var d = DIRT_TAGS[t];
+    if (d) out.push('<span class="tag-chip">'+d.icon+' '+d.label+'</span>');
+  });
+  return out.join(' ');
+}
+
+/* =========================================================
+   RENDER CORE
+   ========================================================= */
+
+function render(){
+  var app = document.getElementById('app');
+  switch(state.screen){
+    case 'TITLE': renderTitle(app); break;
+    case 'CAMP': renderCamp(app); break;
+    case 'CLIMB': renderClimb(app); break;
+    case 'RUN_END': renderRunEnd(app); break;
+    case 'LAUNDRY_MIX': renderLaundryMix(app); break;
+    case 'LAUNDRY_WASH': renderLaundryWash(app); break;
+    case 'LAUNDRY_SPIN': renderLaundrySpin(app); break;
+    case 'LAUNDRY_DRY': renderLaundryDry(app); break;
+    case 'LAUNDRY_RESULT': renderLaundryResult(app); break;
+    default: app.innerHTML = '<p>読み込み中…</p>';
+  }
+  window.scrollTo(0,0);
+}
+
+/* =========================================================
+   TITLE
+   ========================================================= */
+
+function renderTitle(app){
+  app.innerHTML = `
+    <div class="screen title-screen">
+      <div class="title-split"><div class="split-climb"></div><div class="split-wash"></div></div>
+      <div class="title-body">
+        <h1 class="title-logo">ピーク&amp;ウォッシュ</h1>
+        <p class="title-en">PEAK &amp; WASH</p>
+        <p class="title-tagline">登って、汚して、洗い上げる。標高が上がるほど、洗濯は難しくなる。</p>
+        <button class="btn btn-camp btn-big" onclick="goToCamp()">はじめる</button>
+        <p class="title-genre">登山ローグライト × ランドリークラフト</p>
+      </div>
+    </div>
+  `;
+}
+
+function goToCamp(){
+  state.screen = 'CAMP';
+  render();
+}
+
+/* =========================================================
+   CAMP
+   ========================================================= */
+
+function renderCamp(app){
+  app.innerHTML = `
+    <div class="screen camp-screen">
+      <div class="camp-header">
+        <h1>ベースキャンプ</h1>
+        <div class="sp-badge">${state.sp} SP</div>
+      </div>
+
+      <section class="camp-section">
+        <h2>汚れ還元エンチャント</h2>
+        ${state.passives.length
+          ? `<div class="passive-list">${state.passives.map(function(p){ return '<div class="passive-chip">'+p.name+'</div>'; }).join('')}</div>`
+          : `<p class="camp-empty">まだ何も獲得していない。山で特殊な汚れを集め、洗濯で反転させよう。</p>`}
+      </section>
+
+      <section class="camp-section">
+        <h2>ギア強化</h2>
+        <div class="upgrade-list">
+          ${renderUpgradeRow('hp','体力強化','最大HP +10')}
+          ${renderUpgradeRow('stamina','スタミナ強化','最大スタミナ +10')}
+          ${renderUpgradeRow('resist','防汚コーティング','汚れ・水分・凍結の蓄積 -4%')}
+        </div>
+      </section>
+
+      <section class="camp-section">
+        <h2>山を選ぶ</h2>
+        <div class="tier-list">
+          ${TIER_DEFS.map(function(t,i){ return i<=state.unlockedTier ? renderTierCard(t,i) : renderLockedTierCard(t,i); }).join('')}
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function renderUpgradeRow(key,label,desc){
+  var level = state.upgrades[key];
+  var maxLevel = 5;
+  var cost = 20*(level+1);
+  var maxed = level>=maxLevel;
+  var affordable = state.sp>=cost;
+  return `
+    <div class="upgrade-row">
+      <div class="upgrade-info">
+        <div class="upgrade-label">${label}<span class="upgrade-level">Lv.${level}/${maxLevel}</span></div>
+        <div class="upgrade-desc">${desc}</div>
+      </div>
+      ${maxed
+        ? `<button class="btn btn-tiny btn-disabled" disabled>MAX</button>`
+        : `<button class="btn btn-tiny ${affordable?'btn-camp':'btn-disabled'}" ${affordable?'':'disabled'} onclick="buyUpgrade('${key}')">${cost} SP</button>`}
+    </div>
+  `;
+}
+
+function buyUpgrade(key){
+  var level = state.upgrades[key];
+  var cost = 20*(level+1);
+  if (state.sp>=cost && level<5){
+    state.sp -= cost;
+    state.upgrades[key] = level+1;
+    render();
+  }
+}
+
+function renderTierCard(t,i){
+  var isInfinite = i===TIER_DEFS.length-1;
+  return `
+    <button class="tier-card" onclick="startClimb(${i})">
+      <div class="tier-name">${t.name}${isInfinite && state.infiniteLevel>0 ? ' Lv.'+state.infiniteLevel : ''}</div>
+      <div class="tier-sub">${t.subtitle}</div>
+      <div class="tier-flavor">${t.flavor}</div>
+      <div class="tier-cta">登山を開始する</div>
+    </button>
+  `;
+}
+
+function renderLockedTierCard(t,i){
+  return `
+    <div class="tier-card locked">
+      <div class="tier-name">${t.name}</div>
+      <div class="tier-sub">前の山を登頂すると解放される</div>
+    </div>
+  `;
+}
+
+/* =========================================================
+   CLIMB — HUD & RENDER
+   ========================================================= */
+
+function conditionEmoji(run){
+  if (run.frost>=70) return '🥶';
+  if (run.dirt>=70) return '🤢';
+  if (run.moisture>=70) return '💧';
+  if (run.dirt>=40 || run.moisture>=40 || run.frost>=40) return '😓';
+  return '🙂';
+}
+
+function statBarHtml(label, val, max, cls){
+  var pct = Math.round(clamp(val,0,max)/max*100);
+  var displayVal = Math.round(val);
+  return `
+    <div class="stat-row">
+      <div class="stat-label">${label}</div>
+      <div class="stat-track"><div class="stat-fill fill-${cls}" style="width:${pct}%"></div></div>
+      <div class="stat-value">${displayVal}${(cls==='hp'||cls==='stamina')?'':'%'}</div>
+    </div>
+  `;
+}
+
+function climbHudHtml(run, tierDef){
+  return `
+    <div class="climb-hud">
+      <div class="hud-top">
+        <div class="hud-tier">${tierDef.name}</div>
+        <div class="hud-progress">${Math.min(run.nodeIndex+1, run.path.length)} / ${run.path.length}</div>
+        <div class="hud-face">${conditionEmoji(run)}</div>
+      </div>
+      ${statBarHtml('HP', run.hp, run.maxHp, 'hp')}
+      ${statBarHtml('スタミナ', run.stamina, run.maxStamina, 'stamina')}
+      ${statBarHtml('汚れ度', run.dirt, 100, 'dirt')}
+      ${statBarHtml('含水率', run.moisture, 100, 'moisture')}
+      ${statBarHtml('凍結度', run.frost, 100, 'frost')}
+    </div>
+  `;
+}
+
+function renderClimb(app){
+  var run = state.run;
+  var tierDef = TIER_DEFS[run.tierId];
+  if (run.subScreen==='result'){ renderClimbResult(app, run, tierDef); return; }
+  if (run.subScreen==='summit'){ renderSummitPush(app, run, tierDef); return; }
+
+  var node = run.path[run.nodeIndex];
+  var choiceList = node.choices
+    .map(function(c,idx){ return {c:c, idx:idx}; })
+    .filter(function(o){ return !o.c.requires || o.c.requires(run); });
+
+  app.innerHTML = `
+    <div class="screen climb-screen theme-${tierDef.theme}">
+      ${climbHudHtml(run, tierDef)}
+      <div class="event-card">
+        <div class="event-icon">${node.icon}</div>
+        <div class="event-title">${node.title}</div>
+        <div class="event-desc">${node.desc}</div>
+        <div class="event-choices">
+          ${choiceList.map(function(o){
+            return '<button class="choice-btn" onclick="chooseOption('+o.idx+')">'
+              + '<div class="choice-label">'+o.c.label+'</div>'
+              + (o.c.flavor ? '<div class="choice-flavor">'+o.c.flavor+'</div>' : '')
+              + '</button>';
+          }).join('')}
+        </div>
+        ${node.category==='REST' ? `<button class="btn btn-retreat" onclick="retreatNow()">下山してベースキャンプに戻る</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderSummitPush(app, run, tierDef){
+  app.innerHTML = `
+    <div class="screen climb-screen theme-${tierDef.theme}">
+      ${climbHudHtml(run, tierDef)}
+      <div class="event-card summit-card">
+        <div class="event-icon">🏔️</div>
+        <div class="event-title">山頂アタック</div>
+        <div class="event-desc">${tierDef.name}の山頂が目前に迫る。ここまでの装備とコンディションが全てを決める。</div>
+        <button class="btn btn-alpine btn-big" onclick="resolveSummit()">アタックする</button>
+      </div>
+    </div>
+  `;
+}
+
+function deltaListHtml(before, after){
+  var items = [['hp','HP'],['stamina','スタミナ'],['dirt','汚れ度'],['moisture','含水率'],['frost','凍結度']];
+  return items.map(function(pair){
+    var k = pair[0], label = pair[1];
+    var d = Math.round(after[k]-before[k]);
+    if (d===0) return '';
+    var sign = d>0 ? '+' : '';
+    var goodDirection = (k==='hp'||k==='stamina') ? d>0 : d<0;
+    var cls = goodDirection ? 'delta-good' : 'delta-bad';
+    return '<span class="delta '+cls+'">'+label+' '+sign+d+'</span>';
+  }).join('');
+}
+
+function renderClimbResult(app, run, tierDef){
+  var o = run.lastOutcome;
+  var isFail = run.outcome==='FAIL';
+  app.innerHTML = `
+    <div class="screen climb-screen theme-${tierDef.theme}">
+      ${climbHudHtml(run, tierDef)}
+      <div class="event-card result-card ${o.hitRisk?'risk-hit':''} ${isFail?'fail-hit':''}">
+        <div class="result-text">${o.text}</div>
+        <div class="result-deltas">${deltaListHtml(o.before,o.after)}</div>
+        ${o.grantTag ? `<div class="tag-gained">特殊な汚れを採取した：${DIRT_TAGS[o.grantTag].icon} ${DIRT_TAGS[o.grantTag].label}</div>` : ''}
+        <button class="btn btn-alpine btn-big" onclick="proceedFromResult()">${isFail?'救助を待つ':'続ける'}</button>
+      </div>
+    </div>
+  `;
+}
+
+/* =========================================================
+   CLIMB — LOGIC
+   ========================================================= */
+
+function applyEffects(effects, category){
+  if (!effects) return;
+  var run = state.run;
+  var tm = tierMultiplier(run.tierId);
+  var resistMult = 1 - state.upgrades.resist*0.04;
+  var dirtMult = resistMult * (hasPassive('lightStep') ? 0.8 : 1) * tm;
+  var frostMult = resistMult * (hasPassive('coldCore') ? 0.8 : 1) * tm;
+  var moistureMult = tm;
+  var staminaMult = (category==='WEATHER' && hasPassive('windCoat')) ? 0.85 : 1;
+
+  if (effects.hp) run.hp += effects.hp<0 ? Math.round(effects.hp*Math.min(tm,1.4)) : effects.hp;
+  if (effects.stamina) run.stamina += Math.round(effects.stamina * (effects.stamina<0 ? staminaMult : 1));
+  if (effects.dirt) run.dirt += Math.round(effects.dirt * (effects.dirt>0 ? dirtMult : 1));
+  if (effects.moisture) run.moisture += Math.round(effects.moisture * (effects.moisture>0 ? moistureMult : 1));
+  if (effects.frost) run.frost += Math.round(effects.frost * (effects.frost>0 ? frostMult : 1));
+}
+
+function clampRunStats(){
+  var run = state.run;
+  run.hp = Math.round(clamp(run.hp,0,run.maxHp));
+  run.stamina = Math.round(clamp(run.stamina,0,run.maxStamina));
+  run.dirt = Math.round(clamp(run.dirt,0,100));
+  run.moisture = Math.round(clamp(run.moisture,0,100));
+  var frostCap = hasPassive('frostImmune') ? 80 : 100;
+  run.frost = Math.round(clamp(run.frost,0,frostCap));
+}
+
+function adjustedRisk(base){
+  var run = state.run;
+  var r = base;
+  if (run.frost>50) r += 0.15;
+  if (run.frost>80) r += 0.15;
+  if (run.stamina<20) r += 0.10;
+  return Math.min(0.95, r);
+}
+
+function defaultResultLine(node, choice){
+  return choice.label + '。';
+}
+
+function chooseOption(choiceIndex){
+  var run = state.run;
+  var node = run.path[run.nodeIndex];
+  var choice = node.choices[choiceIndex];
+  var before = statsSnapshot(run);
+
+  applyEffects(choice.effects, node.category);
+
+  var resultText = choice.resultLine || defaultResultLine(node, choice);
+  var hitRisk = false;
+  if (choice.riskChance !== undefined){
+    if (Math.random() < adjustedRisk(choice.riskChance)){
+      hitRisk = true;
+      var riskEff = Object.assign({}, choice.riskEffects);
+      if (riskEff.hp && riskEff.hp<0 && hasPassive('rockArmor')) riskEff.hp = Math.round(riskEff.hp*0.7);
+      applyEffects(riskEff, node.category);
+      resultText = choice.riskText;
+    } else {
+      resultText = choice.safeText || resultText;
+    }
+  }
+
+  if (choice.grantTag) run.dirtTags.add(choice.grantTag);
+  if (choice.grantMinerals) run.minerals += choice.grantMinerals;
+  if (choice.grantPlants) run.plants += choice.grantPlants;
+
+  clampRunStats();
+  var after = statsSnapshot(run);
+
+  if (run.hp<=0){
+    run.outcome = 'FAIL';
+    run.minerals = Math.floor(run.minerals*0.5);
+    run.plants = Math.floor(run.plants*0.5);
+  }
+
+  run.lastOutcome = { text:resultText, before:before, after:after, hitRisk:hitRisk, grantTag:choice.grantTag };
+  run.subScreen = 'result';
+  render();
+}
+
+function proceedFromResult(){
+  var run = state.run;
+  if (run.outcome==='FAIL'){
+    state.screen = 'RUN_END';
+    render();
+    return;
+  }
+  if (run.dirt>50) run.stamina -= 3;
+  if (run.dirt>80) run.stamina -= 3;
+  clampRunStats();
+  if (run.stamina<=0){
+    run.outcome = 'RETREAT';
+    state.screen = 'RUN_END';
+    render();
+    return;
+  }
+  run.nodeIndex++;
+  var nextNode = run.path[run.nodeIndex];
+  run.subScreen = nextNode ? 'event' : 'summit';
+  render();
+}
+
+function retreatNow(){
+  state.run.outcome = 'RETREAT';
+  state.screen = 'RUN_END';
+  render();
+}
+
+function computeSummitScore(run){
+  var hpRatio = run.hp/run.maxHp;
+  var stRatio = run.stamina/run.maxStamina;
+  var cleanliness = 1 - (run.dirt+run.moisture+run.frost)/300;
+  var score = hpRatio*0.35 + stRatio*0.20 + cleanliness*0.35 + 0.10;
+  if (hasPassive('lightningPick')) score += 0.05;
+  return score;
+}
+
+function resolveSummit(){
+  var run = state.run;
+  var tierDef = TIER_DEFS[run.tierId];
+  var score = computeSummitScore(run);
+  var threshold = tierDef.summitThreshold;
+  if (run.tierId===TIER_DEFS.length-1) threshold += Math.min(0.25, state.infiniteLevel*0.02);
+
+  if (score>=threshold){
+    run.outcome = 'SUMMIT';
+    if (run.tierId===state.unlockedTier && run.tierId<TIER_DEFS.length-1) state.unlockedTier++;
+    if (run.tierId===TIER_DEFS.length-1) state.infiniteLevel++;
+  } else {
+    run.outcome = 'PARTIAL';
+  }
+  state.screen = 'RUN_END';
+  render();
+}
+
+/* =========================================================
+   CLIMB — RUN / NODE GENERATION
+   ========================================================= */
+
+function pickEventTemplate(category, tierId, usedKeys){
+  var all = EVENT_TEMPLATES[category];
+  var pool = all.filter(function(t){ return t.minTier<=tierId && !usedKeys.has(t.key); });
+  var finalPool = pool.length ? pool : all.filter(function(t){ return t.minTier<=tierId; });
+  return finalPool[Math.floor(Math.random()*finalPool.length)];
+}
+
+function generateNode(tierDef, usedKeys){
+  var r = Math.random();
+  var category;
+  if (r<0.32) category='TERRAIN';
+  else if (r<0.58) category='WEATHER';
+  else if (r<0.80) category='RESOURCE';
+  else if (r<0.90) category='REST';
+  else category='HAZARD';
+  var tmpl = pickEventTemplate(category, tierDef.id, usedKeys);
+  usedKeys.add(tmpl.key);
+  return { category:category, key:tmpl.key, title:tmpl.title, desc:tmpl.desc, icon:tmpl.icon, choices:tmpl.choices };
+}
+
+function newRun(tierId){
+  var tierDef = TIER_DEFS[tierId];
+  var extraNodes = (tierId===TIER_DEFS.length-1) ? Math.min(6, Math.floor(state.infiniteLevel/2)) : 0;
+  var nodeCount = tierDef.baseNodes + extraNodes;
+  var usedKeys = new Set();
+  var path = [];
+  for (var i=0;i<nodeCount;i++){
+    path.push(generateNode(tierDef, usedKeys));
+  }
+  if (!path.some(function(n){ return n.category==='REST'; })){
+    var idx = Math.floor(nodeCount/2);
+    var tmpl = pickEventTemplate('REST', tierId, new Set());
+    path[idx] = { category:'REST', key:tmpl.key, title:tmpl.title, desc:tmpl.desc, icon:tmpl.icon, choices:tmpl.choices };
+  }
+  var maxHp = 100 + state.upgrades.hp*10;
+  var maxStamina = 100 + state.upgrades.stamina*10;
+  return {
+    tierId: tierId,
+    path: path,
+    nodeIndex: 0,
+    subScreen: 'event',
+    maxHp: maxHp, hp: maxHp,
+    maxStamina: maxStamina, stamina: maxStamina,
+    dirt:0, moisture:0, frost:0,
+    dirtTags: new Set(),
+    minerals:0, plants:0,
+    outcome: null,
+    lastOutcome: null,
+    detergentFocus: null,
+    washSettings: null,
+    washIntensity: null,
+    shrinkHappened: false,
+    spinAccuracy: null,
+    dryMethod: null,
+    dryStage: null,
+    dryAccuracy: null
+  };
+}
+
+function startClimb(tierId){
+  state.run = newRun(tierId);
+  state.screen = 'CLIMB';
+  render();
+}
+
+/* =========================================================
+   RUN END
+   ========================================================= */
+
+function runEndIcon(outcome){
+  if (outcome==='SUMMIT') return '🏔️';
+  if (outcome==='PARTIAL') return '⛅';
+  if (outcome==='RETREAT') return '⛺';
+  return '🚑';
+}
+
+function renderRunEnd(app){
+  var run = state.run;
+  var tierDef = TIER_DEFS[run.tierId];
+  var titleMap = { SUMMIT:'登頂成功', PARTIAL:'力及ばず、山頂目前で撤退', RETREAT:'山小屋から下山した', FAIL:'遭難——救助された' };
+  var descMap = {
+    SUMMIT: tierDef.name+'の頂に立った。装備はボロボロだが、確かな達成感がある。',
+    PARTIAL: '頂上は見えていたが、装備の限界で引き返さざるを得なかった。',
+    RETREAT: '無理はせず、集めた素材を持って引き返した。',
+    FAIL: '意識を失う寸前で救助隊に発見された。装備と素材の一部を失ったようだ。'
+  };
+  var tagsHtml = tagChipsHtml(run.dirtTags);
+  app.innerHTML = `
+    <div class="screen run-end-screen outcome-${run.outcome.toLowerCase()}">
+      <div class="run-end-icon">${runEndIcon(run.outcome)}</div>
+      <h1>${titleMap[run.outcome]}</h1>
+      <p class="run-end-desc">${descMap[run.outcome]}</p>
+      <div class="run-end-stats">
+        <div class="run-end-row">鉱物 ${run.minerals} ・ 植物 ${run.plants}</div>
+        <div class="run-end-row">特殊な汚れ：${tagsHtml || 'なし'}</div>
+      </div>
+      <button class="btn btn-wash btn-big" onclick="startLaundry()">ベースキャンプでケアする</button>
+    </div>
+  `;
+}
+
+/* =========================================================
+   LAUNDRY — STEP 1: MIX
+   ========================================================= */
+
+function startLaundry(){
+  laundryUI = { temp:'normal', drum:'mid' };
+  state.screen = 'LAUNDRY_MIX';
+  render();
+}
+
+function renderLaundryMix(app){
+  var run = state.run;
+  app.innerHTML = `
+    <div class="screen laundry-screen">
+      <div class="laundry-header">① 洗剤調合</div>
+      <p class="laundry-sub">今回集めた素材：鉱物 ${run.minerals}・植物 ${run.plants} ${tagChipsHtml(run.dirtTags)}</p>
+      <p class="laundry-prompt">どの洗剤をベースに調合する？</p>
+      <div class="focus-options">
+        ${Object.keys(FOCUS_DEFS).map(function(id){
+          var f = FOCUS_DEFS[id];
+          return '<button class="focus-card" onclick="chooseDetergentFocus(\''+id+'\')">'
+            + '<div class="focus-name">'+f.name+'</div>'
+            + '<div class="focus-desc">'+f.desc+'</div>'
+            + '</button>';
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function chooseDetergentFocus(focusId){
+  state.run.detergentFocus = focusId;
+  state.screen = 'LAUNDRY_WASH';
+  render();
+}
+
+/* =========================================================
+   LAUNDRY — STEP 2: WASH
+   ========================================================= */
+
+function washIntensityScore(temp, drum){
+  var tempScore = {cold:0.2, normal:0.5, hot:0.9}[temp];
+  var drumScore = {low:0.2, mid:0.5, high:0.9}[drum];
+  return (tempScore+drumScore)/2;
+}
+
+function segButton(group, val, label){
+  var active = laundryUI[group]===val;
+  return '<button class="seg-btn '+(active?'active':'')+'" onclick="setLaundryOption(\''+group+'\',\''+val+'\')">'+label+'</button>';
+}
+
+function renderLaundryWash(app){
+  var intensity = washIntensityScore(laundryUI.temp, laundryUI.drum);
+  var shrinkRisk = Math.max(0, (intensity-0.55))*0.9;
+  var removal = Math.round((0.5+intensity*0.4)*100);
+  app.innerHTML = `
+    <div class="screen laundry-screen">
+      <div class="laundry-header">② 洗い・ドラム操作</div>
+      <p class="laundry-sub">水温とドラムの回転数を選ぼう。強すぎると縮みのリスクがある。</p>
+
+      <div class="option-group">
+        <div class="option-group-label">水温</div>
+        <div class="segmented">
+          ${segButton('temp','cold','冷水')}
+          ${segButton('temp','normal','ぬるま湯')}
+          ${segButton('temp','hot','熱湯')}
+        </div>
+      </div>
+
+      <div class="option-group">
+        <div class="option-group-label">ドラム回転数</div>
+        <div class="segmented">
+          ${segButton('drum','low','低速')}
+          ${segButton('drum','mid','中速')}
+          ${segButton('drum','high','高速')}
+        </div>
+      </div>
+
+      <div class="risk-preview">
+        <div class="risk-row">予想汚れ除去率 <strong>${removal}%</strong></div>
+        <div class="risk-row ${shrinkRisk>0.15?'risk-warn':''}">縮みリスク <strong>${Math.round(shrinkRisk*100)}%</strong></div>
+      </div>
+
+      <button class="btn btn-wash btn-big" onclick="confirmWash()">洗濯を始める</button>
+    </div>
+  `;
+}
+
+function setLaundryOption(group, val){
+  laundryUI[group] = val;
+  render();
+}
+
+function confirmWash(){
+  var run = state.run;
+  run.washSettings = { temp:laundryUI.temp, drum:laundryUI.drum };
+  var intensity = washIntensityScore(laundryUI.temp, laundryUI.drum);
+  run.washIntensity = intensity;
+  var shrinkChance = Math.max(0, (intensity-0.55))*0.9;
+  run.shrinkHappened = Math.random() < shrinkChance;
+
+  state.screen = 'LAUNDRY_SPIN';
+  initSpinGame();
+  render();
+  runSpinLoop();
+}
+
+/* =========================================================
+   LAUNDRY — STEP 3: SPIN BALANCER (minigame)
+   ========================================================= */
+
+function initSpinGame(){
+  var run = state.run;
+  spinGame = {
+    round:0, totalRounds:4, angle:0,
+    speed: 130 + run.tierId*28 + state.infiniteLevel*5,
+    markerAngle: Math.floor(Math.random()*360),
+    tolerance: Math.max(10, 22 - run.tierId*3),
+    hits: [], lastTime:null, rafId:null
+  };
+}
+
+function runSpinLoop(){
+  spinGame.lastTime = performance.now();
+  spinGame.rafId = requestAnimationFrame(spinTick);
+}
+
+function spinTick(now){
+  if (!spinGame) return;
+  var dt = (now - spinGame.lastTime)/1000;
+  spinGame.lastTime = now;
+  spinGame.angle = (spinGame.angle + spinGame.speed*dt) % 360;
+  var needle = document.getElementById('spinNeedle');
+  if (!needle){ spinGame = null; return; }
+  needle.style.transform = 'rotate('+spinGame.angle+'deg)';
+  spinGame.rafId = requestAnimationFrame(spinTick);
+}
+
+function angleDiff(a,b){
+  var d = Math.abs(a-b) % 360;
+  return d>180 ? 360-d : d;
+}
+
+function flashFeedback(elId, acc){
+  var el = document.getElementById(elId);
+  if (!el) return;
+  var text, cls;
+  if (acc>0.85){ text='大成功！'; cls='fb-great'; }
+  else if (acc>0.5){ text='成功'; cls='fb-good'; }
+  else if (acc>0.15){ text='惜しい…'; cls='fb-ok'; }
+  else { text='失敗…'; cls='fb-bad'; }
+  el.textContent = text;
+  el.className = 'mini-feedback '+cls;
+}
+
+function hitStabilize(){
+  if (!spinGame) return;
+  var diff = angleDiff(spinGame.angle, spinGame.markerAngle);
+  var acc = diff<=spinGame.tolerance ? 1 : Math.max(0, 1-(diff-spinGame.tolerance)/90);
+  spinGame.hits.push(acc);
+  spinGame.round++;
+  flashFeedback('spinFeedback', acc);
+
+  if (spinGame.round>=spinGame.totalRounds){
+    cancelAnimationFrame(spinGame.rafId);
+    var avg = spinGame.hits.reduce(function(a,b){ return a+b; },0)/spinGame.hits.length;
+    state.run.spinAccuracy = avg;
+    spinGame = null;
+    state.screen = 'LAUNDRY_DRY';
+    render();
+  } else {
+    spinGame.markerAngle = Math.floor(Math.random()*360);
+    var marker = document.getElementById('spinMarker');
+    if (marker) marker.style.transform = 'rotate('+spinGame.markerAngle+'deg)';
+    var label = document.getElementById('spinRoundLabel');
+    if (label) label.textContent = (spinGame.round+1)+' / '+spinGame.totalRounds+' 回目';
+  }
+}
+
+function renderLaundrySpin(app){
+  app.innerHTML = `
+    <div class="screen laundry-screen">
+      <div class="laundry-header">③ 脱水バランサー</div>
+      <p class="laundry-sub">ドラムが暴走しないよう、針が重り（オレンジ）に重なった瞬間に「抑える！」をタップ。</p>
+      <div id="spinRoundLabel" class="round-label">${spinGame.round+1} / ${spinGame.totalRounds} 回目</div>
+      <div class="spin-dial">
+        <div id="spinMarker" class="spin-marker" style="transform:rotate(${spinGame.markerAngle}deg)"></div>
+        <div id="spinNeedle" class="spin-needle" style="transform:rotate(${spinGame.angle}deg)"></div>
+        <div class="spin-center"></div>
+      </div>
+      <div id="spinFeedback" class="mini-feedback"></div>
+      <button class="btn btn-wash btn-big" onclick="hitStabilize()">抑える！</button>
+    </div>
+  `;
+}
+
+/* =========================================================
+   LAUNDRY — STEP 4: DRY / PRESS (minigame)
+   ========================================================= */
+
+function renderLaundryDry(app){
+  var run = state.run;
+  if (!run.dryStage) run.dryStage = 'method';
+
+  if (run.dryStage==='method'){
+    app.innerHTML = `
+      <div class="screen laundry-screen">
+        <div class="laundry-header">④ 乾燥・アイロン</div>
+        <p class="laundry-sub">乾燥方法を選ぼう。</p>
+        <div class="focus-options">
+          <button class="focus-card" onclick="chooseDryMethod('sun')">
+            <div class="focus-name">天日干し</div>
+            <div class="focus-desc">時間はかかるが繊維に優しい</div>
+          </button>
+          <button class="focus-card" onclick="chooseDryMethod('hotair')">
+            <div class="focus-name">熱風乾燥</div>
+            <div class="focus-desc">早いが縮みリスクがやや上がる</div>
+          </button>
+          <button class="focus-card" onclick="chooseDryMethod('spray')">
+            <div class="focus-name">撥水スプレー仕上げ</div>
+            <div class="focus-desc">次回の含水率対策を強化する</div>
+          </button>
+        </div>
+      </div>
+    `;
+  } else {
+    app.innerHTML = `
+      <div class="screen laundry-screen">
+        <div class="laundry-header">プレス仕上げ</div>
+        <p class="laundry-sub">バーが緑のゾーンに入った瞬間に「プレス！」。決まれば折り目クリティカル。</p>
+        <div id="pressRoundLabel" class="round-label">${pressGame.round+1} / ${pressGame.totalRounds} 回目</div>
+        <div class="press-track">
+          <div id="pressZone" class="press-zone" style="left:${pressGame.zoneStart}px;width:${pressGame.zoneWidth}px;"></div>
+          <div id="pressMarker" class="press-marker" style="left:${pressGame.pos}px;"></div>
+        </div>
+        <div id="pressFeedback" class="mini-feedback"></div>
+        <button class="btn btn-wash btn-big" onclick="hitPress()">プレス！</button>
+      </div>
+    `;
+  }
+}
+
+function chooseDryMethod(method){
+  var run = state.run;
+  run.dryMethod = method;
+  run.dryStage = 'press';
+  initPressGame();
+  render();
+  runPressLoop();
+}
+
+function initPressGame(){
+  var run = state.run;
+  var trackLen = 240;
+  var zoneWidth = Math.max(28, 66 - run.tierId*7 - state.infiniteLevel*2);
+  pressGame = {
+    round:0, totalRounds:3, pos:0, dir:1,
+    speed: 150 + run.tierId*22 + state.infiniteLevel*5,
+    trackLen: trackLen, zoneWidth: zoneWidth,
+    zoneStart: Math.random()*(trackLen-zoneWidth),
+    hits: [], lastTime:null, rafId:null
+  };
+}
+
+function runPressLoop(){
+  pressGame.lastTime = performance.now();
+  pressGame.rafId = requestAnimationFrame(pressTick);
+}
+
+function pressTick(now){
+  if (!pressGame) return;
+  var dt = (now-pressGame.lastTime)/1000;
+  pressGame.lastTime = now;
+  pressGame.pos += pressGame.dir*pressGame.speed*dt;
+  if (pressGame.pos>pressGame.trackLen){ pressGame.pos=pressGame.trackLen; pressGame.dir=-1; }
+  if (pressGame.pos<0){ pressGame.pos=0; pressGame.dir=1; }
+  var marker = document.getElementById('pressMarker');
+  if (!marker){ pressGame=null; return; }
+  marker.style.left = pressGame.pos+'px';
+  pressGame.rafId = requestAnimationFrame(pressTick);
+}
+
+function hitPress(){
+  if (!pressGame) return;
+  var zoneEnd = pressGame.zoneStart+pressGame.zoneWidth;
+  var inZone = pressGame.pos>=pressGame.zoneStart && pressGame.pos<=zoneEnd;
+  var center = pressGame.zoneStart+pressGame.zoneWidth/2;
+  var acc;
+  if (inZone){
+    acc = 1 - Math.abs(pressGame.pos-center)/(pressGame.zoneWidth/2)*0.3;
+  } else {
+    var dist = pressGame.pos<pressGame.zoneStart ? pressGame.zoneStart-pressGame.pos : pressGame.pos-zoneEnd;
+    acc = Math.max(0, 1-dist/100);
+  }
+  pressGame.hits.push(acc);
+  pressGame.round++;
+  flashFeedback('pressFeedback', acc);
+
+  if (pressGame.round>=pressGame.totalRounds){
+    cancelAnimationFrame(pressGame.rafId);
+    var avg = pressGame.hits.reduce(function(a,b){ return a+b; },0)/pressGame.hits.length;
+    state.run.dryAccuracy = avg;
+    pressGame = null;
+    finalizeLaundry();
+  } else {
+    var zoneWidth = pressGame.zoneWidth;
+    pressGame.zoneStart = Math.random()*(pressGame.trackLen-zoneWidth);
+    var zoneEl = document.getElementById('pressZone');
+    if (zoneEl) zoneEl.style.left = pressGame.zoneStart+'px';
+    var label = document.getElementById('pressRoundLabel');
+    if (label) label.textContent = (pressGame.round+1)+' / '+pressGame.totalRounds+' 回目';
+  }
+}
+
+/* =========================================================
+   LAUNDRY — RESULT
+   ========================================================= */
+
+function finalizeLaundry(){
+  var run = state.run;
+  var focus = FOCUS_DEFS[run.detergentFocus].bonus;
+
+  var dirtRemoval = clamp01(0.5 + run.washIntensity*0.4 + (focus.dirt||0));
+  var moistureRemoval = clamp01(0.6 + (run.spinAccuracy!=null?run.spinAccuracy:0.5)*0.3 + (focus.moisture||0));
+  var frostRemoval = clamp01(0.5 + (run.dryAccuracy!=null?run.dryAccuracy:0.5)*0.3 + (focus.frost||0));
+
+  var residualDirt = Math.round(run.dirt*(1-dirtRemoval));
+  var residualMoisture = Math.round(run.moisture*(1-moistureRemoval));
+  var residualFrost = Math.round(run.frost*(1-frostRemoval));
+
+  var overallQuality = (dirtRemoval+moistureRemoval+frostRemoval)/3;
+  var newPassives = [];
+  if (overallQuality>0.55){
+    run.dirtTags.forEach(function(tag){
+      var def = DIRT_TAGS[tag];
+      if (def && def.enchant && !hasPassive(def.enchant)){
+        var ench = ENCHANTMENTS[def.enchant];
+        state.passives.push({ id:def.enchant, name:ench.name, desc:ench.desc });
+        newPassives.push(ench.name);
+      }
+    });
+  }
+
+  var sp = 10 + Math.round(overallQuality*20);
+  if (run.outcome==='SUMMIT') sp += 20 + run.tierId*10 + state.infiniteLevel*5;
+  else if (run.outcome==='PARTIAL') sp += 10;
+  state.sp += sp;
+
+  state.laundrySummary = {
+    residualDirt: residualDirt, residualMoisture: residualMoisture, residualFrost: residualFrost,
+    newPassives: newPassives, spGained: sp, shrinkHappened: run.shrinkHappened
+  };
+
+  state.screen = 'LAUNDRY_RESULT';
+  render();
+}
+
+function renderLaundryResult(app){
+  var s = state.laundrySummary;
+  var run = state.run;
+  app.innerHTML = `
+    <div class="screen laundry-screen result-screen clean-flash">
+      <div class="laundry-header">洗濯完了</div>
+      <div class="clean-summary">
+        <div class="clean-row">汚れ度 <span>${run.dirt}%</span> → <strong>${s.residualDirt}%</strong></div>
+        <div class="clean-row">含水率 <span>${run.moisture}%</span> → <strong>${s.residualMoisture}%</strong></div>
+        <div class="clean-row">凍結度 <span>${run.frost}%</span> → <strong>${s.residualFrost}%</strong></div>
+      </div>
+      ${s.shrinkHappened ? `<div class="shrink-warn">高温・高速設定のため、装備がわずかに縮んでしまった。</div>` : ''}
+      ${s.newPassives.length ? `<div class="new-passive">新しい汚れ還元エンチャントを獲得<br>${s.newPassives.join('・')}</div>` : ''}
+      <div class="sp-gain">洗浄ポイント +${s.spGained} SP</div>
+      <button class="btn btn-camp btn-big" onclick="returnToCamp()">ベースキャンプへ戻る</button>
+    </div>
+  `;
+}
+
+function returnToCamp(){
+  state.run = null;
+  state.laundrySummary = null;
+  state.screen = 'CAMP';
+  render();
+}
+
+/* =========================================================
+   INIT
+   ========================================================= */
+
+render();
+
+</script>
+</body>
+</html>

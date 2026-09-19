@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>誤嚥ピンボーラーたかし</title>
+<style>
+:root{
+  --flesh-deep:#3a0b18;
+  --flesh-mid:#7a1830;
+  --flesh-hot:#ff6f91;
+  --bio-green:#3ddc84;
+  --alarm-red:#ff2d4d;
+  --saliva-cyan:#8fe0ff;
+  --bone-cream:#fff1e6;
+  --gold:#ffd23d;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;background:#0a0203;overflow:hidden;overscroll-behavior:none;
+  font-family:'Hiragino Maru Gothic ProN','Rounded Mplus 1c','M PLUS Rounded 1c','Yu Gothic',sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 30%,#3a0b16 0%,#0d0203 75%);}
+#cabinet{position:relative;padding:11px;border-radius:26px;background:#0a0203;
+  box-shadow:0 0 50px rgba(255,180,80,.35),0 25px 70px rgba(0,0,0,.65);}
+#chaseBorder{position:absolute;inset:0;border-radius:26px;z-index:0;
+  background:conic-gradient(from 0deg,#ffd23d 0deg,#ff6f91 45deg,#ff2d4d 90deg,#ff6f91 135deg,#8fe0ff 180deg,#5df0a0 225deg,#8fe0ff 270deg,#ffd23d 315deg,#ffd23d 360deg);
+  filter:saturate(1.4) brightness(1.05);
+  animation:chaseRot 2.6s linear infinite;}
+#chaseBorder.danger{
+  background:conic-gradient(from 0deg,#ff2d4d 0deg,#ffcf3d 30deg,#ff2d4d 60deg,#ff2d4d 90deg,#ffcf3d 120deg,#ff2d4d 150deg,#ff2d4d 180deg,#ffcf3d 210deg,#ff2d4d 240deg,#ff2d4d 270deg,#ffcf3d 300deg,#ff2d4d 330deg,#ff2d4d 360deg);
+  animation-duration:0.8s;}
+#chaseBorder.win{animation-duration:0.5s;filter:saturate(1.7) brightness(1.25);}
+@keyframes chaseRot{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@media (prefers-reduced-motion:reduce){#chaseBorder{animation:none;}}
+#game{position:relative;z-index:1;display:block;touch-action:none;box-shadow:0 0 0 3px #200308,0 0 40px rgba(255,111,145,.2);border-radius:16px;}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(8,2,4,.9);color:var(--bone-cream);text-align:center;padding:24px;z-index:10;}
+.overlay.hidden{display:none;}
+.overlay h1{font-size:32px;margin:0 0 6px;color:#ff8fa3;text-shadow:0 3px 0 #6b0f22;letter-spacing:.04em;line-height:1.35;}
+.overlay .sub{font-size:13.5px;color:#ffd2da;margin:0 0 16px;line-height:1.7;max-width:300px;}
+.howto{font-size:12.5px;color:#ffc7cf;background:rgba(255,255,255,.06);border-radius:12px;padding:12px 16px;margin-bottom:20px;line-height:2;max-width:300px;}
+.howto b.good{color:#5df0a0;}
+.howto b.bad{color:#ff6478;}
+button{font-family:inherit;font-size:18px;font-weight:bold;color:#3a0510;background:linear-gradient(180deg,#ffe27a,#ff9f3d);
+  border:none;border-radius:999px;padding:15px 42px;box-shadow:0 5px 0 #b5620a,0 10px 20px rgba(0,0,0,.35);letter-spacing:.06em;cursor:pointer;}
+button:active{transform:translateY(4px);box-shadow:0 1px 0 #b5620a;}
+#overScore{font-size:24px;font-weight:bold;margin:8px 0 0;color:var(--gold);}
+#overBest{font-size:13px;color:#ffb3bd;margin:2px 0 20px;}
+.credit{position:absolute;bottom:8px;font-size:10px;color:rgba(255,255,255,.25);letter-spacing:.05em;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="cabinet">
+    <div id="chaseBorder"></div>
+    <canvas id="game"></canvas>
+  </div>
+
+  <div id="startScreen" class="overlay">
+    <h1>誤嚥ピンボーラー<br>たかし</h1>
+    <p class="sub">気管に入れば即窒息、食道に送れば即得点！<br>人体内部防衛ピンボール、開幕。</p>
+    <div class="howto">
+      画面の<b>左右をタップ</b>してフリッパー操作<br>
+      食べ物は <b class="good">緑の食道ポケット</b> へ！<br>
+      <b class="bad">中央下の気管</b> に落とすと絶対NG<br>
+      唾液ゲージMAXで下部ボタン「喉頭蓋」封鎖
+    </div>
+    <button id="startBtn">たべはじめる</button>
+  </div>
+
+  <div id="overScreen" class="overlay hidden">
+    <h1 id="overTitle">窒息…</h1>
+    <p id="overScore">SCORE: 0</p>
+    <p id="overBest">BEST: 0</p>
+    <button id="retryBtn">もう一度たべる</button>
+  </div>
+
+  <div class="credit">誤嚥ピンボーラーたかし — 人体内部防衛ピンボール</div>
+</div>
+
+<script>
+'use strict';
+const TAU = Math.PI*2;
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const chaseBorderEl = document.getElementById('chaseBorder');
+let wasDanger = false;
+let wasFever = false;
+const LW = 405, LH = 720;
+
+function resize(){
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  const availW = window.innerWidth - 16;
+  const availH = window.innerHeight - 16;
+  const scale = Math.max(0.1, Math.min(availW/LW, availH/LH));
+  canvas.style.width = Math.floor(LW*scale)+'px';
+  canvas.style.height = Math.floor(LH*scale)+'px';
+  canvas.width = Math.floor(LW*dpr);
+  canvas.height = Math.floor(LH*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', resize);
+if(window.visualViewport) window.visualViewport.addEventListener('resize', resize);
+
+/* ---------------- utils ---------------- */
+function rand(a,b){ return a+Math.random()*(b-a); }
+function randInt(a,b){ return Math.floor(rand(a,b+1)); }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+function dist(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+function degToRad(d){ return d*Math.PI/180; }
+function circleOverlap(x1,y1,x2,y2,r){ return Math.hypot(x2-x1,y2-y1) < r; }
+function closestOnSeg(px,py,ax,ay,bx,by){
+  const abx=bx-ax, aby=by-ay;
+  const ab2 = abx*abx+aby*aby;
+  let t = ab2>0 ? ((px-ax)*abx+(py-ay)*aby)/ab2 : 0;
+  t = clamp(t,0,1);
+  return { x:ax+abx*t, y:ay+aby*t };
+}
+function easeOutBack(t){
+  t = clamp(t,0,1);
+  const c1=1.70158, c3=c1+1;
+  return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2);
+}
+
+/* ---------------- audio (tiny synth, no external files) ---------------- */
+let actx=null;
+function initAudio(){
+  if(actx) return;
+  try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ actx=null; }
+}
+function resumeAudio(){ if(actx && actx.state==='suspended'){ actx.resume(); } }
+function beep(freq,dur,type,vol,slideTo){
+  if(!actx) return;
+  const t0=actx.currentTime;
+  const osc=actx.createOscillator(), gain=actx.createGain();
+  osc.type=type||'square';
+  osc.frequency.setValueAtTime(freq,t0);
+  if(slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(20,slideTo), t0+dur);
+  gain.gain.setValueAtTime(0.0001,t0);
+  gain.gain.exponentialRampToValueAtTime(Math.max(0.001,vol||0.15), t0+0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  osc.connect(gain); gain.connect(actx.destination);
+  osc.start(t0); osc.stop(t0+dur+0.02);
+}
+function noiseBurst(dur,vol){
+  if(!actx) return;
+  const n = Math.floor(actx.sampleRate*dur);
+  const buffer = actx.createBuffer(1,n,actx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<n;i++){ data[i]=(Math.random()*2-1)*(1-i/n); }
+  const src = actx.createBufferSource();
+  src.buffer=buffer;
+  const gain=actx.createGain();
+  gain.gain.setValueAtTime(vol||0.2, actx.currentTime);
+  src.connect(gain); gain.connect(actx.destination);
+  src.start();
+}
+function sfxFlip(){ beep(rand(260,340),0.07,'square',0.10); }
+function sfxGoal(){ beep(520,0.10,'triangle',0.16,780); }
+function sfxBad(){ beep(190,0.24,'sawtooth',0.15,70); }
+function sfxBump(){ beep(rand(440,620),0.05,'sine',0.08); }
+function sfxCough(){ for(let i=0;i<6;i++){ setTimeout(()=>noiseBurst(0.05,0.13),i*45); } }
+function sfxHeart(freq){ beep(freq,0.05,'sine',0.045); }
+function sfxBoss(){ beep(110,0.3,'sawtooth',0.16,60); }
+
+/* ---------------- persistent best score ---------------- */
+let best = 0;
+async function loadBest(){
+  try{
+    const r = await window.storage.get('goen_best', false);
+    if(r && r.value) best = parseInt(r.value,10)||0;
+  }catch(e){ /* no saved score yet */ }
+}
+async function saveBest(){
+  try{ await window.storage.set('goen_best', String(best), false); }catch(e){}
+}
+loadBest();
+
+/* ---------------- board geometry ---------------- */
+const LEFT_PIVOT = {x:120, y:588};
+const RIGHT_PIVOT = {x:285, y:588};
+const FLIP_LEN = 92;
+const FLIP_THICK = 18;
+const FEVER_DURATION = 7;
+const FEVER_COLORS = ['#ffd23d','#ff6f91','#8fe0ff','#5df0a0'];
+function flipLen(){ return state.feverTimer>0 ? FLIP_LEN*1.55 : FLIP_LEN; }
+function flipThick(){ return state.feverTimer>0 ? FLIP_THICK*1.3 : FLIP_THICK; }
+
+const WALLS = [
+  {a:{x:22,y:66}, b:{x:17,y:300}},
+  {a:{x:17,y:300}, b:{x:52,y:520}},
+  {a:{x:52,y:520}, b:{x:LEFT_PIVOT.x-10, y:LEFT_PIVOT.y-14}},
+  {a:{x:LW-22,y:66}, b:{x:LW-17,y:300}},
+  {a:{x:LW-17,y:300}, b:{x:LW-52,y:520}},
+  {a:{x:LW-52,y:520}, b:{x:RIGHT_PIVOT.x+10, y:RIGHT_PIVOT.y-14}},
+];
+const TEETH = [
+  {x:80,y:98,r:17},
+  {x:203,y:74,r:17},
+  {x:326,y:98,r:17},
+];
+const SALIVA_BUMPERS = [
+  {x:134,y:342,r:15},
+  {x:LW-134,y:342,r:15},
+];
+const ESO_GOAL = {x:300,y:533,r:26};
+const TRACHEA = {xMin:120,xMax:290,yTrigger:660};
+const TRACHEA_VISUAL = {x:(TRACHEA.xMin+TRACHEA.xMax)/2, y:TRACHEA.yTrigger+18};
+
+/* ---------------- ball types ---------------- */
+const BALL_TYPES = {
+  rice:    {name:'白米の塊',      r:13, rest:0.50, color:'#fff7e6', edge:'#e8d9b8', score:100},
+  riceBit: {name:'ご飯粒',        r:6,  rest:0.55, color:'#fff7e6', edge:'#e8d9b8', score:40},
+  udon:    {name:'ツルツルうどん', r:9,  rest:0.80, color:'#fff2d0', edge:'#e0c98a', score:150, slippery:true},
+  konjac:  {name:'こんにゃくゼリー',r:12, rest:1.15, color:'rgba(150,190,215,0.78)', edge:'#7fa6bd', score:200, wobble:true},
+  pill:    {name:'カプセル薬',    r:6,  rest:0.25, color:'#ff8fa8', edge:'#c94f6c', score:250, sticky:true},
+};
+function pickType(){
+  const s = state.score;
+  const w = { rice:40, udon:28, konjac:16+Math.min(20,s/500), pill:10+Math.min(22,s/400) };
+  let total=0; for(const k in w) total+=w[k];
+  let r = rand(0,total);
+  for(const k in w){ if(r<w[k]) return k; r-=w[k]; }
+  return 'rice';
+}
+
+/* ---------------- game state ---------------- */
+let state = {
+  screen:'start', score:0, combo:0, comboMax:6,
+  aspiration:0, oxygen:100, saliva:30,
+  time:0, spawnTimer:0.6, spawnInterval:1.3,
+  coughCooldown:0, tracheaImmune:0, epiglottisTimer:0,
+  faceMood:'normal', faceTimer:0, heartTimer:1,
+  shakeTimer:0, shakeMag:0, flashAlpha:0, flashColor:'#fff',
+  syrup:false, bossBannerTimer:0, bossBannerText:'',
+  feverTimer:0, feverSparkleTimer:0,
+};
+let balls = [];
+let particles = [];
+let popups = [];
+let displayScore = 0;
+let boss = null;
+let bossesDefeated = 0;
+let nextBossScore = 3000;
+let ballId = 0;
+let keyL=false, keyR=false;
+const activePointers = new Map();
+
+/* ---------------- flippers ---------------- */
+function makeFlipper(side){
+  const restA = side==='left' ? degToRad(58) : degToRad(122);
+  const activeA = side==='left' ? degToRad(-22) : degToRad(202);
+  return { side, pivot: side==='left'?LEFT_PIVOT:RIGHT_PIVOT, restA, activeA, angle:restA, angVel:0, active:false };
+}
+let flipperL = makeFlipper('left');
+let flipperR = makeFlipper('right');
+
+function updateFlipper(f,dt){
+  const target = f.active ? f.activeA : f.restA;
+  let speed = f.active ? 13 : 8;
+  if(state.feverTimer>0) speed *= 1.25;
+  const prev = f.angle;
+  const diff = target-f.angle;
+  const maxStep = speed*dt;
+  f.angle = Math.abs(diff)<=maxStep ? target : f.angle+Math.sign(diff)*maxStep;
+  f.angVel = (f.angle-prev)/dt;
+}
+function flipperTip(f){ const L=flipLen(); return { x:f.pivot.x+Math.cos(f.angle)*L, y:f.pivot.y+Math.sin(f.angle)*L }; }
+
+function setFlipperActive(side, val){
+  const f = side==='left' ? flipperL : flipperR;
+  const wasActive = f.active;
+  f.active = val;
+  if(val && !wasActive){
+    sfxFlip();
+    if(boss && boss.stuckSide===side){
+      boss.peel++;
+      shake(6);
+      if(boss.peel>=boss.peelNeeded){
+        boss.stuckSide=null;
+        boss.vx = Math.cos(f.angle)*260;
+        boss.vy = Math.sin(f.angle)*260-80;
+        boss.hitCd=0.4;
+        popupText('引き剥がした！', boss.x, boss.y, false, 1.2);
+        damageBoss(1);
+      }
+    }
+  }
+}
+
+/* ---------------- balls ---------------- */
+function spawnBall(typeKey,x,y,vx,vy){
+  const cap = state.feverTimer>0 ? 24 : 14;
+  if(balls.length>=cap) return;
+  const t = BALL_TYPES[typeKey];
+  balls.push({
+    id:++ballId, type:typeKey,
+    x:x!==undefined?x:rand(90,LW-90),
+    y:y!==undefined?y:rand(-30,6),
+    vx:vx!==undefined?vx:rand(-30,30),
+    vy:vy!==undefined?vy:rand(10,40),
+    r:t.r, rot:rand(0,TAU), wet:false, split:false, dead:false, inDanger:false,
+  });
+}
+
+function ballVsWalls(b){
+  for(const seg of WALLS){
+    const cp = closestOnSeg(b.x,b.y,seg.a.x,seg.a.y,seg.b.x,seg.b.y);
+    const dx=b.x-cp.x, dy=b.y-cp.y;
+    const d = Math.hypot(dx,dy)||0.0001;
+    const minD = b.r+9; /* matches the drawn wall's half-thickness so fast balls get caught before visually clipping in */
+    if(d<minD){
+      const nx=dx/d, ny=dy/d;
+      b.x += nx*(minD-d); b.y += ny*(minD-d);
+      const vn = b.vx*nx+b.vy*ny;
+      if(vn<0){
+        const rest = BALL_TYPES[b.type].rest*0.85;
+        const j = -(1+rest)*vn;
+        b.vx += j*nx; b.vy += j*ny;
+      }
+    }
+  }
+  if(b.x<b.r+4){ b.x=b.r+4; if(b.vx<0)b.vx*=-0.5; }
+  if(b.x>LW-b.r-4){ b.x=LW-b.r-4; if(b.vx>0)b.vx*=-0.5; }
+  if(b.y<b.r+4 && b.vy<0){ b.y=b.r+4; b.vy*=-0.5; }
+}
+
+function ballVsFlipper(b,f){
+  const tip = flipperTip(f);
+  const cp = closestOnSeg(b.x,b.y,f.pivot.x,f.pivot.y,tip.x,tip.y);
+  const dx=b.x-cp.x, dy=b.y-cp.y;
+  const d = Math.hypot(dx,dy)||0.0001;
+  const minD = b.r+flipThick()/2;
+  if(d>=minD) return false;
+  const nx=dx/d, ny=dy/d;
+  b.x += nx*(minD-d); b.y += ny*(minD-d);
+  const rx=cp.x-f.pivot.x, ry=cp.y-f.pivot.y;
+  const pvx=-f.angVel*ry, pvy=f.angVel*rx;
+  const relvx=b.vx-pvx, relvy=b.vy-pvy;
+  const vn = relvx*nx+relvy*ny;
+  if(vn<0){
+    const rest = BALL_TYPES[b.type].rest;
+    const j = -(1+rest)*vn;
+    b.vx += j*nx; b.vy += j*ny;
+    const kick = clamp(Math.abs(f.angVel)/7,0,1);
+    b.vx += pvx*0.35*kick; b.vy += pvy*0.35*kick;
+  }
+  if(b.inDanger && f.active){ onClutchSave(b,f); b.inDanger=false; }
+  if(Math.abs(f.angVel)>4){ onFlipperStrongHit(b,f); } else { sfxBump(); }
+  return true;
+}
+
+function onFlipperStrongHit(b,f){
+  sfxFlip();
+  spawnParticles(b.x,b.y,BALL_TYPES[b.type].color,6);
+  shake(4);
+  if(b.type==='rice' && !b.split && Math.hypot(b.vx,b.vy)>230){
+    b.split=true; b.dead=true;
+    const n = randInt(2,3);
+    for(let i=0;i<n;i++){
+      balls.push({
+        id:++ballId, type:'riceBit', x:b.x+rand(-6,6), y:b.y+rand(-6,6),
+        vx:b.vx*0.5+rand(-80,80), vy:b.vy*0.5-rand(20,80),
+        r:6, rot:0, wet:false, split:true, dead:false,
+      });
+    }
+  }
+}
+
+function ballVsBumper(b,bump){
+  const d = dist(b.x,b.y,bump.x,bump.y);
+  const minD = b.r+bump.r;
+  if(d>=minD) return false;
+  const nx=(b.x-bump.x)/(d||0.0001), ny=(b.y-bump.y)/(d||0.0001);
+  b.x = bump.x+nx*minD; b.y = bump.y+ny*minD;
+  const vn = b.vx*nx+b.vy*ny;
+  if(vn<0){ const j=-(1+1.15)*vn; b.vx+=j*nx; b.vy+=j*ny; }
+  else { b.vx+=nx*60; b.vy+=ny*60; }
+  return true;
+}
+
+function updateBall(b,dt){
+  const t = BALL_TYPES[b.type];
+  let g = 620;
+  if(t.slippery) g*=0.92;
+  if(state.feverTimer>0) g*=1.4;
+  b.vy += g*dt;
+  let damp = state.syrup ? 0.985 : 0.999;
+  if(t.sticky && !b.wet && b.y>420) damp = 0.90;
+  const df = Math.pow(damp, dt*60);
+  b.vx*=df; b.vy*=df;
+  if(t.wobble) b.vx += Math.sin(state.time*9+b.id)*10*dt;
+
+  b.x += b.vx*dt; b.y += b.vy*dt;
+  b.rot += (b.vx/50)*dt;
+
+  if(circleOverlap(b.x,b.y,ESO_GOAL.x,ESO_GOAL.y,ESO_GOAL.r+t.r*0.3)){ onEsophagusGoal(b); return true; }
+  if(state.tracheaImmune<=0 && state.epiglottisTimer<=0 && b.y>TRACHEA.yTrigger && b.x>TRACHEA.xMin && b.x<TRACHEA.xMax){
+    onTracheaHit(b); return true;
+  }
+  if(state.epiglottisTimer>0 && b.y>TRACHEA.yTrigger-8 && b.x>TRACHEA.xMin && b.x<TRACHEA.xMax){
+    b.y = TRACHEA.yTrigger-10; b.vy = -Math.abs(b.vy)*0.6-80;
+  }
+  if(b.y>LH+15) return true;
+
+  if(b.y>TRACHEA.yTrigger-46 && b.y<=TRACHEA.yTrigger && b.x>TRACHEA.xMin-12 && b.x<TRACHEA.xMax+12){
+    b.inDanger = true; /* deep in the gap, about to drain — a deliberate flip now counts as a clutch save */
+  } else if(b.y<=TRACHEA.yTrigger-46){
+    b.inDanger = false;
+  }
+
+  ballVsWalls(b);
+  if(!b.dead) ballVsFlipper(b,flipperL);
+  if(!b.dead) ballVsFlipper(b,flipperR);
+  if(b.dead) return true;
+
+  for(const bump of TEETH){ if(ballVsBumper(b,bump)) spawnParticles(b.x,b.y,'#ffe9b0',5); }
+  for(const bump of SALIVA_BUMPERS){
+    if(ballVsBumper(b,bump)){
+      if(!b.wet){ b.wet=true; state.saliva=clamp(state.saliva+8,0,100); }
+      spawnParticles(b.x,b.y,'#8fd8ff',6);
+    }
+  }
+  return false;
+}
+
+/* ---------------- goal / hazard ---------------- */
+function onEsophagusGoal(b){
+  const t = BALL_TYPES[b.type];
+  state.combo++;
+  const mult = 1+Math.floor(state.combo/3)*0.5;
+  const feverMult = state.feverTimer>0 ? 2 : 1;
+  const gained = Math.round(t.score*mult*feverMult);
+  state.score += gained;
+  state.oxygen = clamp(state.oxygen+4,0,100);
+  state.faceMood='happy'; state.faceTimer=1.1;
+  const tier = state.combo>=6 ? '#ff8fe0' : (state.combo>=3 ? '#ffd23d' : '#5df0a0');
+  spawnParticles(ESO_GOAL.x,ESO_GOAL.y,'#5df0a0',10);
+  spawnParticles(ESO_GOAL.x,ESO_GOAL.y,'#ffe9b0',7,true);
+  spawnBurst(ESO_GOAL.x,ESO_GOAL.y,tier,10,50,0.45);
+  popupText('+'+gained, ESO_GOAL.x, ESO_GOAL.y, false, 1.0, tier);
+  sfxGoal();
+  if(state.combo===3){
+    popupText('チャンス！', LW/2, LH*0.3, true, 1.1, '#ff8fe0');
+    spawnBurst(LW/2, LH*0.3, '#ff8fe0', 14, 80, 0.6);
+  }
+  if(state.combo>0 && state.combo%state.comboMax===0) triggerCough(false);
+}
+function onClutchSave(b,f){
+  const t = BALL_TYPES[b.type];
+  const bonus = Math.round(t.score*1.5);
+  state.score += bonus;
+  state.faceMood='happy'; state.faceTimer=1.2;
+  spawnParticles(b.x,b.y,'#ffd23d',10,true);
+  spawnBurst(b.x,b.y,'#ffd23d',14,70,0.5);
+  shake(10); sfxGoal();
+  popupText('危機一髪キャッチ！ +'+bonus, b.x, b.y-26, true, 1.2, '#ffd23d');
+  startFever();
+}
+function startFever(){
+  state.feverTimer = state.feverTimer>0 ? Math.min(state.feverTimer+3, FEVER_DURATION+6) : FEVER_DURATION;
+  strobeFlash('#fff6de',5,70);
+  spawnBurst(LW/2,LH*0.30,'#ff6f91',18,110,0.8);
+  spawnBurst(LW/2,LH*0.30,'#8fe0ff',18,80,0.65);
+  spawnBurst(LW/2,LH*0.30,'#ffd23d',18,140,0.9);
+  popupText('FEVER！！', LW/2, LH*0.30, true, 1.6, '#ffd23d');
+  sfxBoss();
+}
+function onTracheaHit(b){
+  const t = BALL_TYPES[b.type];
+  state.aspiration = clamp(state.aspiration+(t.r>10?16:12),0,100);
+  state.oxygen = clamp(state.oxygen-6,0,100);
+  state.combo = 0;
+  state.faceMood='pain'; state.faceTimer=1.0;
+  spawnParticles(TRACHEA_VISUAL.x,TRACHEA_VISUAL.y,'#ff5468',14);
+  spawnBurst(TRACHEA_VISUAL.x,TRACHEA_VISUAL.y,'#ff2d4d',8,45,0.35);
+  shake(10); flash('#ff2d4d',0.20); sfxBad();
+  if(state.aspiration>=100){
+    if(canCough()) triggerCough(true); else gameOver('窒息…');
+  } else if(state.aspiration>=82 && canCough()){
+    triggerCough(true);
+  }
+}
+function canCough(){ return state.coughCooldown<=0; }
+function triggerCough(emergency){
+  state.coughCooldown = 6;
+  shake(20); sfxCough();
+  for(const b of balls){ b.vy = -rand(420,620); b.vx += rand(-160,160); }
+  state.aspiration = clamp(state.aspiration-(emergency?55:40),0,100);
+  state.combo = 0;
+  state.tracheaImmune = 1.2;
+  strobeFlash('#fff6de',4,80);
+  spawnBurst(LW/2,LH*0.42,'#ffd23d',18,140,0.8);
+  spawnBurst(LW/2,LH*0.42,'#ff6f91',18,95,0.6);
+  spawnParticles(LW/2,LH*0.42,'#ffd23d',22,true);
+  popupText('気道クリア！！', LW/2, LH*0.42, true, 1.5, '#ffd23d');
+}
+function tryEpiglottis(){
+  if(state.saliva>=100 && state.epiglottisTimer<=0){
+    state.saliva=0; state.epiglottisTimer=3.0;
+    flash('#8fe0ff',0.22);
+    spawnBurst(LW/2,LH*0.55,'#8fe0ff',10,50,0.4);
+    popupText('喉頭蓋クローズ！', LW/2, LH*0.55, false, 1.3, '#8fe0ff');
+  }
+}
+
+/* ---------------- boss ---------------- */
+function checkBossSpawn(){
+  if(!boss && state.score>=nextBossScore) spawnBoss(bossesDefeated%2===0 ? 'mochi' : 'candy');
+}
+function spawnBoss(type){
+  boss = {
+    type, x:LW/2, y:90, vx:rand(-40,40), vy:20,
+    r: type==='mochi'?44:38,
+    hp: type==='mochi'?5:6,
+    hardened:false, stuckSide:null, peel:0, peelNeeded:7,
+    hitCd:0, introTimer:1.6, defeating:false, defeatTimer:0,
+  };
+  state.bossBannerTimer = 2.2;
+  state.bossBannerText = type==='mochi' ? 'メガお餅 襲来！' : '暴走黒飴 襲来！';
+  if(type==='candy') state.syrup = true;
+  shake(10);
+  strobeFlash('#ff2d4d',3,140);
+  sfxBoss();
+}
+function updateBoss(dt){
+  if(!boss) return;
+  if(boss.introTimer>0){ boss.introTimer-=dt; boss.y+=40*dt; return; }
+  if(boss.defeating){
+    boss.defeatTimer-=dt;
+    boss.x = lerp(boss.x,ESO_GOAL.x,0.07);
+    boss.y = lerp(boss.y,ESO_GOAL.y,0.07);
+    boss.r *= 0.95;
+    if(boss.defeatTimer<=0) finishBossDefeat();
+    return;
+  }
+  if(boss.hitCd>0) boss.hitCd-=dt;
+  if(boss.stuckSide){
+    const f = boss.stuckSide==='left'?flipperL:flipperR;
+    const tip = flipperTip(f);
+    boss.x = lerp(boss.x,tip.x,0.4); boss.y = lerp(boss.y,tip.y,0.4);
+    return;
+  }
+
+  boss.vy += 180*dt;
+  boss.vx *= Math.pow(0.988, dt*60);
+  boss.x += boss.vx*dt; boss.y += boss.vy*dt;
+  bossVsWalls();
+  if(boss.y<boss.r+58){ boss.y=boss.r+58; boss.vy*=-0.6; }
+
+  for(const bump of TEETH){
+    const d = dist(boss.x,boss.y,bump.x,bump.y);
+    if(d<boss.r+bump.r){
+      const nx=(boss.x-bump.x)/(d||1), ny=(boss.y-bump.y)/(d||1);
+      boss.x=bump.x+nx*(boss.r+bump.r); boss.y=bump.y+ny*(boss.r+bump.r);
+      const speed = Math.hypot(boss.vx,boss.vy);
+      boss.vx*=-0.6; boss.vy*=-0.6;
+      if(boss.type==='candy' && speed>240 && boss.hitCd<=0){
+        damageBoss(2); boss.hitCd=0.5; shake(14); flash('#ffffff',0.16);
+      } else if(boss.hitCd<=0){ sfxBump(); }
+    }
+  }
+
+  if(boss.y>TRACHEA.yTrigger-10 && boss.x>TRACHEA.xMin-30 && boss.x<TRACHEA.xMax+30){
+    state.aspiration = clamp(state.aspiration+35,0,100);
+    state.oxygen = clamp(state.oxygen-14,0,100);
+    shake(20); flash('#ff2d4d',0.28); sfxBad();
+    boss.y=200; boss.vy=-220; boss.vx=rand(-60,60);
+    if(state.aspiration>=100){ if(canCough()) triggerCough(true); else gameOver('窒息…'); }
+  }
+
+  checkBossFlipper(flipperL,'left');
+  checkBossFlipper(flipperR,'right');
+}
+function bossVsWalls(){
+  for(const seg of WALLS){
+    const cp = closestOnSeg(boss.x,boss.y,seg.a.x,seg.a.y,seg.b.x,seg.b.y);
+    const dx=boss.x-cp.x, dy=boss.y-cp.y;
+    const d = Math.hypot(dx,dy)||0.0001;
+    const minD = boss.r+9;
+    if(d<minD){
+      const nx=dx/d, ny=dy/d;
+      boss.x += nx*(minD-d); boss.y += ny*(minD-d);
+      const vn = boss.vx*nx+boss.vy*ny;
+      if(vn<0){ const j=-(1+0.35)*vn; boss.vx+=j*nx; boss.vy+=j*ny; }
+    }
+  }
+  if(boss.x<boss.r+4){ boss.x=boss.r+4; if(boss.vx<0) boss.vx*=-0.5; }
+  if(boss.x>LW-boss.r-4){ boss.x=LW-boss.r-4; if(boss.vx>0) boss.vx*=-0.5; }
+}
+function checkBossFlipper(f,side){
+  const tip = flipperTip(f);
+  const cp = closestOnSeg(boss.x,boss.y,f.pivot.x,f.pivot.y,tip.x,tip.y);
+  const d = dist(boss.x,boss.y,cp.x,cp.y);
+  const thick = flipThick();
+  if(d>=boss.r+thick/2) return;
+  const nx=(boss.x-cp.x)/(d||1), ny=(boss.y-cp.y)/(d||1);
+  boss.x=cp.x+nx*(boss.r+thick/2); boss.y=cp.y+ny*(boss.r+thick/2);
+  const rx=cp.x-f.pivot.x, ry=cp.y-f.pivot.y;
+  const pvx=-f.angVel*ry, pvy=f.angVel*rx;
+
+  if(boss.type==='mochi' && !boss.hardened && boss.hitCd<=0 && f.active && Math.abs(f.angVel)>3){
+    boss.stuckSide=side; boss.peel=0; shake(8); flash('#fff3d0',0.12);
+    return;
+  }
+  const hitThresh = (boss.type==='mochi' && boss.hardened) ? 6.5 : 4.5;
+  if(Math.abs(f.angVel)>hitThresh && boss.hitCd<=0){
+    boss.vx += pvx*0.4; boss.vy += pvy*0.4;
+    damageBoss(1); boss.hitCd=0.5;
+    shake(12); flash('#ffffff',0.15);
+  } else {
+    const vn = (boss.vx-pvx)*nx+(boss.vy-pvy)*ny;
+    if(vn<0){
+      const j = -(1+0.3)*vn;
+      boss.vx += j*nx; boss.vy += j*ny;
+      boss.vx += pvx*0.15; boss.vy += pvy*0.15;
+    }
+  }
+}
+function damageBoss(n){
+  boss.hp -= n;
+  spawnParticles(boss.x,boss.y, boss.type==='mochi'?'#fff3d0':'#2a0d1a', 10);
+  spawnParticles(boss.x,boss.y,'#ffd23d',8,true);
+  spawnBurst(boss.x,boss.y, boss.type==='mochi'?'#ffd23d':'#ff6f91', 10, 55, 0.4);
+  popupText(boss.type==='mochi'?'ベチッ！':'ガキッ！', boss.x, boss.y-boss.r, true, 0.9, '#ffffff');
+  if(boss.hp<=0){ boss.defeating=true; boss.defeatTimer=0.7; }
+  else if(boss.type==='mochi' && !boss.hardened){ boss.hardened=true; }
+}
+function finishBossDefeat(){
+  const bonus = boss.type==='mochi' ? 1500 : 2200;
+  state.score += bonus;
+  state.oxygen = clamp(state.oxygen+20,0,100);
+  strobeFlash('#ffe27a',5,90);
+  spawnBurst(ESO_GOAL.x,ESO_GOAL.y,'#ffd23d',20,150,0.9);
+  spawnBurst(LW/2,LH*0.4,'#ff6f91',16,120,0.75);
+  spawnBurst(LW/2,LH*0.4,'#8fe0ff',16,90,0.6);
+  spawnParticles(ESO_GOAL.x,ESO_GOAL.y,'#ffd23d',28,true);
+  spawnParticles(LW/2,LH*0.4,'#ff8fe0',16,true);
+  state.feverTimer = Math.min((state.feverTimer>0?state.feverTimer:0)+4, FEVER_DURATION+6);
+  popupText('撃破！！ +'+bonus, LW/2, LH*0.38, true, 1.8, '#ffd23d');
+  sfxGoal();
+  bossesDefeated++;
+  nextBossScore = state.score+3500+bossesDefeated*1200;
+  if(boss.type==='candy') state.syrup=false;
+  boss=null;
+}
+
+/* ---------------- particles / bursts / popups ---------------- */
+function spawnParticles(x,y,color,n,spark){
+  for(let i=0;i<n;i++){
+    particles.push({
+      x,y,vx:rand(-160,160),vy:rand(-220,10),life:rand(0.35,0.75),maxLife:0.75,color,
+      r:spark?rand(4,8):rand(2,4), spark:!!spark, rot:rand(0,TAU), spin:rand(-8,8),
+    });
+  }
+}
+function spawnRainSparkle(){
+  const color = FEVER_COLORS[randInt(0,FEVER_COLORS.length-1)];
+  particles.push({
+    x:rand(15,LW-15), y:-10, vx:rand(-20,20), vy:rand(60,140),
+    life:rand(1.2,1.8), maxLife:1.8, color, r:rand(3,6), spark:true, rot:rand(0,TAU), spin:rand(-4,4),
+  });
+}
+function updateParticles(dt){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.vy+=400*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt; p.rot+=p.spin*dt;
+    if(p.life<=0) particles.splice(i,1);
+  }
+}
+function drawSparkle(x,y,r,color,rot){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(rot);
+  ctx.fillStyle=color;
+  ctx.beginPath();
+  ctx.moveTo(0,-r); ctx.lineTo(r*0.28,-r*0.28); ctx.lineTo(r,0); ctx.lineTo(r*0.28,r*0.28);
+  ctx.lineTo(0,r); ctx.lineTo(-r*0.28,r*0.28); ctx.lineTo(-r,0); ctx.lineTo(-r*0.28,-r*0.28);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function drawParticles(){
+  for(const p of particles){
+    ctx.globalAlpha=clamp(p.life/p.maxLife,0,1);
+    if(p.spark){ drawSparkle(p.x,p.y,p.r,p.color,p.rot); }
+    else { ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,TAU); ctx.fill(); }
+  }
+  ctx.globalAlpha=1;
+}
+
+let bursts = [];
+function spawnBurst(x,y,color,rayCount,maxLen,dur){
+  bursts.push({x,y,color,rayCount:rayCount||10,maxLen:maxLen||70,life:dur||0.5,maxLife:dur||0.5});
+}
+function updateBursts(dt){
+  for(let i=bursts.length-1;i>=0;i--){ bursts[i].life-=dt; if(bursts[i].life<=0) bursts.splice(i,1); }
+}
+function drawBursts(){
+  for(const b of bursts){
+    const t = 1-(b.life/b.maxLife);
+    const len = b.maxLen*easeOutBack(Math.min(1,t*1.4));
+    ctx.save();
+    ctx.globalAlpha = clamp(1-t,0,1)*0.85;
+    ctx.strokeStyle = b.color; ctx.lineWidth = 3.5; ctx.lineCap='round';
+    for(let i=0;i<b.rayCount;i++){
+      const a = (i/b.rayCount)*TAU + t*2.2;
+      const inner=16, outer=16+len;
+      ctx.beginPath();
+      ctx.moveTo(b.x+Math.cos(a)*inner, b.y+Math.sin(a)*inner);
+      ctx.lineTo(b.x+Math.cos(a)*outer, b.y+Math.sin(a)*outer);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+function strobeFlash(color,times,gap){
+  for(let i=0;i<times;i++){ setTimeout(()=>flash(color,0.32),i*(gap||90)); }
+}
+
+function popupText(text,x,y,big,dur,color){
+  popups.push({text,x,y,life:dur||1.0,maxLife:dur||1.0,big:!!big,color:color||(big?'#ffd23d':'#ffffff')});
+}
+function updatePopups(dt){
+  for(let i=popups.length-1;i>=0;i--){
+    const p=popups[i]; p.y-=38*dt; p.life-=dt;
+    if(p.life<=0) popups.splice(i,1);
+  }
+}
+function drawPopups(){
+  ctx.textAlign='center';
+  for(const p of popups){
+    const age = p.maxLife-p.life;
+    const scale = age<0.18 ? Math.max(0.05,easeOutBack(age/0.18)) : 1;
+    const a = p.life<0.3 ? p.life/0.3 : 1;
+    ctx.save();
+    ctx.globalAlpha=clamp(a,0,1);
+    ctx.translate(p.x,p.y);
+    ctx.scale(scale,scale);
+    ctx.font = (p.big?'bold 26px ':'bold 15px ')+"'Rounded Mplus 1c',sans-serif";
+    ctx.lineJoin='round';
+    ctx.strokeStyle='rgba(30,4,10,0.6)';
+    ctx.lineWidth = p.big?7:3.5;
+    ctx.strokeText(String(p.text),0,0);
+    ctx.fillStyle = p.color;
+    ctx.fillText(String(p.text),0,0);
+    ctx.restore();
+  }
+  ctx.globalAlpha=1;
+}
+function shake(mag){ state.shakeTimer=Math.max(state.shakeTimer,0.25); state.shakeMag=mag; }
+function flash(color,a){ state.flashColor=color; state.flashAlpha=a; }
+
+/* ---------------- update ---------------- */
+function update(dt){
+  state.time += dt;
+  state.spawnTimer -= dt;
+  if(state.coughCooldown>0) state.coughCooldown-=dt;
+  if(state.tracheaImmune>0) state.tracheaImmune-=dt;
+  if(state.epiglottisTimer>0) state.epiglottisTimer-=dt;
+  if(state.faceTimer>0) state.faceTimer-=dt; else state.faceMood='normal';
+  if(state.shakeTimer>0) state.shakeTimer=Math.max(0,state.shakeTimer-dt);
+  if(state.bossBannerTimer>0) state.bossBannerTimer-=dt;
+  state.flashAlpha = Math.max(0,state.flashAlpha-dt*2.4);
+
+  state.oxygen = clamp(state.oxygen-1.1*dt,0,100);
+  state.saliva = clamp(state.saliva+3*dt,0,100);
+
+  state.heartTimer -= dt;
+  if(state.heartTimer<=0){
+    const bf = clamp(state.aspiration/100,0,1);
+    state.heartTimer = lerp(0.62,0.24,bf);
+    sfxHeart(lerp(90,140,bf));
+  }
+
+  updateFlipper(flipperL,dt);
+  updateFlipper(flipperR,dt);
+
+  for(let i=balls.length-1;i>=0;i--){
+    if(updateBall(balls[i],dt)) balls.splice(i,1);
+  }
+  updateBoss(dt);
+  updateParticles(dt);
+  updateBursts(dt);
+  updatePopups(dt);
+
+  if(state.feverTimer>0){
+    state.feverTimer = Math.max(0,state.feverTimer-dt);
+    state.feverSparkleTimer -= dt;
+    if(state.feverSparkleTimer<=0){
+      state.feverSparkleTimer = 0.045;
+      spawnRainSparkle(); spawnRainSparkle();
+    }
+  }
+
+  const feverOn = state.feverTimer>0;
+  if(state.spawnTimer<=0){
+    const baseInterval = Math.max(0.55, state.spawnInterval-state.score/9000);
+    state.spawnTimer = feverOn ? Math.max(0.11, baseInterval/5) : baseInterval;
+    spawnBall(pickType());
+    if(state.score>1800 && Math.random()<0.22) spawnBall(pickType());
+    if(feverOn && Math.random()<0.5) spawnBall(pickType());
+  }
+
+  checkBossSpawn();
+  if(state.score>best) best=state.score;
+  if(state.oxygen<=0) gameOver('酸欠…');
+
+  displayScore += (state.score-displayScore)*Math.min(1,dt*7);
+  if(Math.abs(state.score-displayScore)<1) displayScore=state.score;
+
+  const dangerNow = state.aspiration>=70;
+  if(dangerNow!==wasDanger){ chaseBorderEl.classList.toggle('danger',dangerNow); wasDanger=dangerNow; }
+  if(feverOn!==wasFever){ chaseBorderEl.classList.toggle('win',feverOn); wasFever=feverOn; }
+}
+
+/* ---------------- draw ---------------- */
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  ctx.save();
+  const sh = state.shakeTimer>0 ? state.shakeMag*(state.shakeTimer/0.25) : 0;
+  if(sh>0) ctx.translate(rand(-sh,sh),rand(-sh,sh));
+
+  drawBackground();
+  drawWalls();
+  drawSensors();
+  for(const bump of SALIVA_BUMPERS) drawBumper(bump,'#bfe9ff','#6ec6ff');
+  for(const bump of TEETH) drawBumper(bump,'#fffaf0','#e8d9b8');
+  drawFlipper(flipperL);
+  drawFlipper(flipperR);
+  for(const b of balls) drawBall(b);
+  if(boss) drawBoss();
+  drawBursts();
+  drawParticles();
+  drawPopups();
+
+  if(state.screen==='playing' || state.screen==='gameover'){
+    drawFace();
+    drawHUD();
+    drawEpiglottisButton();
+  }
+  ctx.restore();
+
+  drawFeverVignette();
+
+  if(state.flashAlpha>0){
+    ctx.fillStyle=state.flashColor;
+    ctx.globalAlpha=state.flashAlpha;
+    ctx.fillRect(0,0,LW,LH);
+    ctx.globalAlpha=1;
+  }
+  if(state.bossBannerTimer>0) drawBossBanner();
+}
+function drawBackground(){
+  const g = ctx.createLinearGradient(0,0,0,LH);
+  g.addColorStop(0,'#7a1830'); g.addColorStop(0.5,'#5c1226'); g.addColorStop(1,'#340a16');
+  ctx.fillStyle=g; ctx.fillRect(0,0,LW,LH);
+  ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=3;
+  for(let i=0;i<5;i++){
+    ctx.beginPath(); ctx.moveTo(0,110+i*115);
+    ctx.quadraticCurveTo(LW/2,140+i*115,LW,110+i*115); ctx.stroke();
+  }
+}
+function drawWalls(){
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.strokeStyle='#8c2440'; ctx.lineWidth=17;
+  for(const seg of WALLS){ ctx.beginPath(); ctx.moveTo(seg.a.x,seg.a.y); ctx.lineTo(seg.b.x,seg.b.y); ctx.stroke(); }
+  ctx.strokeStyle='#d6577a'; ctx.lineWidth=4;
+  for(const seg of WALLS){ ctx.beginPath(); ctx.moveTo(seg.a.x,seg.a.y); ctx.lineTo(seg.b.x,seg.b.y); ctx.stroke(); }
+}
+function drawSensors(){
+  const pulse = 0.7+Math.sin(state.time*4)*0.3;
+  let grd = ctx.createRadialGradient(ESO_GOAL.x,ESO_GOAL.y,2,ESO_GOAL.x,ESO_GOAL.y,ESO_GOAL.r*1.9);
+  grd.addColorStop(0,`rgba(93,240,160,${0.55*pulse})`); grd.addColorStop(1,'rgba(93,240,160,0)');
+  ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(ESO_GOAL.x,ESO_GOAL.y,ESO_GOAL.r*1.9,0,TAU); ctx.fill();
+  ctx.fillStyle='#173d28'; ctx.beginPath(); ctx.arc(ESO_GOAL.x,ESO_GOAL.y,ESO_GOAL.r,0,TAU); ctx.fill();
+  ctx.strokeStyle='#5df0a0'; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle='#c9ffe0'; ctx.font="bold 12px 'Rounded Mplus 1c',sans-serif"; ctx.textAlign='center';
+  ctx.fillText('食道', ESO_GOAL.x, ESO_GOAL.y+4);
+
+  const cx=TRACHEA_VISUAL.x, cy=TRACHEA_VISUAL.y;
+  const pulse2 = state.epiglottisTimer>0 ? 0.15 : 0.7+Math.sin(state.time*6)*0.3;
+  let grd2 = ctx.createRadialGradient(cx,cy,2,cx,cy,74);
+  grd2.addColorStop(0,`rgba(255,45,77,${0.5*pulse2})`); grd2.addColorStop(1,'rgba(255,45,77,0)');
+  ctx.fillStyle=grd2; ctx.beginPath(); ctx.arc(cx,cy,74,0,TAU); ctx.fill();
+  ctx.fillStyle = state.epiglottisTimer>0 ? '#5fb8e8' : '#2c0710';
+  ctx.beginPath(); ctx.ellipse(cx,cy-6,(TRACHEA.xMax-TRACHEA.xMin)/2,16,0,0,TAU); ctx.fill();
+  ctx.fillStyle='#ffd2da'; ctx.font="bold 12px 'Rounded Mplus 1c',sans-serif";
+  ctx.fillText(state.epiglottisTimer>0?'喉頭蓋 閉':'気管', cx, cy-2);
+}
+function drawBumper(bump,fill,edge){
+  ctx.fillStyle=fill; ctx.beginPath(); ctx.arc(bump.x,bump.y,bump.r,0,TAU); ctx.fill();
+  ctx.strokeStyle=edge; ctx.lineWidth=3; ctx.stroke();
+}
+function drawFlipper(f){
+  const tip = flipperTip(f);
+  const fever = state.feverTimer>0;
+  const grad = ctx.createLinearGradient(f.pivot.x,f.pivot.y,tip.x,tip.y);
+  if(fever){
+    grad.addColorStop(0,'#e8a900'); grad.addColorStop(1,'#ffe27a');
+  } else {
+    grad.addColorStop(0, f.side==='left' ? '#c94f6c':'#d1587a');
+    grad.addColorStop(1, f.side==='left' ? '#ff8fa8':'#ffa3b8');
+  }
+  if(fever){ ctx.save(); ctx.shadowColor='#ffd23d'; ctx.shadowBlur=16; }
+  ctx.strokeStyle=grad; ctx.lineWidth=flipThick(); ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(f.pivot.x,f.pivot.y); ctx.lineTo(tip.x,tip.y); ctx.stroke();
+  if(fever) ctx.restore();
+  ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(f.pivot.x,f.pivot.y); ctx.lineTo(tip.x,tip.y); ctx.stroke();
+  ctx.fillStyle= fever? '#e8a900' : '#a83a54'; ctx.beginPath(); ctx.arc(f.pivot.x,f.pivot.y,9,0,TAU); ctx.fill();
+}
+function drawBall(b){
+  const t = BALL_TYPES[b.type];
+  ctx.save(); ctx.translate(b.x,b.y);
+  if(t.slippery){
+    ctx.rotate(Math.atan2(b.vy,b.vx));
+    ctx.fillStyle=t.color;
+    ctx.beginPath(); ctx.ellipse(0,0,b.r*1.6,b.r*0.7,0,0,TAU); ctx.fill();
+    ctx.strokeStyle=t.edge; ctx.lineWidth=2; ctx.stroke();
+  } else {
+    ctx.rotate(b.rot);
+    ctx.fillStyle=t.color;
+    ctx.beginPath(); ctx.arc(0,0,b.r,0,TAU); ctx.fill();
+    ctx.strokeStyle=t.edge; ctx.lineWidth=2; ctx.stroke();
+    if(b.type==='pill'){
+      ctx.fillStyle = b.wet ? '#ffe8ee' : '#ffffff';
+      ctx.beginPath(); ctx.arc(-b.r*0.3,-b.r*0.3,b.r*0.35,0,TAU); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+function drawBoss(){
+  ctx.save(); ctx.translate(boss.x,boss.y);
+  const wob = Math.sin(state.time*6)*3;
+  ctx.fillStyle = boss.type==='mochi' ? (boss.hardened?'#f2e6c8':'#fff6e2') : '#1c0a14';
+  ctx.beginPath(); ctx.arc(0,0,boss.r+wob*0.3,0,TAU); ctx.fill();
+  ctx.strokeStyle = boss.type==='mochi' ? '#d8b978' : '#ff4d6d'; ctx.lineWidth=4; ctx.stroke();
+  ctx.fillStyle = boss.type==='mochi' ? '#5c3a10' : '#ffd2da';
+  ctx.beginPath(); ctx.arc(-boss.r*0.3,-boss.r*0.15,4,0,TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(boss.r*0.3,-boss.r*0.15,4,0,TAU); ctx.fill();
+  ctx.strokeStyle = boss.type==='mochi' ? '#5c3a10' : '#ffd2da'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.arc(0,boss.r*0.25,boss.r*0.28,0,Math.PI); ctx.stroke();
+  ctx.restore();
+  const bw=100, maxHp = boss.type==='mochi'?5:6;
+  ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fillRect(LW/2-bw/2,18,bw,8);
+  ctx.fillStyle = boss.type==='mochi' ? '#ffd23d' : '#ff4d6d';
+  ctx.fillRect(LW/2-bw/2,18,bw*clamp(boss.hp/maxHp,0,1),8);
+}
+function drawFace(){
+  const cx=40, cy=40, r=26;
+  ctx.fillStyle='#ffd7b0'; ctx.beginPath(); ctx.arc(cx,cy,r,0,TAU); ctx.fill();
+  ctx.strokeStyle='#c98850'; ctx.lineWidth=2; ctx.stroke();
+  ctx.strokeStyle='#5a3418'; ctx.fillStyle='#5a3418'; ctx.lineWidth=2.5; ctx.lineCap='round';
+  const mood = state.faceMood;
+  if(mood==='happy'){
+    ctx.beginPath(); ctx.arc(cx-9,cy-4,3,Math.PI,0); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx+9,cy-4,3,Math.PI,0); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx,cy+6,9,0.15*Math.PI,0.85*Math.PI); ctx.stroke();
+  } else if(mood==='pain'){
+    ctx.beginPath(); ctx.moveTo(cx-13,cy-8); ctx.lineTo(cx-4,cy-3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+13,cy-8); ctx.lineTo(cx+4,cy-3); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx,cy+11,7,Math.PI,0); ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.arc(cx-8,cy-3,2.4,0,TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx+8,cy-3,2.4,0,TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy+5,5,0,Math.PI); ctx.stroke();
+  }
+}
+function drawHUD(){
+  ctx.textAlign='left';
+  ctx.save();
+  ctx.shadowColor='rgba(255,210,61,0.55)'; ctx.shadowBlur=10;
+  ctx.fillStyle='#fff1e6'; ctx.font="bold 23px 'Rounded Mplus 1c',sans-serif";
+  ctx.fillText(Math.floor(displayScore).toLocaleString(), 76, 34);
+  ctx.restore();
+  ctx.font="11px 'Rounded Mplus 1c',sans-serif"; ctx.fillStyle='#ffb3bd';
+  ctx.fillText('SCORE', 76, 46);
+  if(state.combo>0){
+    const tier = state.combo>=6 ? '#ff8fe0' : (state.combo>=3 ? '#ffd23d' : '#ffffff');
+    const pulse = 1+Math.sin(state.time*10)*0.06;
+    ctx.save();
+    ctx.textAlign='right'; ctx.translate(LW-14,34); ctx.scale(pulse,pulse);
+    ctx.shadowColor=tier; ctx.shadowBlur=9;
+    ctx.fillStyle=tier; ctx.font="bold 17px 'Rounded Mplus 1c',sans-serif";
+    ctx.fillText(state.combo+' COMBO',0,0);
+    ctx.restore();
+  }
+  drawGauge(LW-96,54,80,'誤嚥',state.aspiration,'#ff4d6d','#ffc2cd');
+  drawGauge(LW-96,70,80,'酸素',state.oxygen,'#6ec6ff','#d6f1ff');
+  drawGauge(LW-96,86,80,'唾液',state.saliva,'#8fe0ff','#e6faff');
+  if(state.feverTimer>0){
+    drawGauge(LW-96,102,80,'FEVER',100*state.feverTimer/(FEVER_DURATION+6),'#ffd23d','#fff6de');
+  }
+  ctx.textAlign='left';
+}
+function drawFeverVignette(){
+  if(state.feverTimer<=0) return;
+  const pulse = 0.5+Math.sin(state.time*8)*0.5;
+  const g = ctx.createRadialGradient(LW/2,LH/2,LH*0.25,LW/2,LH/2,LH*0.72);
+  g.addColorStop(0,'rgba(255,210,61,0)');
+  g.addColorStop(1,`rgba(255,180,60,${(0.16+0.12*pulse).toFixed(3)})`);
+  ctx.fillStyle=g;
+  ctx.fillRect(0,0,LW,LH);
+}
+function drawGauge(x,y,w,label,val,color,hi){
+  ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fillRect(x,y,w,9);
+  const fw = w*clamp(val/100,0,1);
+  ctx.fillStyle=color; ctx.fillRect(x,y,fw,9);
+  if(fw>1.5){ ctx.globalAlpha=0.55; ctx.fillStyle=hi||'#fff'; ctx.fillRect(x,y,fw,3); ctx.globalAlpha=1; }
+  ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1; ctx.strokeRect(x,y,w,9);
+  ctx.fillStyle='#fff'; ctx.font="8px 'Rounded Mplus 1c',sans-serif"; ctx.textAlign='right';
+  ctx.fillText(label, x-4, y+8);
+}
+function drawEpiglottisButton(){
+  const ready = state.saliva>=100 && state.epiglottisTimer<=0;
+  const cx=LW/2, cy=LH-40, r=32;
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,TAU);
+  ctx.fillStyle = ready ? 'rgba(143,224,255,0.85)' : 'rgba(255,255,255,0.10)';
+  ctx.fill();
+  ctx.strokeStyle = ready ? '#ffffff' : 'rgba(255,255,255,0.3)'; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle = ready ? '#04202b' : 'rgba(255,255,255,0.4)';
+  ctx.font = "bold 11px 'Rounded Mplus 1c',sans-serif"; ctx.textAlign='center';
+  ctx.fillText('喉頭蓋', cx, cy+4);
+}
+function drawBossBanner(){
+  const t = state.bossBannerTimer;
+  const age = 2.2-t;
+  const a = t>1.8 ? (2.2-t)/0.4 : (t<0.4 ? t/0.4 : 1);
+  const scale = age<0.22 ? Math.max(0.05,easeOutBack(age/0.22)) : 1;
+  const ribbonY = LH*0.42;
+  ctx.save(); ctx.globalAlpha=clamp(a,0,1);
+  const grad = ctx.createLinearGradient(0,ribbonY,0,ribbonY+64);
+  grad.addColorStop(0,'rgba(10,2,4,0.15)'); grad.addColorStop(0.18,'rgba(8,1,4,0.88)');
+  grad.addColorStop(0.82,'rgba(8,1,4,0.88)'); grad.addColorStop(1,'rgba(10,2,4,0.15)');
+  ctx.fillStyle=grad; ctx.fillRect(0,ribbonY,LW,64);
+  ctx.fillStyle='#ffd23d'; ctx.fillRect(0,ribbonY,LW,3); ctx.fillRect(0,ribbonY+61,LW,3);
+  ctx.translate(LW/2,ribbonY+40); ctx.scale(scale,scale);
+  ctx.textAlign='center'; ctx.font="bold 25px 'Rounded Mplus 1c',sans-serif";
+  ctx.lineJoin='round'; ctx.strokeStyle='rgba(20,2,6,0.75)'; ctx.lineWidth=7;
+  ctx.strokeText(state.bossBannerText,0,0);
+  ctx.fillStyle='#ffe27a';
+  ctx.fillText(state.bossBannerText,0,0);
+  ctx.restore();
+}
+
+/* ---------------- main loop ---------------- */
+let lastT=null, acc=0;
+const STEP=1/180; /* finer physics tick than render rate: prevents fast balls/flippers tunneling through thin walls in one step */
+function frame(ts){
+  requestAnimationFrame(frame);
+  if(lastT==null) lastT=ts;
+  let dtReal=(ts-lastT)/1000; lastT=ts;
+  dtReal=Math.min(dtReal,0.05);
+  if(state.screen==='playing'){
+    acc+=dtReal;
+    let steps=0;
+    while(acc>=STEP && steps<24){ update(STEP); acc-=STEP; steps++; }
+  }
+  draw();
+}
+
+/* ---------------- input ---------------- */
+function localPos(evt){
+  const rect = canvas.getBoundingClientRect();
+  return { x:(evt.clientX-rect.left)*(LW/rect.width), y:(evt.clientY-rect.top)*(LH/rect.height) };
+}
+function pointerSide(x){ return x<LW/2 ? 'left' : 'right'; }
+function recomputeFlippers(){
+  let l=keyL, r=keyR;
+  for(const v of activePointers.values()){ if(v==='left')l=true; if(v==='right')r=true; }
+  setFlipperActive('left', l);
+  setFlipperActive('right', r);
+}
+canvas.addEventListener('pointerdown', e=>{
+  initAudio(); resumeAudio();
+  if(state.screen!=='playing') return;
+  const pos = localPos(e);
+  if(pos.y>LH-76 && Math.abs(pos.x-LW/2)<40){
+    tryEpiglottis();
+    activePointers.set(e.pointerId,'epi');
+    e.preventDefault();
+    return;
+  }
+  activePointers.set(e.pointerId, pointerSide(pos.x));
+  recomputeFlippers();
+  e.preventDefault();
+}, {passive:false});
+function releasePointer(e){ activePointers.delete(e.pointerId); recomputeFlippers(); }
+canvas.addEventListener('pointerup', releasePointer);
+canvas.addEventListener('pointercancel', releasePointer);
+canvas.addEventListener('pointerleave', releasePointer);
+
+window.addEventListener('keydown', e=>{
+  initAudio(); resumeAudio();
+  if(state.screen!=='playing') return;
+  if(e.code==='ArrowLeft'||e.code==='KeyZ'){ keyL=true; recomputeFlippers(); }
+  if(e.code==='ArrowRight'||e.code==='KeyX'||e.code==='KeyM'){ keyR=true; recomputeFlippers(); }
+  if(e.code==='Space'){ tryEpiglottis(); e.preventDefault(); }
+});
+window.addEventListener('keyup', e=>{
+  if(e.code==='ArrowLeft'||e.code==='KeyZ'){ keyL=false; recomputeFlippers(); }
+  if(e.code==='ArrowRight'||e.code==='KeyX'||e.code==='KeyM'){ keyR=false; recomputeFlippers(); }
+});
+
+/* ---------------- screens ---------------- */
+const startScreen = document.getElementById('startScreen');
+const overScreen = document.getElementById('overScreen');
+document.getElementById('startBtn').addEventListener('click', ()=>{ initAudio(); resumeAudio(); startGame(); });
+document.getElementById('retryBtn').addEventListener('click', ()=>{ initAudio(); resumeAudio(); startGame(); });
+
+function resetGame(){
+  balls.length=0; particles.length=0; popups.length=0; bursts.length=0;
+  boss=null; bossesDefeated=0; nextBossScore=3000;
+  flipperL=makeFlipper('left'); flipperR=makeFlipper('right');
+  state.score=0; state.combo=0; state.aspiration=0; state.oxygen=100; state.saliva=30;
+  state.time=0; state.spawnTimer=0.6; state.spawnInterval=1.3;
+  state.coughCooldown=0; state.tracheaImmune=0; state.epiglottisTimer=0;
+  state.faceMood='normal'; state.faceTimer=0; state.heartTimer=1;
+  state.shakeTimer=0; state.flashAlpha=0; state.syrup=false; state.bossBannerTimer=0;
+  state.feverTimer=0; state.feverSparkleTimer=0;
+  keyL=false; keyR=false; activePointers.clear();
+  displayScore=0; wasDanger=false; wasFever=false;
+  chaseBorderEl.classList.remove('danger','win');
+}
+function startGame(){
+  resetGame();
+  state.screen='playing';
+  startScreen.classList.add('hidden');
+  overScreen.classList.add('hidden');
+  setTimeout(()=>popupText('左右タップでフリッパー！', LW/2, LH*0.32, false, 2.0), 150);
+}
+function gameOver(reason){
+  if(state.screen!=='playing') return;
+  state.screen='gameover';
+  if(state.score>best){ best=state.score; saveBest(); }
+  document.getElementById('overTitle').textContent = reason;
+  document.getElementById('overScore').textContent = 'SCORE: '+Math.floor(state.score).toLocaleString();
+  document.getElementById('overBest').textContent = 'BEST: '+Math.floor(best).toLocaleString();
+  overScreen.classList.remove('hidden');
+}
+
+resize();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

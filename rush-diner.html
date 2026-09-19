@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#D62839">
+<title>ラッシュ・ダイナー | Rush Diner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFF3DC; --bg-soft:#FFFBF0; --surface:#FFFFFF;
+  --ink:#2E2119; --ink-soft:#8A7660;
+  --red:#D62839; --red-deep:#A81F2D;
+  --alert:#E63946;
+  --gold:#F2A93B; --gold-deep:#C9861F;
+  --green:#3E8E5B; --green-deep:#2E6D45;
+  --line:#EAD9B8;
+  --shadow:0 3px 10px rgba(46,33,25,0.14);
+  --shadow-lg:0 10px 26px rgba(46,33,25,0.20);
+  --radius-card:18px;
+  --radius-pill:999px;
+  --font:'Zen Maru Gothic','Hiragino Maru Gothic ProN','Hiragino Sans','Yu Gothic Medium',Meiryo,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#1C1512; --bg-soft:#241B16; --surface:#2B211A;
+    --ink:#F5E9D8; --ink-soft:#C2A98C;
+    --red:#FF5A67; --red-deep:#D62839;
+    --alert:#FF6B76;
+    --gold:#FFC864; --gold-deep:#F2A93B;
+    --green:#6FCB92; --green-deep:#3E8E5B;
+    --line:#4A3B2C;
+    --shadow:0 3px 10px rgba(0,0,0,0.45);
+    --shadow-lg:0 10px 28px rgba(0,0,0,0.5);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1C1512; --bg-soft:#241B16; --surface:#2B211A;
+  --ink:#F5E9D8; --ink-soft:#C2A98C;
+  --red:#FF5A67; --red-deep:#D62839;
+  --alert:#FF6B76;
+  --gold:#FFC864; --gold-deep:#F2A93B;
+  --green:#6FCB92; --green-deep:#3E8E5B;
+  --line:#4A3B2C;
+  --shadow:0 3px 10px rgba(0,0,0,0.45);
+  --shadow-lg:0 10px 28px rgba(0,0,0,0.5);
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--font); -webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none; user-select:none;
+  overscroll-behavior:none;
+}
+body::before{
+  content:""; position:fixed; inset:0; z-index:-1;
+  background:repeating-linear-gradient(45deg, var(--bg-soft) 0 14px, var(--bg) 14px 28px);
+  opacity:0.5;
+}
+#app{
+  max-width:480px; margin:0 auto; min-height:100vh; min-height:100dvh;
+  background:var(--bg); position:relative; overflow-x:hidden;
+  box-shadow:var(--shadow-lg);
+  display:flex; flex-direction:column;
+}
+.screen{display:none; flex-direction:column; min-height:100vh; min-height:100dvh;}
+.screen.active{display:flex;}
+button{font-family:inherit;}
+button:focus-visible, .table-card:focus-visible, .entrance-chip:focus-visible{
+  outline:3px solid var(--gold-deep); outline-offset:2px;
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important;}
+}
+.hidden{display:none !important;}
+
+/* Buttons */
+.btn{
+  border:none; border-radius:var(--radius-pill); font-weight:700; font-size:1rem;
+  padding:12px 22px; cursor:pointer; color:#fff;
+  background:var(--ink-soft); transition:transform .08s ease;
+}
+.btn:active{transform:scale(0.95);}
+.btn-primary{background:var(--red); box-shadow:var(--shadow);}
+.btn-primary:active{background:var(--red-deep);}
+.btn-ghost{background:transparent; border:2px solid var(--red); color:var(--red);}
+.btn-large{display:block; width:100%; padding:16px; font-size:1.12rem; margin:8px 0;}
+.icon-btn{
+  width:40px;height:40px;border-radius:50%; border:none; background:var(--surface);
+  box-shadow:var(--shadow); font-size:1.1rem; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:0 0 auto;
+}
+.icon-btn:active{transform:scale(0.92);}
+
+/* Start screen */
+.start-wrap{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; text-align:center; gap:8px;}
+.logo-plate{
+  background:var(--surface); border:3px solid var(--red); border-radius:28px;
+  padding:30px 26px; box-shadow:var(--shadow-lg);
+  animation:plate-drop .6s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes plate-drop{ from{transform:translateY(-60px) rotate(-4deg); opacity:0;} to{transform:translateY(0) rotate(0); opacity:1;} }
+.logo-emoji{font-size:3.4rem; animation:steam-rise 2.4s ease-in-out infinite;}
+@keyframes steam-rise{0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);}}
+.game-title{font-size:1.9rem; font-weight:900; margin:10px 0 0; line-height:1.25;}
+.game-title .subtitle{display:block; font-size:0.92rem; font-weight:500; color:var(--ink-soft); margin-top:2px;}
+.tagline{color:var(--ink-soft); font-size:0.95rem; margin:10px 0 2px;}
+.best-record{font-size:0.85rem; color:var(--gold-deep); font-weight:700; min-height:1.3em;}
+.start-actions{width:100%; max-width:280px; margin-top:14px;}
+.start-footnote{font-size:0.76rem; color:var(--ink-soft); margin-top:10px;}
+
+/* Prep screen */
+.topbar{padding:18px 18px 6px;}
+.topbar-title{font-size:1.25rem; font-weight:900;}
+.prep-stats{display:flex; gap:10px; padding:0 18px 12px;}
+.stat-chip{background:var(--surface); border-radius:var(--radius-pill); padding:8px 16px; font-weight:700; box-shadow:var(--shadow); font-size:0.92rem;}
+.notice-card{
+  margin:0 18px 14px; padding:13px 16px; border-radius:14px;
+  background:var(--gold); color:var(--ink); font-weight:700; font-size:0.86rem; line-height:1.5;
+  border:2px dashed var(--gold-deep);
+}
+.notice-card.bad{background:var(--alert); color:#fff; border-color:var(--red-deep);}
+.notice-card.good{background:var(--green); color:#fff; border-color:var(--green-deep);}
+.prep-scroll{flex:1; overflow-y:auto; padding:0 18px 18px;}
+.prep-section{margin-bottom:22px;}
+.prep-section h2{font-size:1.02rem; font-weight:900; margin:0 0 10px; display:flex; align-items:center; gap:6px;}
+.upgrade-row, .shop-row{
+  display:flex; align-items:center; gap:10px; background:var(--surface);
+  border-radius:14px; padding:10px 14px; margin-bottom:8px; box-shadow:var(--shadow);
+}
+.row-icon{font-size:1.6rem; width:34px; text-align:center; flex:0 0 auto;}
+.row-info{flex:1; min-width:0;}
+.row-title{font-weight:700; font-size:0.9rem;}
+.row-sub{font-size:0.76rem; color:var(--ink-soft); margin-top:2px;}
+.row-levels{display:flex; gap:3px; margin-top:4px;}
+.level-dot{width:8px;height:8px;border-radius:50%;background:var(--line);}
+.level-dot.filled{background:var(--gold-deep);}
+.row-btn{
+  border:none; border-radius:var(--radius-pill); padding:9px 14px; font-weight:700; font-size:0.8rem;
+  background:var(--red); color:#fff; white-space:nowrap; cursor:pointer; flex:0 0 auto;
+}
+.row-btn:disabled{background:var(--line); color:var(--ink-soft);}
+.row-btn.owned{background:var(--green); color:#fff;}
+.prep-footer{position:sticky; bottom:0; background:var(--bg); padding:10px 18px calc(14px + env(safe-area-inset-bottom)); box-shadow:0 -6px 16px rgba(46,33,25,0.08);}
+
+/* Business HUD */
+.hud{padding:10px 14px 8px; background:var(--bg-soft); border-bottom:2px solid var(--line); position:relative;}
+.hud-row1{display:flex; align-items:center; gap:8px;}
+.hud-day{font-weight:900; font-size:0.98rem; flex:0 0 auto;}
+.hud-clock{font-size:0.82rem; color:var(--ink-soft); font-weight:700; flex:0 0 auto;}
+.hud-timer{flex:1; height:8px; background:var(--line); border-radius:4px; overflow:hidden;}
+.timer-fill{height:100%; background:var(--gold-deep); width:100%;}
+.hud-row2{display:flex; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap;}
+.hud-stat{display:flex; align-items:center; gap:5px; font-weight:800; font-size:0.82rem;}
+.mini-bar{width:48px; height:8px; background:var(--line); border-radius:4px; overflow:hidden; flex:0 0 auto;}
+.mini-bar-fill{height:100%; border-radius:4px;}
+.rep-fill{background:var(--gold-deep);}
+.sta-fill{background:var(--green);}
+.hud-combo{margin-left:auto; font-size:0.8rem; font-weight:800; color:var(--red); min-width:36px; text-align:right;}
+#hud-floats{position:relative; height:0;}
+
+.event-banner{
+  margin:8px 14px 0; padding:10px 14px; border-radius:14px; text-align:center;
+  font-weight:800; font-size:0.88rem; color:#fff; background:var(--red);
+  animation:banner-in .35s ease;
+}
+.event-banner.happy{background:linear-gradient(90deg,var(--gold-deep),var(--gold)); color:var(--ink);}
+.event-banner.owner{background:var(--red-deep);}
+@keyframes banner-in{from{transform:translateY(-14px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+
+.entrance-row{display:flex; gap:10px; padding:10px 14px; overflow-x:auto;}
+.entrance-chip{flex:0 0 auto; width:56px; text-align:center; cursor:pointer; position:relative; padding-top:4px;}
+.entrance-chip .av{font-size:1.6rem; display:block; background:var(--surface); border-radius:50%; width:46px; height:46px; line-height:46px; box-shadow:var(--shadow); border:3px solid transparent; margin:0 auto;}
+.entrance-chip.selected .av{border-color:var(--gold-deep); transform:scale(1.08);}
+.entrance-chip.complainer .av{border-color:var(--alert);}
+.entrance-chip .mini-bar{width:42px; margin:4px auto 0;}
+.entrance-chip .tag{position:absolute; top:-4px; right:2px; font-size:0.8rem;}
+
+.floor-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; padding:8px 14px;}
+@media (min-width:560px){.floor-grid{grid-template-columns:repeat(3,1fr);}}
+.table-card{
+  position:relative; background:var(--surface); border-radius:var(--radius-card);
+  border:3px solid var(--line); padding:14px 8px 10px; min-height:126px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  box-shadow:var(--shadow); cursor:pointer;
+}
+.table-card .tnum{position:absolute; top:6px; left:8px; font-size:0.65rem; font-weight:800; color:var(--ink-soft); background:var(--bg-soft); border-radius:6px; padding:1px 5px;}
+.table-card.vip{border-color:var(--gold-deep);}
+.table-card.vip.locked{opacity:0.55;}
+.table-card.state-empty{border-style:dashed;}
+.table-card.state-dirty{background:var(--bg-soft);}
+.table-card.state-broken{background:repeating-linear-gradient(135deg,var(--bg-soft) 0 6px, var(--line) 6px 12px);}
+.table-card.angry{border-color:var(--alert); animation:pulse-alert 0.9s ease-in-out infinite;}
+@keyframes pulse-alert{0%,100%{box-shadow:0 0 0 0 rgba(230,57,70,0.45);} 50%{box-shadow:0 0 0 9px rgba(230,57,70,0);}}
+.t-icon{font-size:2rem; animation:pop-in .25s ease;}
+@keyframes pop-in{from{transform:scale(0.5); opacity:0;} to{transform:scale(1); opacity:1;}}
+.t-order-badge{position:absolute; top:-10px; right:2px; font-size:1.4rem; animation:bounce-badge 1s ease-in-out infinite;}
+.t-bill-badge{position:absolute; top:-10px; right:2px; font-size:1.3rem; animation:bounce-badge 1s ease-in-out infinite;}
+@keyframes bounce-badge{0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);}}
+.t-label{font-size:0.68rem; color:var(--ink-soft); font-weight:700; margin-top:4px; text-align:center; line-height:1.3;}
+.patience-bar{width:80%; height:7px; background:var(--line); border-radius:4px; margin-top:6px; overflow:hidden;}
+.patience-fill{height:100%; border-radius:4px; transition:width .2s linear, background-color .2s;}
+.patience-fill.ok{background:var(--green);}
+.patience-fill.warn{background:var(--gold-deep);}
+.patience-fill.danger{background:var(--alert);}
+.clean-fill{position:absolute; bottom:0; left:0; height:4px; background:var(--gold-deep); width:0%;}
+
+.kitchen-row{padding:8px 14px 4px;}
+.kitchen-label{font-weight:800; font-size:0.82rem; margin-bottom:6px; color:var(--ink-soft);}
+.kitchen-list{display:flex; gap:10px; overflow-x:auto; padding:4px 2px 8px;}
+.kitchen-item{
+  flex:0 0 auto; width:70px; background:var(--surface); padding:10px 6px 8px; text-align:center; position:relative;
+  clip-path:polygon(0 0,100% 0,100% 88%,92% 100%,84% 88%,76% 100%,68% 88%,60% 100%,52% 88%,44% 100%,36% 88%,28% 100%,20% 88%,12% 100%,4% 88%,0 100%);
+  box-shadow:var(--shadow);
+}
+.kitchen-item .k-icon{font-size:1.5rem;}
+.kitchen-item .k-ring{width:32px;height:32px;border-radius:50%;margin:4px auto 2px; background:conic-gradient(var(--gold-deep) var(--p,0%),var(--line) 0); display:flex; align-items:center; justify-content:center;}
+.kitchen-item .k-ring::after{content:"";width:23px;height:23px;border-radius:50%;background:var(--surface);}
+.kitchen-item.ready{box-shadow:0 0 0 3px var(--gold-deep), var(--shadow);}
+.kitchen-item.mistake{box-shadow:0 0 0 3px var(--alert), var(--shadow);}
+.kitchen-item .k-dest{font-size:0.62rem; font-weight:800; color:var(--ink-soft); margin-top:2px;}
+.redo-btn{position:absolute; top:2px; right:2px; background:var(--alert); color:#fff; border:none; border-radius:50%; width:20px; height:20px; font-size:0.7rem; line-height:20px; padding:0; cursor:pointer;}
+
+.tray-row{display:flex; gap:8px; padding:2px 14px 8px; min-height:40px; align-items:center; flex-wrap:wrap;}
+.tray-label{font-size:0.76rem; color:var(--ink-soft); font-weight:700;}
+.tray-item{width:32px; height:32px; background:var(--surface); border-radius:8px; box-shadow:var(--shadow); display:flex; align-items:center; justify-content:center; font-size:1.05rem; position:relative;}
+.tray-item .k-dest{position:absolute; bottom:-13px; left:50%; transform:translateX(-50%); font-size:0.56rem; font-weight:800; color:var(--ink-soft); white-space:nowrap;}
+.tray-slot-empty{width:32px;height:32px;border-radius:8px;border:2px dashed var(--line);}
+
+.itembar{
+  display:flex; gap:8px; padding:10px 14px calc(12px + env(safe-area-inset-bottom));
+  background:var(--bg-soft); border-top:2px solid var(--line);
+}
+.item-btn{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+  background:var(--surface); border:none; border-radius:14px; padding:8px 4px;
+  box-shadow:var(--shadow); font-family:inherit; position:relative; cursor:pointer;
+}
+.item-btn:active{transform:scale(0.94);}
+.item-btn.armed{box-shadow:0 0 0 3px var(--gold-deep), var(--shadow);}
+.item-btn .ib-icon{font-size:1.35rem;}
+.item-btn .ib-label{font-size:0.6rem; font-weight:700; color:var(--ink-soft);}
+.item-btn .ib-count{position:absolute; top:2px; right:6px; font-size:0.62rem; font-weight:800; background:var(--red); color:#fff; border-radius:8px; padding:0 4px;}
+.item-btn:disabled{opacity:0.4;}
+.item-btn .ib-cd{font-size:0.58rem; color:var(--ink-soft);}
+
+.float-text{position:absolute; left:50%; top:6px; transform:translateX(-50%); font-weight:900; font-size:0.82rem; pointer-events:none; animation:float-up .9s ease-out forwards; z-index:30; white-space:nowrap;}
+@keyframes float-up{from{transform:translate(-50%,0); opacity:1;} to{transform:translate(-50%,-34px); opacity:0;}}
+.float-text.money{color:var(--green-deep);}
+.float-text.bad{color:var(--alert);}
+.float-text.ok{color:var(--gold-deep);}
+
+/* Result / gameover */
+.result-wrap, .gameover-wrap{flex:1; display:flex; flex-direction:column; justify-content:center; padding:28px 22px; gap:10px;}
+.result-wrap h2, .gameover-wrap h2{font-size:1.25rem; font-weight:900; text-align:center; margin:0 0 6px;}
+.result-card{background:var(--surface); border-radius:18px; padding:16px 18px; box-shadow:var(--shadow-lg);}
+.result-line{display:flex; justify-content:space-between; gap:10px; padding:7px 0; font-size:0.9rem; border-bottom:1px solid var(--line);}
+.result-line:last-child{border-bottom:none;}
+.result-line .v.pos{color:var(--green-deep); font-weight:800;}
+.result-line .v.neg{color:var(--alert); font-weight:800;}
+.gameover-emoji{font-size:3rem; text-align:center;}
+
+/* Overlay */
+.overlay{position:fixed; inset:0; background:rgba(46,33,25,0.55); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100;}
+.overlay-card{background:var(--surface); border-radius:20px; padding:22px; max-width:420px; width:100%; max-height:82vh; overflow-y:auto; box-shadow:var(--shadow-lg);}
+.overlay-card h2{margin-top:0; font-size:1.15rem;}
+.howto-list{padding-left:0; list-style:none; margin:14px 0; display:flex; flex-direction:column; gap:9px;}
+.howto-list li{font-size:0.85rem; line-height:1.55; background:var(--bg-soft); border-radius:12px; padding:10px 12px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section id="screen-start" class="screen active">
+    <div class="start-wrap">
+      <div class="logo-plate">
+        <div class="logo-emoji">🍔</div>
+        <h1 class="game-title">ラッシュ・ダイナー<span class="subtitle">Rush Diner</span></h1>
+      </div>
+      <p class="tagline">お客様をさばいて、繁盛店を目指せ！</p>
+      <div class="best-record" id="best-record"></div>
+      <div class="start-actions">
+        <button id="btn-start-game" class="btn btn-primary btn-large">🎬 開店準備をはじめる</button>
+        <button id="btn-howto" class="btn btn-ghost btn-large">📖 遊び方</button>
+      </div>
+      <div class="start-footnote">タップ操作でプレイできます</div>
+    </div>
+  </section>
+
+  <section id="screen-prep" class="screen">
+    <header class="topbar">
+      <div class="topbar-title">Day <span id="prep-day"></span> ・ 開店準備</div>
+    </header>
+    <div class="prep-stats">
+      <div class="stat-chip">💰 <span id="prep-money"></span></div>
+      <div class="stat-chip">⭐ <span id="prep-rep"></span>%</div>
+    </div>
+    <div id="owner-notice" class="notice-card hidden"></div>
+    <div id="prep-scroll" class="prep-scroll">
+      <section class="prep-section">
+        <h2>🍳 メニュー強化</h2>
+        <div id="menu-upgrade-list"></div>
+      </section>
+      <section class="prep-section">
+        <h2>🛒 アイテム購入</h2>
+        <div id="item-shop-list"></div>
+      </section>
+      <section class="prep-section">
+        <h2>🔧 設備投資</h2>
+        <div id="equip-shop-list"></div>
+      </section>
+    </div>
+    <div class="prep-footer">
+      <button id="btn-start-business" class="btn btn-primary btn-large">🔔 営業開始</button>
+    </div>
+  </section>
+
+  <section id="screen-business" class="screen">
+    <header class="hud">
+      <div class="hud-row1">
+        <div class="hud-day">Day <span id="hud-day"></span></div>
+        <div class="hud-clock">🕒 <span id="hud-clock"></span></div>
+        <div class="hud-timer"><div id="timer-fill" class="timer-fill"></div></div>
+        <button id="btn-mute" class="icon-btn">🔊</button>
+        <button id="btn-help" class="icon-btn">❓</button>
+      </div>
+      <div class="hud-row2">
+        <div class="hud-stat">💰<span id="hud-money"></span></div>
+        <div class="hud-stat"><span>⭐</span><div class="mini-bar"><div id="hud-rep-fill" class="mini-bar-fill rep-fill"></div></div></div>
+        <div class="hud-stat"><span>⚡</span><div class="mini-bar"><div id="hud-sta-fill" class="mini-bar-fill sta-fill"></div></div></div>
+        <div class="hud-combo" id="hud-combo"></div>
+      </div>
+      <div id="hud-floats"></div>
+    </header>
+
+    <div id="event-banner" class="event-banner hidden"></div>
+    <div id="entrance" class="entrance-row"></div>
+    <div id="floor" class="floor-grid"></div>
+
+    <div class="kitchen-row">
+      <div class="kitchen-label">🍳 厨房</div>
+      <div id="kitchen-list" class="kitchen-list"></div>
+    </div>
+    <div id="tray" class="tray-row"></div>
+    <div id="itembar" class="itembar"></div>
+  </section>
+
+  <section id="screen-result" class="screen">
+    <div class="result-wrap">
+      <h2 id="result-title"></h2>
+      <div class="result-card" id="result-card"></div>
+      <div id="result-owner-outcome" class="notice-card hidden"></div>
+      <div id="result-next-notice" class="notice-card hidden"></div>
+      <button id="btn-next-day" class="btn btn-primary btn-large">➡️ 次の日へ</button>
+    </div>
+  </section>
+
+  <section id="screen-gameover" class="screen">
+    <div class="gameover-wrap">
+      <div class="gameover-emoji">😢</div>
+      <h2 id="gameover-reason"></h2>
+      <div class="result-card" id="gameover-stats"></div>
+      <button id="btn-restart" class="btn btn-primary btn-large">🔄 もう一度挑戦する</button>
+    </div>
+  </section>
+
+  <div id="help-overlay" class="overlay hidden">
+    <div class="overlay-card">
+      <h2>📖 遊び方</h2>
+      <ol class="howto-list">
+        <li>👋 入口のお客様をタップして選び、空いている席をタップすると案内できます。</li>
+        <li>🍽️ 席の上に料理アイコンが出たら、お客様をタップして注文を受けます。</li>
+        <li>🍳 厨房で完成した料理をタップして持ち上げ、届け先の席をタップして配膳します。</li>
+        <li>🧾 会計アイコンが出たらタップで会計。売上が入ります！</li>
+        <li>🧹 お客様が帰った後の汚れた席はタップして片付けましょう。</li>
+        <li>😠 我慢ゲージが切れて怒ってしまったら、タップしてお詫びしましょう。放っておくと帰ってしまいます。</li>
+        <li>🥤🧴🎟️ 画面下のアイテムやスキルも活用して、忙しい時間帯を乗り切ろう！</li>
+      </ol>
+      <button id="btn-close-help" class="btn btn-primary btn-large">わかった！</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+'use strict';
+
+// ============================================================
+// CONFIG
+// ============================================================
+const CONFIG = {
+  TICK_MS:100,
+  DAY_LENGTH_MS:100000,
+  CLOSING_GRACE_MS:8000,
+  OPEN_HOUR:11, CLOSE_HOUR:21,
+  HH_START_FRAC:0.6, HH_END_FRAC:0.8,
+  TABLE_COUNT:5,
+  BASE_SPAWN_MS:5200, MIN_SPAWN_MS:1700, SPAWN_DECAY_PER_DAY:130, HH_SPAWN_MULT:0.5,
+  ENTRANCE_MAX:4, ENTRANCE_DECAY_PER_MS:100/18000,
+  COMBO_TARGET:5, COMBO_HH_MS:15000,
+  ORDER_REVEAL_MIN:1200, ORDER_REVEAL_MAX:2200,
+  BASE_DECAY_PER_MS:100/22000,
+  COMPLAINER_MULT:1.4, VIP_MULT:2,
+  FLARE_CHANCE_PER_SEC:0.04,
+  ABANDON_MS:9000,
+  ANGRY_PENALTY:3, ABANDON_PENALTY:6, SMOOTH_BONUS:0.5, ENTRANCE_ABANDON_PENALTY:2,
+  MISTAKE_CHANCE:0.06, MISTAKE_CHANCE_HH:0.08,
+  BASE_CLEAN_MS:1200,
+  ENERGY_DRINK_MS:30000, ENERGY_CLEAN_MULT:0.6,
+  ROLLERSKATE_CLEAN_MULT:0.8, DISHWASHER_CLEAN_MULT:0.25,
+  ITEM_PRICE:{energyDrink:15, oshibori:12, coupon:25},
+  UPGRADE_PRICE:{rollerSkates:90, largeTray:140, dishwasher:120},
+  MENU_UPGRADE_COST:{fast:[40,90], main:[60,140], dessert:[35,80]},
+  TRAY_BASE_CAP:2, TRAY_LARGE_CAP:4,
+  FIXED_COST_BASE:40, FIXED_COST_PER_DAY:6,
+  START_MONEY:100, START_REP:60,
+  GAMEOVER_REP:20,
+  CALL_MANAGER_COOLDOWN_MS:25000,
+  REPAIR_COST:15,
+  OWNER_BONUS_BASE:60, OWNER_BONUS_PER_DAY:4,
+};
+
+const DISHES = {
+  fast:{name:'ファストフード', emoji:'🍔', baseCook:3000, basePrice:10, eatMs:3000, cookLvl:0.15, priceLvl:0.08},
+  main:{name:'メインディッシュ', emoji:'🥩', baseCook:7000, basePrice:25, eatMs:5000, cookLvl:0.05, priceLvl:0.25},
+  dessert:{name:'ドリンク・デザート', emoji:'🍰', baseCook:2000, basePrice:8, eatMs:2500, cookLvl:0.10, priceLvl:0.08},
+};
+const AVATARS = ['🧑','👩','👨','👵','👴','🧕','🧔','👱'];
+const SAVE_KEY='rushDinerBest_v1';
+
+// ============================================================
+// STATE
+// ============================================================
+let state=null;
+let gameClock=0;
+let nextId=1;
+function genId(){ return 'id'+(nextId++); }
+function now(){ return gameClock; }
+
+function freshState(){
+  return {
+    screen:'start', day:1,
+    money:CONFIG.START_MONEY, reputation:CONFIG.START_REP, stamina:100,
+    menuLevel:{fast:1, main:1, dessert:1},
+    owned:{rollerSkates:false, largeTray:false, dishwasher:false},
+    items:{energyDrink:0, oshibori:0, coupon:0},
+    energyDrinkUntil:0, callManagerReadyAt:0,
+    nextDayOwnerEvent:false, lastOwnerEventDay:-99,
+    ownerEventThisDay:false, ownerEventSpawnAt:0, ownerEventSpawnedThisDay:false, ownerEventActive:false,
+    lastOwnerOutcome:null,
+    nextDaySpawnMult:1, nextDayCostMult:1, activeSpawnMult:1, activeCostMult:1,
+    tables:[], vipTable:null,
+    entranceQueue:[], kitchen:[], tray:[],
+    combo:0, comboHappyHourUntil:0,
+    selectedCustomerId:null, armedItem:null,
+    businessElapsed:0, closing:false, closingStartedAt:0, nextSpawnAt:0,
+    floats:[], muted:false, paused:false,
+    lastResult:null, brokenCount:0, gameOverReason:null,
+    _tutorialShown:false, _dayRevenue:0, _repAtDayStart:CONFIG.START_REP,
+  };
+}
+function resetTables(){
+  state.tables=[];
+  for(let i=1;i<=CONFIG.TABLE_COUNT;i++){
+    state.tables.push({id:'t'+i, num:i, isVip:false, status:'empty', customer:null, cleaningUntil:0});
+  }
+  state.vipTable={id:'vip', num:'VIP', isVip:true, status:'empty', customer:null, cleaningUntil:0};
+}
+function allTables(){ return state.tables.concat([state.vipTable]); }
+function findTable(id){ return allTables().find(t=>t.id===id); }
+
+// ============================================================
+// localStorage best record
+// ============================================================
+function loadBest(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw) return {bestDay:0,bestMoney:0};
+    const p=JSON.parse(raw);
+    return {bestDay:p.bestDay||0, bestMoney:p.bestMoney||0};
+  }catch(e){ return {bestDay:0,bestMoney:0}; }
+}
+function saveBest(day,money){
+  try{
+    const cur=loadBest();
+    localStorage.setItem(SAVE_KEY, JSON.stringify({bestDay:Math.max(cur.bestDay,day), bestMoney:Math.max(cur.bestMoney,money)}));
+  }catch(e){ /* storage unavailable, ignore */ }
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function rand(min,max){ return Math.random()*(max-min)+min; }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+function fmtMoney(v){ return 'G'+Math.round(v); }
+function fmtClock(frac){
+  const totalMin=CONFIG.OPEN_HOUR*60 + frac*(CONFIG.CLOSE_HOUR-CONFIG.OPEN_HOUR)*60;
+  const h=Math.floor(totalMin/60), m=Math.floor(totalMin%60);
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+function dayDecayMult(day){ return Math.min(2.5, 1+0.05*(day-1)); }
+function complainerChance(day){ if(day<4) return 0; return Math.min(0.35, 0.12+0.02*(day-4)); }
+function elapsedFrac(){ return clamp(state.businessElapsed/CONFIG.DAY_LENGTH_MS,0,1); }
+function isClockHappyHour(){ const f=elapsedFrac(); return f>=CONFIG.HH_START_FRAC && f<=CONFIG.HH_END_FRAC; }
+function isHappyHour(){ return isClockHappyHour() || now()<state.comboHappyHourUntil; }
+function currentSpawnInterval(){
+  let base=Math.max(CONFIG.MIN_SPAWN_MS, CONFIG.BASE_SPAWN_MS - CONFIG.SPAWN_DECAY_PER_DAY*(state.day-1));
+  base *= (state.activeSpawnMult||1);
+  if(isHappyHour()) base*=CONFIG.HH_SPAWN_MULT;
+  return base;
+}
+function trayCap(){ return state.owned.largeTray? CONFIG.TRAY_LARGE_CAP : CONFIG.TRAY_BASE_CAP; }
+function cleanMultiplier(){
+  let m=1;
+  if(state.owned.rollerSkates) m*=CONFIG.ROLLERSKATE_CLEAN_MULT;
+  if(now()<state.energyDrinkUntil) m*=CONFIG.ENERGY_CLEAN_MULT;
+  if(state.owned.dishwasher) m*=CONFIG.DISHWASHER_CLEAN_MULT;
+  return m;
+}
+function tipMult(){ return 0.7 + (state.reputation/100)*0.6; }
+function menuUpgradeCost(type){
+  const lvl=state.menuLevel[type];
+  if(lvl>=3) return null;
+  return CONFIG.MENU_UPGRADE_COST[type][lvl-1];
+}
+function pickDish(){
+  const hh=isHappyHour();
+  const base = hh? {fast:25,main:15,dessert:60} : {fast:45,main:30,dessert:25};
+  const dBonus=(state.menuLevel.dessert-1)*4;
+  const w={fast:base.fast, main:base.main, dessert:base.dessert+dBonus};
+  const total=w.fast+w.main+w.dessert;
+  let r=Math.random()*total;
+  if(r<w.fast) return 'fast';
+  r-=w.fast;
+  if(r<w.main) return 'main';
+  return 'dessert';
+}
+function computeCookMs(dishKey){
+  const d=DISHES[dishKey], lvl=state.menuLevel[dishKey];
+  let ms=d.baseCook*(1-d.cookLvl*(lvl-1));
+  if(isHappyHour()) ms*=0.5;
+  return Math.max(700, ms);
+}
+function computePrice(dishKey, mistakeDiscount){
+  const d=DISHES[dishKey], lvl=state.menuLevel[dishKey];
+  let p=d.basePrice*(1+d.priceLvl*(lvl-1));
+  p*=tipMult();
+  if(isHappyHour()) p*=1.5;
+  if(mistakeDiscount) p*=0.7;
+  return Math.round(p);
+}
+function pushFloat(target,text,cls){
+  state.floats.push({id:genId(), target, text, cls, createdAt:now()});
+}
+function patienceClass(p, angry){
+  if(angry) return 'danger';
+  if(p>55) return 'ok';
+  if(p>25) return 'warn';
+  return 'danger';
+}
+
+// ============================================================
+// AUDIO
+// ============================================================
+let audioCtx=null;
+function ensureAudio(){
+  if(!audioCtx){ try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(audioCtx && audioCtx.state==='suspended'){ audioCtx.resume(); }
+}
+function beep(freq,dur,type,vol,delay){
+  if(state && state.muted) return;
+  if(!audioCtx) return;
+  const t0=audioCtx.currentTime+(delay||0);
+  const osc=audioCtx.createOscillator(), gain=audioCtx.createGain();
+  osc.type=type||'sine'; osc.frequency.setValueAtTime(freq,t0);
+  gain.gain.setValueAtTime(0,t0);
+  gain.gain.linearRampToValueAtTime(vol||0.12,t0+0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(t0); osc.stop(t0+dur+0.03);
+}
+function sfx(name){
+  if(!state || state.muted || !audioCtx) return;
+  switch(name){
+    case 'tap': beep(600,0.05,'sine',0.07); break;
+    case 'seat': beep(520,0.08,'triangle',0.11); break;
+    case 'order': beep(720,0.07,'sine',0.1); break;
+    case 'pickup': beep(820,0.05,'square',0.05); break;
+    case 'serve': beep(900,0.09,'sine',0.11); break;
+    case 'cha': beep(1000,0.06,'sine',0.12); setTimeout(()=>beep(1300,0.09,'sine',0.12),55); break;
+    case 'clean': beep(400,0.06,'triangle',0.07); break;
+    case 'angry': beep(220,0.15,'sawtooth',0.1); break;
+    case 'fail': beep(160,0.28,'sawtooth',0.12); break;
+    case 'happy': beep(880,0.09,'sine',0.11); setTimeout(()=>beep(1174,0.11,'sine',0.11),85); setTimeout(()=>beep(1568,0.13,'sine',0.11),170); break;
+    case 'daystart': beep(523,0.09,'sine',0.09); setTimeout(()=>beep(659,0.11,'sine',0.09),95); break;
+    case 'gameover': beep(300,0.2,'sawtooth',0.1); setTimeout(()=>beep(200,0.28,'sawtooth',0.1),190); break;
+  }
+}
+
+// ============================================================
+// GENERIC LIST SYNC (preserves DOM nodes so CSS animations don't restart)
+// ============================================================
+function syncList(containerEl, items, keyFn, sigFn, htmlFn, extraFn){
+  const seen=new Set();
+  items.forEach(item=>{
+    const key=String(keyFn(item));
+    seen.add(key);
+    let node=containerEl.querySelector(':scope > [data-key="'+key+'"]');
+    if(!node){
+      node=document.createElement('div');
+      node.dataset.key=key;
+      containerEl.appendChild(node);
+    }
+    const sig=sigFn(item);
+    if(node.dataset.sig!==sig){
+      node.innerHTML=htmlFn(item);
+      node.dataset.sig=sig;
+    }
+    if(extraFn) extraFn(node,item);
+  });
+  Array.from(containerEl.children).forEach(ch=>{
+    if(ch.dataset && !seen.has(ch.dataset.key)) ch.remove();
+  });
+}
+function renderFloatsInto(containerEl, targetKey){
+  if(!containerEl) return;
+  const relevant=state.floats.filter(f=>f.target===targetKey);
+  const existing=Array.from(containerEl.querySelectorAll(':scope > .float-text'));
+  const existingIds=new Set(existing.map(n=>n.dataset.fid));
+  relevant.forEach(f=>{
+    if(!existingIds.has(f.id)){
+      const span=document.createElement('div');
+      span.className='float-text '+(f.cls||'');
+      span.textContent=f.text;
+      span.dataset.fid=f.id;
+      containerEl.appendChild(span);
+    }
+  });
+  existing.forEach(n=>{
+    if(!relevant.find(f=>f.id===n.dataset.fid)) n.remove();
+  });
+}
+
+// ============================================================
+// RENDER: start / prep
+// ============================================================
+function renderStart(){
+  const best=loadBest();
+  document.getElementById('best-record').textContent = best.bestDay>0
+    ? ('ベストレコード：Day '+best.bestDay+' ／ '+fmtMoney(best.bestMoney))
+    : '';
+}
+function renderPrep(){
+  document.getElementById('prep-day').textContent=state.day;
+  document.getElementById('prep-money').textContent=fmtMoney(state.money);
+  document.getElementById('prep-rep').textContent=Math.round(state.reputation);
+
+  const noticeEl=document.getElementById('owner-notice');
+  if(state.nextDayOwnerEvent){
+    noticeEl.classList.remove('hidden');
+    noticeEl.className='notice-card';
+    noticeEl.textContent='📢 予告：本日はオーナーが視察にいらっしゃいます！VIP席へのご案内を忘れずに。';
+  } else {
+    noticeEl.classList.add('hidden');
+  }
+
+  document.getElementById('menu-upgrade-list').innerHTML = Object.keys(DISHES).map(key=>{
+    const d=DISHES[key], lvl=state.menuLevel[key], cost=menuUpgradeCost(key);
+    const dots=[1,2,3].map(i=>'<span class="level-dot'+(i<=lvl?' filled':'')+'"></span>').join('');
+    const btn = cost==null
+      ? '<button class="row-btn owned" disabled>MAX</button>'
+      : '<button class="row-btn" data-action="menu" data-key="'+key+'" '+(state.money<cost?'disabled':'')+'>強化 '+fmtMoney(cost)+'</button>';
+    return '<div class="upgrade-row"><div class="row-icon">'+d.emoji+'</div><div class="row-info"><div class="row-title">'+d.name+'</div><div class="row-levels">'+dots+'</div></div>'+btn+'</div>';
+  }).join('');
+
+  const itemDefs=[
+    {key:'energyDrink', icon:'🥤', name:'エナジードリンク', desc:'30秒間、片付け速度アップ＆スタミナ全回復'},
+    {key:'oshibori', icon:'🧴', name:'高級おしぼり', desc:'お客様の我慢ゲージを全回復'},
+    {key:'coupon', icon:'🎟️', name:'お詫びクーポン', desc:'クレームを即座に鎮める'},
+  ];
+  document.getElementById('item-shop-list').innerHTML = itemDefs.map(it=>{
+    const price=CONFIG.ITEM_PRICE[it.key], owned=state.items[it.key];
+    return '<div class="shop-row"><div class="row-icon">'+it.icon+'</div><div class="row-info"><div class="row-title">'+it.name+' <span style="color:var(--ink-soft);font-weight:500;">(所持 '+owned+')</span></div><div class="row-sub">'+it.desc+'</div></div><button class="row-btn" data-action="buyitem" data-key="'+it.key+'" '+(state.money<price?'disabled':'')+'>購入 '+fmtMoney(price)+'</button></div>';
+  }).join('');
+
+  const equipDefs=[
+    {key:'rollerSkates', icon:'🛼', name:'ローラースケート', desc:'片付け速度+20%（恒久）'},
+    {key:'largeTray', icon:'🍱', name:'大型トレイ', desc:'一度に運べる料理が4品に増加'},
+    {key:'dishwasher', icon:'🫧', name:'全自動食洗機', desc:'テーブルの片付けが自動化・高速化'},
+  ];
+  document.getElementById('equip-shop-list').innerHTML = equipDefs.map(eq=>{
+    const price=CONFIG.UPGRADE_PRICE[eq.key], isOwned=state.owned[eq.key];
+    const btn = isOwned
+      ? '<button class="row-btn owned" disabled>導入済み</button>'
+      : '<button class="row-btn" data-action="buyequip" data-key="'+eq.key+'" '+(state.money<price?'disabled':'')+'>導入 '+fmtMoney(price)+'</button>';
+    return '<div class="shop-row"><div class="row-icon">'+eq.icon+'</div><div class="row-info"><div class="row-title">'+eq.name+'</div><div class="row-sub">'+eq.desc+'</div></div>'+btn+'</div>';
+  }).join('');
+}
+
+// ============================================================
+// RENDER: business
+// ============================================================
+function renderBusiness(){
+  document.getElementById('hud-day').textContent=state.day;
+  document.getElementById('hud-clock').textContent=fmtClock(elapsedFrac());
+  document.getElementById('timer-fill').style.width=Math.max(0,(1-elapsedFrac())*100)+'%';
+  document.getElementById('hud-money').textContent=fmtMoney(state.money);
+  document.getElementById('hud-rep-fill').style.width=clamp(state.reputation,0,100)+'%';
+  document.getElementById('hud-sta-fill').style.width=clamp(state.stamina,0,100)+'%';
+  document.getElementById('hud-combo').textContent=state.combo>0? ('🔥x'+state.combo) : '';
+  document.getElementById('btn-mute').textContent=state.muted? '🔇':'🔊';
+
+  renderEventBanner();
+  renderEntrance();
+  renderFloor();
+  renderKitchen();
+  renderTray();
+  renderItemBar();
+  renderFloatsInto(document.getElementById('hud-floats'), 'hud');
+}
+
+let lastBannerKey='';
+function renderEventBanner(){
+  const el=document.getElementById('event-banner');
+  let key='', text='', cls='';
+  if(state.ownerEventActive){ key='owner'; text='👑 オーナー視察中！VIP席へご案内を'; cls='owner'; }
+  else if(isHappyHour()){ key='happy'; text='🎉 ハッピーアワー！ご注文殺到中'; cls='happy'; }
+  if(key){
+    el.classList.remove('hidden');
+    if(lastBannerKey!==key){ el.textContent=text; el.className='event-banner '+cls; }
+  } else {
+    el.classList.add('hidden');
+  }
+  lastBannerKey=key;
+}
+
+function renderEntrance(){
+  syncList(document.getElementById('entrance'), state.entranceQueue, c=>c.id,
+    c=>c.isComplainer+':'+c.isVip+':'+c.avatar+':'+(c.id===state.selectedCustomerId),
+    c=>{
+      const tag=c.isVip? '<span class="tag">👑</span>' : (c.isComplainer? '<span class="tag">💢</span>':'');
+      return '<div class="av">'+c.avatar+'</div>'+tag+'<div class="mini-bar"><div class="mini-bar-fill patience-fill"></div></div>';
+    },
+    (node,c)=>{
+      node.className='entrance-chip'+(c.id===state.selectedCustomerId?' selected':'')+(c.isComplainer?' complainer':'');
+      const fill=node.querySelector('.patience-fill');
+      if(fill){
+        if(c.isVip){ fill.style.width='100%'; fill.className='mini-bar-fill patience-fill ok'; }
+        else { fill.style.width=clamp(c.patience,0,100)+'%'; fill.className='mini-bar-fill patience-fill '+patienceClass(c.patience,false); }
+      }
+    }
+  );
+}
+
+function tableSig(t){
+  const c=t.customer;
+  return [t.status, t.isVip?(state.ownerEventActive?1:0):1, c?c.dish:'', c?c.orderRevealed:'', c?c.angry:'', c?c.isVip:'', t.cleaningUntil>0].join('|');
+}
+function tableHtml(t){
+  const label=t.isVip? 'VIP' : ('卓'+t.num);
+  let inner='';
+  if(t.isVip && !state.ownerEventActive && t.status==='empty'){
+    inner='<div class="t-icon">🔒</div><div class="t-label">VIP席</div>';
+  } else if(t.status==='empty'){
+    inner='<div class="t-icon">🍽️</div><div class="t-label">空席</div>';
+  } else if(t.status==='broken'){
+    inner='<div class="t-icon">🔧</div><div class="t-label">故障中<br>タップで修理</div>';
+  } else if(t.status==='dirty'){
+    inner='<div class="t-icon">🧹</div><div class="t-label">片付け待ち</div><div class="clean-fill"></div>';
+  } else if(t.customer){
+    const c=t.customer;
+    const av=c.isVip? '<span style="position:relative;display:inline-block;">🤵<span style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:0.9rem;">👑</span></span>' : c.avatar;
+    let badge='';
+    if(c.angry){ badge='<div class="t-order-badge">😠</div>'; }
+    else if(t.status==='seated' && c.orderRevealed){ badge='<div class="t-order-badge">'+DISHES[c.dish].emoji+'</div>'; }
+    else if(t.status==='bill'){ badge='<div class="t-bill-badge">🧾</div>'; }
+    let faceLabel='';
+    if(t.status==='eating') faceLabel='<div class="t-label">😋 食事中</div>';
+    else if(t.status==='bill') faceLabel='<div class="t-label">会計をタップ</div>';
+    else if(t.status==='ordered') faceLabel='<div class="t-label">🍳 調理待ち</div>';
+    else if(t.status==='seated' && !c.orderRevealed) faceLabel='<div class="t-label">🤔 検討中</div>';
+    else if(t.status==='seated' && c.orderRevealed) faceLabel='<div class="t-label">タップで注文</div>';
+    inner='<div class="t-icon">'+av+'</div>'+badge+faceLabel+'<div class="patience-bar"><div class="patience-fill"></div></div>';
+  }
+  return '<div class="tnum">'+label+'</div>'+inner;
+}
+function tableExtra(node,t){
+  let cls='table-card state-'+t.status;
+  if(t.isVip) cls+=' vip';
+  if(t.isVip && !state.ownerEventActive && t.status==='empty') cls+=' locked';
+  if(t.customer && t.customer.angry) cls+=' angry';
+  node.className=cls;
+
+  const fill=node.querySelector('.patience-fill');
+  if(fill && t.customer){
+    fill.style.width=clamp(t.customer.patience,0,100)+'%';
+    fill.className='patience-fill '+patienceClass(t.customer.patience, t.customer.angry);
+  }
+  const cleanFill=node.querySelector('.clean-fill');
+  if(cleanFill && t.cleaningUntil>0){
+    const dur=t._cleanDur||CONFIG.BASE_CLEAN_MS;
+    const remain=clamp((t.cleaningUntil-now())/dur,0,1);
+    cleanFill.style.width=((1-remain)*100)+'%';
+  }
+  renderFloatsInto(node, 'table:'+t.id);
+}
+function renderFloor(){
+  syncList(document.getElementById('floor'), allTables(), t=>t.id, tableSig, tableHtml, tableExtra);
+}
+
+function ticketReady(k){ return now()>=k.readyAt; }
+function kitchenHtml(k){
+  const d=DISHES[k.dish], ready=ticketReady(k);
+  let html='';
+  if(ready && k.isMistake) html+='<button class="redo-btn" data-action="redo">↻</button>';
+  html+='<div class="k-icon"'+(ready?'':' style="opacity:0.55"')+'>'+d.emoji+(ready&&k.isMistake?'⚠️':'')+'</div>';
+  if(!ready) html+='<div class="k-ring"></div>';
+  html+='<div class="k-dest">→ '+k.tableLabel+'</div>';
+  return html;
+}
+function kitchenExtra(node,k){
+  const ready=ticketReady(k);
+  node.className='kitchen-item'+(ready?(k.isMistake?' mistake':' ready'):'');
+  const ring=node.querySelector('.k-ring');
+  if(ring){
+    const p=clamp((now()-k.startAt)/Math.max(1,(k.readyAt-k.startAt))*100,0,100);
+    ring.style.setProperty('--p', p+'%');
+  }
+}
+function renderKitchen(){
+  syncList(document.getElementById('kitchen-list'), state.kitchen, k=>k.id,
+    k=>ticketReady(k)+':'+k.isMistake+':'+k.dish+':'+k.tableLabel,
+    kitchenHtml, kitchenExtra);
+}
+
+function renderTray(){
+  const cap=trayCap();
+  let html='<span class="tray-label">🧺</span>';
+  for(let i=0;i<cap;i++){
+    const item=state.tray[i];
+    html += item
+      ? '<div class="tray-item">'+DISHES[item.dish].emoji+(item.isMistake?'⚠️':'')+'<span class="k-dest">'+item.tableLabel+'</span></div>'
+      : '<div class="tray-slot-empty"></div>';
+  }
+  document.getElementById('tray').innerHTML=html;
+}
+
+function itemBtnHtml(key,icon,label,count,armed){
+  return '<button class="item-btn'+(armed?' armed':'')+'" data-action="item" data-key="'+key+'" '+(count<=0?'disabled':'')+'><span class="ib-icon">'+icon+'</span><span class="ib-label">'+label+'</span><span class="ib-count">'+count+'</span></button>';
+}
+function renderItemBar(){
+  const cdRemain=Math.max(0, state.callManagerReadyAt-now());
+  let html='';
+  html+=itemBtnHtml('energyDrink','🥤','ドリンク', state.items.energyDrink, false);
+  html+=itemBtnHtml('oshibori','🧴','おしぼり', state.items.oshibori, state.armedItem==='oshibori');
+  html+=itemBtnHtml('coupon','🎟️','クーポン', state.items.coupon, state.armedItem==='coupon');
+  if(state.day>=4){
+    const ready=cdRemain<=0;
+    html+='<button class="item-btn" data-action="callmanager" '+(ready?'':'disabled')+'><span class="ib-icon">📣</span><span class="ib-label">店長呼出</span>'+(ready?'<span class="ib-count">OK</span>':'<span class="ib-cd">'+Math.ceil(cdRemain/1000)+'s</span>')+'</button>';
+  }
+  document.getElementById('itembar').innerHTML=html;
+}
+
+// ============================================================
+// RENDER: result / gameover
+// ============================================================
+function renderResult(){
+  const r=state.lastResult;
+  document.getElementById('result-title').textContent='Day '+r.day+' 営業終了';
+  const lines=[
+    ['🍽️ 売上', fmtMoney(r.revenue), 'pos'],
+    ['📦 固定費（家賃・人件費）', '-'+fmtMoney(r.fixedCost), 'neg'],
+    ['💰 差引損益', (r.net>=0?'+':'')+fmtMoney(r.net), r.net>=0?'pos':'neg'],
+    ['⭐ 評判度', Math.round(r.repBefore)+'% → '+Math.round(r.repAfter)+'%', r.repAfter>=r.repBefore?'pos':'neg'],
+  ];
+  document.getElementById('result-card').innerHTML=lines.map(l=>'<div class="result-line"><span>'+l[0]+'</span><span class="v '+l[2]+'">'+l[1]+'</span></div>').join('');
+
+  const ownerEl=document.getElementById('result-owner-outcome');
+  if(r.ownerOutcome){
+    ownerEl.classList.remove('hidden');
+    if(r.ownerOutcome.success){
+      ownerEl.className='notice-card good';
+      ownerEl.textContent='👑 オーナー視察は大成功！特別ボーナス '+fmtMoney(r.ownerOutcome.bonus)+' を獲得。明日は来客増加が期待できます。';
+    } else {
+      ownerEl.className='notice-card bad';
+      ownerEl.textContent='👑 オーナー視察は失敗に終わりました…評判が大きく下がり、明日の仕入れ値が高騰します。';
+    }
+  } else {
+    ownerEl.classList.add('hidden');
+  }
+
+  const noticeEl=document.getElementById('result-next-notice');
+  if(state.nextDayOwnerEvent){
+    noticeEl.classList.remove('hidden');
+    noticeEl.className='notice-card';
+    noticeEl.textContent='📢 明日はオーナーが視察にいらっしゃいます！準備を整えましょう。';
+  } else {
+    noticeEl.classList.add('hidden');
+  }
+}
+function renderGameOver(){
+  document.getElementById('gameover-reason').textContent=state.gameOverReason;
+  document.getElementById('gameover-stats').innerHTML=
+    '<div class="result-line"><span>生き延びた日数</span><span class="v">Day '+state.day+'</span></div>'+
+    '<div class="result-line"><span>最終所持金</span><span class="v">'+fmtMoney(state.money)+'</span></div>';
+}
+
+// ============================================================
+// SCREEN TRANSITIONS
+// ============================================================
+function showScreen(name){
+  state.screen=name;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  if(name==='start') renderStart();
+  if(name==='prep') renderPrep();
+  if(name==='result') renderResult();
+  if(name==='gameover') renderGameOver();
+  if(name==='business') renderBusiness();
+}
+
+// ============================================================
+// GAME FLOW
+// ============================================================
+function startNewGame(){
+  state=freshState();
+  resetTables();
+  gameClock=0;
+  sfx('daystart');
+  showScreen('prep');
+}
+function startBusinessDay(){
+  resetTables();
+  state.entranceQueue=[]; state.kitchen=[]; state.tray=[];
+  state.combo=0; state.comboHappyHourUntil=0;
+  state.selectedCustomerId=null; state.armedItem=null;
+  state.businessElapsed=0; state.closing=false; state.floats=[];
+  state.stamina=100; state.brokenCount=0;
+  state.nextSpawnAt=now()+800;
+  state.activeSpawnMult=state.nextDaySpawnMult; state.nextDaySpawnMult=1;
+  state.activeCostMult=state.nextDayCostMult; state.nextDayCostMult=1;
+  state.ownerEventActive=false; state.ownerEventSpawnedThisDay=false;
+  state.ownerEventThisDay=state.nextDayOwnerEvent; state.nextDayOwnerEvent=false;
+  if(state.ownerEventThisDay){ state.ownerEventSpawnAt=now()+rand(15000,26000); }
+  state.lastOwnerOutcome=null; state.gameOverReason=null;
+  state._dayRevenue=0; state._repAtDayStart=state.reputation;
+  sfx('daystart');
+  showScreen('business');
+  if(state.day===1 && !state._tutorialShown){
+    state._tutorialShown=true;
+    document.getElementById('help-overlay').classList.remove('hidden');
+    state.paused=true;
+  }
+}
+function endBusinessDay(){
+  const vip=state.vipTable;
+  if(vip.customer && vip.customer.isVip){
+    handleOwnerOutcome(false);
+    vip.customer=null; vip.status='dirty';
+  }
+  const revenue=state._dayRevenue||0;
+  const fixedCost=Math.round((CONFIG.FIXED_COST_BASE+CONFIG.FIXED_COST_PER_DAY*state.day)*(state.activeCostMult||1));
+  const repBefore=state._repAtDayStart;
+  state.money-=fixedCost;
+  const net=revenue-fixedCost;
+
+  state.lastResult={ day:state.day, revenue, fixedCost, net, repBefore, repAfter:state.reputation, ownerOutcome:state.lastOwnerOutcome };
+  saveBest(state.day, state.money);
+
+  if(state.money<0){
+    state.gameOverReason='😢 資金がショートし、閉店に追い込まれました…';
+    sfx('gameover'); showScreen('gameover'); return;
+  }
+  if(state.reputation<=CONFIG.GAMEOVER_REP){
+    state.gameOverReason='😢 評判が地に落ち、営業停止となりました…';
+    sfx('gameover'); showScreen('gameover'); return;
+  }
+  maybeScheduleOwnerEvent();
+  showScreen('result');
+}
+function goToNextDay(){
+  state.day++;
+  showScreen('prep');
+}
+function maybeScheduleOwnerEvent(){
+  const upcoming=state.day+1;
+  if(upcoming<4) return;
+  const neverHappened=state.lastOwnerEventDay<0;
+  const forceBy=neverHappened && upcoming>=7;
+  const gapOk=(upcoming-state.lastOwnerEventDay)>=3;
+  if(gapOk && (forceBy || Math.random()<0.35)){
+    state.nextDayOwnerEvent=true;
+    state.lastOwnerEventDay=upcoming;
+  }
+}
+
+// ============================================================
+// SIMULATION (runs every tick while on business screen)
+// ============================================================
+function patienceDecayRate(c){
+  let mult=1;
+  if(c.isComplainer) mult*=CONFIG.COMPLAINER_MULT;
+  if(c.isVip) mult*=CONFIG.VIP_MULT;
+  return CONFIG.BASE_DECAY_PER_MS*dayDecayMult(state.day)*mult;
+}
+function simulate(dt){
+  state.businessElapsed+=dt;
+  if(!state.closing && state.businessElapsed>=CONFIG.DAY_LENGTH_MS){
+    state.closing=true; state.closingStartedAt=now();
+    state.entranceQueue.forEach(c=>{ if(c.isVip) handleOwnerOutcome(false); });
+    state.entranceQueue=[];
+  }
+
+  if(!state.closing){
+    maybeSpawnOwnerEvent();
+    maybeSpawnRegular();
+  }
+
+  for(let i=state.entranceQueue.length-1;i>=0;i--){
+    const c=state.entranceQueue[i];
+    if(c.isVip) continue;
+    c.patience -= dt*CONFIG.ENTRANCE_DECAY_PER_MS;
+    if(c.patience<=0){
+      state.entranceQueue.splice(i,1);
+      state.reputation=clamp(state.reputation-CONFIG.ENTRANCE_ABANDON_PENALTY,0,100);
+      pushFloat('hud','😤 お客様が帰りました','bad');
+      if(state.selectedCustomerId===c.id) state.selectedCustomerId=null;
+    }
+  }
+
+  state.stamina=clamp(state.stamina+dt*0.006,0,100);
+
+  allTables().forEach(t=>{
+    const c=t.customer;
+    if(c && (t.status==='seated'||t.status==='ordered')){
+      if(!c.orderRevealed && now()>=c.orderRevealAt){
+        c.orderRevealed=true;
+        c.dish = c.isVip? 'main' : pickDish();
+        sfx('order');
+      }
+      if(!c.angry){
+        c.patience -= dt*patienceDecayRate(c);
+        if(c.patience<=0){
+          triggerAngry(t,false);
+        } else if(c.isComplainer && c.orderRevealed && !c.hasFlared){
+          if(Math.random() < (CONFIG.FLARE_CHANCE_PER_SEC/1000)*dt){
+            triggerAngry(t,true);
+          }
+        }
+      } else if(now()-c.angrySince > CONFIG.ABANDON_MS){
+        customerAbandon(t);
+      }
+    }
+    if(t.status==='eating' && c && now()>=c.eatUntil){
+      t.status='bill';
+      c.billAmount=computePrice(c.dish, c.mistakeDiscount);
+    }
+    if(t.status==='dirty' && t.cleaningUntil>0 && now()>=t.cleaningUntil){
+      t.status='empty'; t.cleaningUntil=0; t.customer=null;
+    }
+  });
+
+  maybeBreakdown(dt);
+  state.floats=state.floats.filter(f=> now()-f.createdAt < 900);
+
+  if(state.closing){
+    const idle=allTables().every(t=>t.status==='empty');
+    if(idle || now()-state.closingStartedAt>CONFIG.CLOSING_GRACE_MS){
+      endBusinessDay();
+    }
+  }
+}
+
+function maybeSpawnRegular(){
+  if(now() < state.nextSpawnAt) return;
+  if(state.entranceQueue.filter(c=>!c.isVip).length >= CONFIG.ENTRANCE_MAX){
+    state.nextSpawnAt=now()+400; return;
+  }
+  const isComplainer=Math.random() < complainerChance(state.day);
+  state.entranceQueue.push({id:genId(), avatar:pick(AVATARS), isComplainer, isVip:false, patience:100, spawnedAt:now()});
+  state.nextSpawnAt=now()+currentSpawnInterval();
+}
+function maybeSpawnOwnerEvent(){
+  if(!state.ownerEventThisDay || state.ownerEventSpawnedThisDay) return;
+  if(now() < state.ownerEventSpawnAt) return;
+  state.ownerEventSpawnedThisDay=true;
+  state.ownerEventActive=true;
+  state.entranceQueue.unshift({id:genId(), avatar:'🤵', isComplainer:false, isVip:true, patience:100, spawnedAt:now()});
+  pushFloat('hud','👑 オーナーが来店！','ok');
+  sfx('order');
+}
+function maybeBreakdown(dt){
+  if(state.day<11 || state.brokenCount>=2) return;
+  const chancePerMs=0.005/CONFIG.TICK_MS;
+  if(Math.random() < chancePerMs*dt){
+    const candidates=state.tables.filter(t=>t.status==='empty');
+    if(candidates.length>0){
+      pick(candidates).status='broken';
+      state.brokenCount++;
+      pushFloat('hud','⚠️ 設備が故障しました','bad');
+    }
+  }
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+function trySeatCustomer(custId, table){
+  const idx=state.entranceQueue.findIndex(c=>c.id===custId);
+  if(idx<0) return;
+  const c=state.entranceQueue[idx];
+  if(table.status!=='empty' || table.isVip!==c.isVip) return;
+  state.entranceQueue.splice(idx,1);
+  table.customer={
+    id:c.id, avatar:c.avatar, isComplainer:c.isComplainer, isVip:c.isVip,
+    dish:null, orderRevealed:false, orderRevealAt:now()+rand(CONFIG.ORDER_REVEAL_MIN,CONFIG.ORDER_REVEAL_MAX),
+    patience:100, angry:false, hasFlared:false, angrySince:0, hadIncident:false,
+    servedAt:0, eatUntil:0, billAmount:0, mistakeDiscount:false,
+  };
+  table.status='seated';
+  state.selectedCustomerId=null;
+  state.stamina=clamp(state.stamina-4,0,100);
+  sfx('seat');
+}
+function takeOrder(table){
+  const c=table.customer; if(!c || !c.orderRevealed) return;
+  table.status='ordered';
+  const cookMs=computeCookMs(c.dish);
+  const isMistake=Math.random() < (isHappyHour()?CONFIG.MISTAKE_CHANCE_HH:CONFIG.MISTAKE_CHANCE);
+  state.kitchen.push({id:genId(), tableId:table.id, tableLabel:table.isVip?'VIP':('卓'+table.num), dish:c.dish, startAt:now(), readyAt:now()+cookMs, isMistake, baseCookMs:cookMs});
+  sfx('order');
+}
+function pickupTicket(ticket){
+  if(now()<ticket.readyAt) return;
+  if(state.tray.length>=trayCap()){ pushFloat('hud','トレイがいっぱいです','bad'); return; }
+  const idx=state.kitchen.findIndex(k=>k.id===ticket.id);
+  if(idx<0) return;
+  state.kitchen.splice(idx,1);
+  state.tray.push({id:ticket.id, tableId:ticket.tableId, tableLabel:ticket.tableLabel, dish:ticket.dish, isMistake:ticket.isMistake});
+  sfx('pickup');
+}
+function redoTicket(ticket){
+  const k=state.kitchen.find(x=>x.id===ticket.id);
+  if(!k) return;
+  k.isMistake=false; k.startAt=now(); k.readyAt=now()+k.baseCookMs;
+  pushFloat('hud','🔁 作り直し中…','ok');
+}
+function deliverTrayItem(idx, table){
+  const item=state.tray[idx];
+  const c=table.customer; if(!c) return;
+  state.tray.splice(idx,1);
+  if(item.isMistake){
+    c.mistakeDiscount=true;
+    triggerAngry(table, false, true);
+    pushFloat('table:'+table.id, '🍽️ 配膳ミス…', 'bad');
+  } else {
+    pushFloat('table:'+table.id, '✅ 配膳！', 'ok');
+  }
+  table.status='eating';
+  c.servedAt=now();
+  c.eatUntil=now()+DISHES[c.dish].eatMs;
+  state.stamina=clamp(state.stamina-3,0,100);
+  sfx('serve');
+}
+function triggerAngry(table, isFlare, silent){
+  const c=table.customer; if(!c) return;
+  c.angry=true; c.angrySince=now(); c.hadIncident=true;
+  if(isFlare) c.hasFlared=true;
+  if(!c.isVip){
+    state.reputation=clamp(state.reputation-CONFIG.ANGRY_PENALTY,0,100);
+    if(!silent) pushFloat('table:'+table.id,'😠 クレーム発生！','bad');
+  }
+  sfx('angry');
+}
+function customerAbandon(table){
+  const c=table.customer; if(!c) return;
+  if(c.isVip){
+    handleOwnerOutcome(false);
+  } else {
+    state.reputation=clamp(state.reputation-CONFIG.ABANDON_PENALTY,0,100);
+    state.combo=0;
+    pushFloat('table:'+table.id,'😤 帰ってしまった…','bad');
+    sfx('fail');
+  }
+  markDirty(table);
+}
+function apologize(table){
+  const c=table.customer; if(!c || !c.angry) return;
+  sfx('tap');
+  if(table.status==='seated' || table.status==='ordered'){
+    if(c.isComplainer){
+      c.patience=Math.min(100,c.patience+25);
+      if(c.patience>30) c.angry=false;
+      pushFloat('table:'+table.id,'😅 少し落ち着いた','ok');
+    } else {
+      c.patience=Math.min(100,c.patience+45);
+      c.angry=false;
+      pushFloat('table:'+table.id,'🙏 お詫びした','ok');
+    }
+  } else {
+    c.angry=false;
+    pushFloat('table:'+table.id,'🙏 お詫びした','ok');
+  }
+}
+function checkout(table){
+  const c=table.customer; if(!c) return;
+  if(c.isVip){
+    const success=c.patience>=80;
+    handleOwnerOutcome(success);
+    state.money+=computePrice(c.dish,false);
+    markDirty(table);
+    return;
+  }
+  const amt=c.billAmount;
+  state.money+=amt;
+  state._dayRevenue=(state._dayRevenue||0)+amt;
+  pushFloat('table:'+table.id,'+'+fmtMoney(amt),'money');
+  if(!c.hadIncident){
+    state.reputation=clamp(state.reputation+CONFIG.SMOOTH_BONUS,0,100);
+    state.combo++;
+    if(state.combo>=CONFIG.COMBO_TARGET){
+      state.comboHappyHourUntil=now()+CONFIG.COMBO_HH_MS;
+      state.combo=0;
+      pushFloat('hud','🔥 絶好調！ハッピータイム','ok');
+    }
+  } else {
+    state.combo=0;
+  }
+  markDirty(table);
+  sfx('cha');
+}
+function markDirty(table){
+  table.customer=null; table.status='dirty'; table.cleaningUntil=0;
+  const dur=CONFIG.BASE_CLEAN_MS*cleanMultiplier();
+  table._cleanDur=dur;
+  if(state.owned.dishwasher){ table.cleaningUntil=now()+Math.max(200,dur); }
+}
+function startCleaning(table){
+  if(table.cleaningUntil>0) return;
+  const dur=CONFIG.BASE_CLEAN_MS*cleanMultiplier();
+  table._cleanDur=dur;
+  table.cleaningUntil=now()+dur;
+  state.stamina=clamp(state.stamina-3,0,100);
+  sfx('clean');
+}
+function tryRepair(table){
+  if(state.money<CONFIG.REPAIR_COST){ pushFloat('table:'+table.id,'お金が足りません','bad'); return; }
+  state.money-=CONFIG.REPAIR_COST;
+  table.status='empty';
+  state.brokenCount=Math.max(0,state.brokenCount-1);
+  pushFloat('table:'+table.id,'🔧 修理した','ok');
+}
+function handleOwnerOutcome(success){
+  if(state.lastOwnerOutcome) return;
+  state.ownerEventActive=false;
+  if(success){
+    const bonus=Math.round(CONFIG.OWNER_BONUS_BASE+CONFIG.OWNER_BONUS_PER_DAY*state.day);
+    state.money+=bonus;
+    state.reputation=clamp(state.reputation+10,0,100);
+    state.nextDaySpawnMult=0.75;
+    state.lastOwnerOutcome={success:true,bonus};
+    pushFloat('hud','👑 視察大成功！','ok');
+    sfx('happy');
+  } else {
+    state.reputation=clamp(state.reputation-30,0,100);
+    state.nextDayCostMult=1.5;
+    state.lastOwnerOutcome={success:false};
+    pushFloat('hud','👑 視察は失敗…','bad');
+    sfx('fail');
+  }
+}
+
+// items
+function useEnergyDrink(){
+  if(state.items.energyDrink<=0) return;
+  state.items.energyDrink--;
+  state.stamina=100;
+  state.energyDrinkUntil=now()+CONFIG.ENERGY_DRINK_MS;
+  pushFloat('hud','🥤 元気回復！','ok');
+  sfx('happy');
+}
+function armItem(type){
+  state.armedItem = state.armedItem===type? null : type;
+  state.selectedCustomerId=null;
+}
+function tryUseOshiboriOn(table){
+  const c=table.customer;
+  if(!c || !(table.status==='seated'||table.status==='ordered')){ pushFloat('hud','使えません','bad'); return; }
+  if(state.items.oshibori<=0) return;
+  state.items.oshibori--;
+  c.patience=100; c.angry=false;
+  state.armedItem=null;
+  pushFloat('table:'+table.id,'🧴 全回復！','ok');
+  sfx('happy');
+}
+function tryUseCouponOn(table){
+  const c=table.customer;
+  if(!c || !c.angry){ pushFloat('hud','使えません','bad'); return; }
+  if(state.items.coupon<=0) return;
+  state.items.coupon--;
+  c.patience=100; c.angry=false;
+  state.armedItem=null;
+  pushFloat('table:'+table.id,'🎟️ クレーム解消！','ok');
+  sfx('happy');
+}
+function useCallManager(){
+  if(now()<state.callManagerReadyAt) return;
+  allTables().forEach(t=>{
+    if(t.customer && t.customer.angry){ t.customer.patience=100; t.customer.angry=false; }
+  });
+  state.callManagerReadyAt=now()+CONFIG.CALL_MANAGER_COOLDOWN_MS;
+  pushFloat('hud','📣 店長対応！','ok');
+  sfx('happy');
+}
+
+// prep purchases
+function buyMenuUpgrade(key){
+  const cost=menuUpgradeCost(key);
+  if(cost==null || state.money<cost) return;
+  state.money-=cost; state.menuLevel[key]++;
+  renderPrep();
+}
+function buyItem(key){
+  const price=CONFIG.ITEM_PRICE[key];
+  if(state.money<price) return;
+  state.money-=price; state.items[key]++;
+  renderPrep();
+}
+function buyEquip(key){
+  const price=CONFIG.UPGRADE_PRICE[key];
+  if(state.owned[key] || state.money<price) return;
+  state.money-=price; state.owned[key]=true;
+  renderPrep();
+}
+
+// ============================================================
+// EVENT HANDLERS
+// ============================================================
+function onFloorTap(e){
+  const card=e.target.closest('.table-card'); if(!card) return;
+  const table=findTable(card.dataset.key); if(!table) return;
+  ensureAudio();
+
+  if(state.armedItem==='oshibori'){ tryUseOshiboriOn(table); return; }
+  if(state.armedItem==='coupon'){ tryUseCouponOn(table); return; }
+
+  if(state.selectedCustomerId){
+    const c=state.entranceQueue.find(x=>x.id===state.selectedCustomerId);
+    const validTarget = c && table.status==='empty' && table.isVip===c.isVip;
+    if(validTarget){ trySeatCustomer(state.selectedCustomerId, table); return; }
+    state.selectedCustomerId=null;
+  }
+
+  if(state.tray.length>0){
+    const idx=state.tray.findIndex(it=>it.tableId===table.id);
+    if(idx>=0 && table.status==='ordered'){ deliverTrayItem(idx, table); return; }
+  }
+
+  if(table.customer && table.customer.angry){ apologize(table); return; }
+  if(table.status==='seated' && table.customer && table.customer.orderRevealed){ takeOrder(table); return; }
+  if(table.status==='bill'){ checkout(table); return; }
+  if(table.status==='dirty' && table.cleaningUntil===0){ startCleaning(table); return; }
+  if(table.status==='broken'){ tryRepair(table); return; }
+  sfx('tap');
+}
+function onEntranceTap(e){
+  const chip=e.target.closest('.entrance-chip'); if(!chip) return;
+  ensureAudio();
+  const id=chip.dataset.key;
+  state.armedItem=null;
+  state.selectedCustomerId = state.selectedCustomerId===id? null : id;
+}
+function onKitchenTap(e){
+  const redo=e.target.closest('.redo-btn');
+  const card=e.target.closest('.kitchen-item'); if(!card) return;
+  ensureAudio();
+  const ticket=state.kitchen.find(k=>k.id===card.dataset.key);
+  if(!ticket) return;
+  if(redo){ redoTicket(ticket); return; }
+  pickupTicket(ticket);
+}
+function onItemBarTap(e){
+  const btn=e.target.closest('button'); if(!btn) return;
+  ensureAudio();
+  const action=btn.dataset.action;
+  if(action==='item'){
+    const key=btn.dataset.key;
+    if(key==='energyDrink') useEnergyDrink(); else armItem(key);
+  } else if(action==='callmanager'){
+    useCallManager();
+  }
+}
+function onPrepTap(e){
+  const btn=e.target.closest('button[data-action]'); if(!btn) return;
+  const action=btn.dataset.action, key=btn.dataset.key;
+  if(action==='menu') buyMenuUpgrade(key);
+  if(action==='buyitem') buyItem(key);
+  if(action==='buyequip') buyEquip(key);
+}
+
+function onTick(){
+  if(!state) return;
+  if(state.screen==='business'){
+    if(!state.paused){ gameClock+=CONFIG.TICK_MS; simulate(CONFIG.TICK_MS); }
+    renderBusiness();
+  }
+}
+
+function init(){
+  document.getElementById('btn-start-game').addEventListener('click', ()=>{ ensureAudio(); startNewGame(); });
+  document.getElementById('btn-howto').addEventListener('click', ()=>{ ensureAudio(); document.getElementById('help-overlay').classList.remove('hidden'); });
+  document.getElementById('btn-close-help').addEventListener('click', ()=>{
+    document.getElementById('help-overlay').classList.add('hidden');
+    if(state && state.screen==='business') state.paused=false;
+  });
+  document.getElementById('btn-help').addEventListener('click', ()=>{
+    document.getElementById('help-overlay').classList.remove('hidden');
+    if(state) state.paused=true;
+  });
+  document.getElementById('btn-mute').addEventListener('click', ()=>{
+    if(!state) return;
+    state.muted=!state.muted;
+    document.getElementById('btn-mute').textContent=state.muted?'🔇':'🔊';
+  });
+  document.getElementById('btn-start-business').addEventListener('click', ()=>{ ensureAudio(); startBusinessDay(); });
+  document.getElementById('btn-next-day').addEventListener('click', goToNextDay);
+  document.getElementById('btn-restart').addEventListener('click', ()=>{ ensureAudio(); startNewGame(); });
+
+  document.getElementById('entrance').addEventListener('click', onEntranceTap);
+  document.getElementById('floor').addEventListener('click', onFloorTap);
+  document.getElementById('kitchen-list').addEventListener('click', onKitchenTap);
+  document.getElementById('itembar').addEventListener('click', onItemBarTap);
+  document.getElementById('prep-scroll').addEventListener('click', onPrepTap);
+
+  document.addEventListener('visibilitychange', ()=>{
+    if(!state) return;
+    if(document.hidden){ state.paused=true; }
+    else if(state.screen==='business' && document.getElementById('help-overlay').classList.contains('hidden')){ state.paused=false; }
+  });
+
+  renderStart();
+  setInterval(onTick, CONFIG.TICK_MS);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>

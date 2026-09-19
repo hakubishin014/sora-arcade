@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>エマージェンシー・サバイバル！ 〜ボクの生存ルート〜</title>
+  <style>
+    :root {
+      --bg-dark: #0d1b2a;
+      --card-bg: #1b263b;
+      --accent-yellow: #ffb703;
+      --danger-red: #e63946;
+      --safe-green: #06d6a0;
+      --cyan-btn: #4cc9f0;
+      --text-light: #f8f9fa;
+      --text-dark: #212529;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+
+    body {
+      background-color: #050c14;
+      color: var(--text-light);
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 440px;
+      height: 100vh;
+      max-height: 840px;
+      background: linear-gradient(180deg, #1b263b 0%, #0d1b2a 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+      border-radius: 14px;
+    }
+
+    .shake { animation: shake-anim 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+    @keyframes shake-anim {
+      10%, 90% { transform: translate3d(-5px, 0, 0); }
+      20%, 80% { transform: translate3d(6px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+      40%, 60% { transform: translate3d(8px, 0, 0); }
+    }
+
+    header {
+      padding: 14px 16px;
+      background: rgba(0, 0, 0, 0.4);
+      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+      z-index: 10;
+    }
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .hp-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    .hp-bar-bg {
+      width: 130px;
+      height: 14px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 7px;
+      overflow: hidden;
+    }
+    .hp-bar-fill {
+      width: 100%;
+      height: 100%;
+      background: var(--safe-green);
+      transition: width 0.3s ease, background-color 0.3s ease;
+    }
+    .timer-container { margin-top: 4px; }
+    .timer-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .timer-bar-fill {
+      width: 100%;
+      height: 100%;
+      background: var(--accent-yellow);
+    }
+
+    #main-view {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 16px 20px;
+      text-align: center;
+      position: relative;
+      z-index: 5;
+    }
+    .phase-badge {
+      background: var(--accent-yellow);
+      color: var(--text-dark);
+      font-size: 0.85rem;
+      font-weight: 800;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+    }
+    .situation-box {
+      font-size: 1.15rem;
+      font-weight: bold;
+      line-height: 1.45;
+      margin-bottom: 12px;
+      min-height: 3.4em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .character-avatar {
+      font-size: 4.2rem;
+      margin-bottom: 6px;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+      transition: transform 0.2s;
+    }
+
+    #actions-container {
+      padding: 14px 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+    .action-btn {
+      background: #ffffff;
+      color: var(--text-dark);
+      border: none;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+      transition: transform 0.1s, background-color 0.2s;
+    }
+    .action-btn:active { transform: scale(0.98); }
+    .action-btn .btn-key {
+      background: var(--bg-dark);
+      color: #fff;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    #feedback-banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      width: 90%;
+      background: rgba(13, 27, 42, 0.95);
+      border: 3px solid var(--accent-yellow);
+      border-radius: 16px;
+      padding: 18px;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 100;
+    }
+    #feedback-banner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    .feedback-title { font-size: 1.4rem; font-weight: 900; margin-bottom: 6px; }
+    .feedback-desc { font-size: 0.9rem; line-height: 1.4; color: #e0e1dd; }
+
+    #effect-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 40;
+    }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(13, 27, 42, 0.98);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      z-index: 200;
+      text-align: center;
+      overflow-y: auto;
+    }
+    .modal-title {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--accent-yellow);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+    .disclaimer-card {
+      background: rgba(255, 255, 255, 0.08);
+      border-left: 4px solid var(--accent-yellow);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: left;
+      font-size: 0.8rem;
+      line-height: 1.45;
+      margin: 12px 0;
+      color: #e0e1dd;
+    }
+    .primary-btn {
+      background: var(--accent-yellow);
+      color: var(--text-dark);
+      border: none;
+      border-radius: 30px;
+      padding: 14px 32px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 15px rgba(255, 183, 3, 0.4);
+      margin: 6px 0;
+      transition: transform 0.1s;
+    }
+    .secondary-btn {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 20px;
+      padding: 8px 18px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 4px;
+    }
+    .share-btn {
+      background: #000;
+      color: #fff;
+      border: 1px solid #333;
+      border-radius: 20px;
+      padding: 10px 20px;
+      font-weight: bold;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    /* Stage Selector & Mode Toggle */
+    .stage-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+      margin: 14px 0;
+    }
+    .stage-card {
+      background: var(--card-bg);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .stage-card.selected {
+      border-color: var(--accent-yellow);
+      background: #2b3a55;
+      transform: scale(1.02);
+    }
+    .stage-icon { font-size: 2rem; margin-bottom: 4px; }
+    .stage-name { font-size: 0.9rem; font-weight: bold; }
+    .stage-record { font-size: 0.75rem; color: #a0aec0; margin-top: 2px; }
+
+    .mode-toggle {
+      display: flex;
+      background: rgba(0,0,0,0.4);
+      border-radius: 20px;
+      padding: 4px;
+      margin-bottom: 12px;
+    }
+    .mode-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: #a0aec0;
+      padding: 6px 14px;
+      border-radius: 16px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .mode-btn.active {
+      background: var(--accent-yellow);
+      color: var(--text-dark);
+    }
+
+    /* Handbook Modal */
+    #handbook-content {
+      text-align: left;
+      max-height: 380px;
+      overflow-y: auto;
+      padding: 10px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      margin: 12px 0;
+    }
+    .handbook-item {
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .handbook-q { font-weight: bold; color: var(--accent-yellow); }
+    .handbook-a { color: var(--safe-green); }
+    .handbook-w { color: var(--danger-red); }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div id="game-container">
+  <canvas id="effect-canvas"></canvas>
+
+  <!-- Header -->
+  <header>
+    <div class="status-bar">
+      <div class="hp-container">
+        <span>❤️ HP</span>
+        <div class="hp-bar-bg">
+          <div id="hp-bar" class="hp-bar-fill"></div>
+        </div>
+      </div>
+      <div id="phase-indicator" style="font-weight: bold; font-size: 0.85rem;">PHASE 1/4</div>
+    </div>
+    <div class="timer-container">
+      <div class="timer-bar-bg">
+        <div id="timer-bar" class="timer-bar-fill"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main View -->
+  <main id="main-view">
+    <div id="phase-badge" class="phase-badge">刺された直後の行動</div>
+    <div id="character" class="character-avatar">😰</div>
+    <div id="situation-text" class="situation-box">状況テキスト</div>
+  </main>
+
+  <!-- Action Cards -->
+  <footer id="actions-container">
+    <button class="action-btn" onclick="handleSelect(0)">
+      <span class="btn-key">A</span>
+      <span id="opt-0">選択肢A</span>
+    </button>
+    <button class="action-btn" onclick="handleSelect(1)">
+      <span class="btn-key">B</span>
+      <span id="opt-1">選択肢B</span>
+    </button>
+    <button class="action-btn" onclick="handleSelect(2)">
+      <span class="btn-key">C</span>
+      <span id="opt-2">選択肢C</span>
+    </button>
+  </footer>
+
+  <!-- Feedback Banner -->
+  <div id="feedback-banner">
+    <div id="feedback-title" class="feedback-title">ナイス判断！</div>
+    <div id="feedback-desc" class="feedback-desc">解説テキスト</div>
+  </div>
+
+  <!-- Title Screen Overlay -->
+  <div id="title-screen" class="modal-overlay">
+    <div style="font-size: 3.2rem; margin-bottom: 6px;">🚨🏕️</div>
+    <h1 class="modal-title">エマージェンシー・サバイバル！<br><span style="font-size: 1.1rem; color: #fff;">〜ボクの生存ルート〜</span></h1>
+    
+    <!-- 難易度切り替え -->
+    <div class="mode-toggle">
+      <button id="mode-normal" class="mode-btn active" onclick="setMode(5000, this)">NORMAL (5秒)</button>
+      <button id="mode-hard" class="mode-btn" onclick="setMode(3000, this)">HARD (3秒⚡️)</button>
+    </div>
+
+    <!-- ステージ選択 -->
+    <div class="stage-list">
+      <div class="stage-card selected" onclick="selectStage('bee', this)">
+        <div class="stage-icon">🐝</div>
+        <div class="stage-name">ハチ刺傷編</div>
+        <div id="rec-bee" class="stage-record">Best: -</div>
+      </div>
+      <div class="stage-card" onclick="selectStage('jellyfish', this)">
+        <div class="stage-icon">🪼</div>
+        <div class="stage-name">クラゲ刺傷編</div>
+        <div id="rec-jellyfish" class="stage-record">Best: -</div>
+      </div>
+      <div class="stage-card" onclick="selectStage('tick', this)">
+        <div class="stage-icon">🕷️</div>
+        <div class="stage-name">マダニ咬傷編</div>
+        <div id="rec-tick" class="stage-record">Best: -</div>
+      </div>
+      <div class="stage-card" onclick="selectStage('heatstroke', this)">
+        <div class="stage-icon">☀️</div>
+        <div class="stage-name">熱中症警戒編</div>
+        <div id="rec-heatstroke" class="stage-record">Best: -</div>
+      </div>
+    </div>
+
+    <div>
+      <button class="primary-btn" onclick="startGame()">サバイバル開始！</button>
+    </div>
+    <div>
+      <button class="secondary-btn" onclick="openHandbook()">📖 救急ハンドブック</button>
+    </div>
+  </div>
+
+  <!-- Result Screen Overlay -->
+  <div id="result-screen" class="modal-overlay hidden">
+    <div id="result-badge" style="font-size: 3.2rem; margin-bottom: 4px;">🏆</div>
+    <h2 id="result-rank" class="modal-title" style="margin-bottom: 2px;">【 RESULT: RANK S 】</h2>
+    <p id="result-comment" style="font-size: 0.95rem; margin-bottom: 6px;">適切な処置が完了しました！</p>
+    
+    <div class="disclaimer-card">
+      <strong>【重要：現実の救急事案でのご注意】</strong><br>
+      ※本ゲームは応急処置の一般的知識を学ぶものです。<br>
+      ・現場に医師・看護師・救急救命士等の専門家がいる場合は直ちに指示に従ってください。<br>
+      ・意識障害やアナフィラキシー等の重篤症状がある場合は、迷わず<strong>119番（救急車）</strong>を要請してください。
+    </div>
+    
+    <button class="primary-btn" onclick="resetGame()">もう一度プレイ</button>
+    <button class="share-btn" onclick="shareX()">𝕏 で結果をシェア</button>
+    <button class="secondary-btn" onclick="backToTitle()" style="margin-top: 6px;">ステージ選択へ戻る</button>
+  </div>
+
+  <!-- Handbook Modal Overlay -->
+  <div id="handbook-modal" class="modal-overlay hidden">
+    <h2 class="modal-title">📖 救急ハンドブック</h2>
+    <p style="font-size: 0.8rem; color: #a0aec0;">全ステージの正しい対処とNG理由</p>
+    <div id="handbook-content"></div>
+    <button class="primary-btn" onclick="closeHandbook()">閉じる</button>
+  </div>
+</div>
+
+<script>
+  // Web Audio API サウンドシステム
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  function playTone(freq, type, duration, delay=0) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime + delay);
+    osc.stop(audioCtx.currentTime + delay + duration);
+  }
+
+  function playSE(type) {
+    switch(type) {
+      case 'correct':
+        playTone(523.25, 'sine', 0.15, 0.0); // C5
+        playTone(659.25, 'sine', 0.15, 0.1); // E5
+        playTone(783.99, 'sine', 0.25, 0.2); // G5
+        playTone(1046.50, 'sine', 0.35, 0.3); // C6
+        break;
+      case 'wrong':
+        playTone(180, 'sawtooth', 0.3, 0.0);
+        playTone(140, 'sawtooth', 0.4, 0.15);
+        break;
+      case 'tick':
+        playTone(800, 'square', 0.03, 0.0);
+        break;
+      case 'alert':
+        playTone(440, 'sine', 0.1, 0.0);
+        playTone(880, 'sine', 0.1, 0.12);
+        break;
+    }
+  }
+
+  // ステージデータベース
+  const STAGES = {
+    bee: {
+      name: "ハチ刺傷編",
+      icon: "🐝",
+      phases: [
+        {
+          phaseName: "フェーズ1: 刺された直後",
+          situation: "ハチがまだ周囲を飛んでいる！<br>どうやって退避する？",
+          avatar: "😰",
+          options: [
+            { text: "静かに姿勢を低くしてその場から離れる", isCorrect: true, reason: "姿勢を低くしてゆっくり後退するのが最も安全です！" },
+            { text: "手を振り回してハチを叩き落とす", isCorrect: false, reason: "刺激すると仲間を呼ばれて追撃されます！" },
+            { text: "その場で死んだふりをする", isCorrect: false, reason: "死んだふりは無意味！動かない標的としてさらに刺されます。" }
+          ]
+        },
+        {
+          phaseName: "フェーズ2: 毒・針の除去",
+          situation: "安全な場所へ避難した。<br>刺された患部の処置はどうする？",
+          avatar: "😣",
+          options: [
+            { text: "ポイズンリムーバーで患部から毒を吸い出す", isCorrect: true, reason: "専用器具で数分以内に毒を吸い出すのが有効です！" },
+            { text: "口で直接毒を吸い出す", isCorrect: false, reason: "口内粘膜から毒が吸収されて極めて危険です！" },
+            { text: "針を指先で強くつまんで引き抜く", isCorrect: false, reason: "毒嚢を潰して毒を体内に押し込んでしまいます！" }
+          ]
+        },
+        {
+          phaseName: "フェーズ3: 患部のケア",
+          situation: "毒を吸い出した後の患部。<br>次に行うべき正しい処置は？",
+          avatar: "🤕",
+          options: [
+            { text: "きれいな流水で洗い流し、保冷剤で冷やす", isCorrect: true, reason: "流水で洗い流し冷やすことで腫れと毒の吸収を抑えます！" },
+            { text: "昔の知恵として患部にアンモニア（尿）をかける", isCorrect: false, reason: "ハチ毒にアンモニアは効果なし＆雑菌感染の危険！" },
+            { text: "血行を良くするために温タオルで温める", isCorrect: false, reason: "温めると血流促進で毒の巡りが加速します！" }
+          ]
+        },
+        {
+          phaseName: "フェーズ4: 全身症状への警戒",
+          situation: "応急手当を終えた。<br>その後の行動として最も適切なのは？",
+          avatar: "🧐",
+          options: [
+            { text: "安静にして全身症状を観察、異変があれば即119番", isCorrect: true, reason: "アナフィラキシー（呼吸困難や蕁麻疹）を厳重警戒！" },
+            { text: "気合で治すため、すぐに全力ダッシュで下山する", isCorrect: false, reason: "激しい運動は心拍数を上げ毒を全身に循環させます！" },
+            { text: "痛みを紛らわすためにお酒を飲む", isCorrect: false, reason: "アルコールは血管を拡張し危険度を激増させます！" }
+          ]
+        }
+      ]
+    },
+    jellyfish: {
+      name: "クラゲ刺傷編",
+      icon: "🪼",
+      phases: [
+        {
+          phaseName: "フェーズ1: 刺された瞬間",
+          situation: "海でビリッと激痛が走った！<br>まずどう行動する？",
+          avatar: "🌊",
+          options: [
+            { text: "静かに海から上がり陸へ避難する", isCorrect: true, reason: "パニックで溺れるのを防ぎ、安全な陸へ速やかに退避します。" },
+            { text: "海水を激しくバチャバチャ叩いて触手を払う", isCorrect: false, reason: "刺激で未発射の毒針（刺胞）が一斉に発射されます！" },
+            { text: "近くのペットボトルの真水を患部にぶっかける", isCorrect: false, reason: "真水は浸透圧の差で毒針を大量発射させ激痛が悪化！" }
+          ]
+        },
+        {
+          phaseName: "フェーズ2: 触手の除去",
+          situation: "肌にクラゲの触手が絡みついている。<br>どうやって取り除く？",
+          avatar: "😣",
+          options: [
+            { text: "海水で優しく流し、ピンセットや手袋でそっと除去", isCorrect: true, reason: "海水で流しながら器具を使って慎重に外します。" },
+            { text: "砂浜の砂やタオルで強くゴシゴシこすり落とす", isCorrect: false, reason: "こすると触手の針がすべて肌に深く刺さります！" },
+            { text: "素手で思い切り一気にむしり取る", isCorrect: false, reason: "除去しようとした手の平まで刺されて被害倍増！" }
+          ]
+        },
+        {
+          phaseName: "フェーズ3: 消毒と中和",
+          situation: "触手を取った後の処置。<br>正しい対処法は？",
+          avatar: "🤕",
+          options: [
+            { text: "種類不明時は酢を避け、海水でよく洗い流して冷やす", isCorrect: true, reason: "カツオノエボシ等の場合、酢をかけると毒針が発射され悪化します！" },
+            { text: "どんなクラゲでもとにかく食酢をドバドバかける", isCorrect: false, reason: "酢が有効なのはアンドンクラゲ等の一部のみで逆効果のリスク大！" },
+            { text: "熱湯を患部にかけて毒を熱変性させる", isCorrect: false, reason: "重度の火傷を負うだけで毒の無効化にはなりません！" }
+          ]
+        },
+        {
+          phaseName: "フェーズ4: 全身症状の観察",
+          situation: "処置を終えてからの行動は？",
+          avatar: "🧐",
+          options: [
+            { text: "患部を冷やして安静にし、全身症状があれば受診", isCorrect: true, reason: "冷やして痛みを和らげ、呼吸苦や血圧低下に警戒します。" },
+            { text: "痛みを我慢して海水浴を再開する", isCorrect: false, reason: "海中でショック症状を起こすと溺死の恐れがあります！" },
+            { text: "患部の上部を針金や紐で強く縛り上げる", isCorrect: false, reason: "血流遮断により組織壊死を起こす危険があります！" }
+          ]
+        }
+      ]
+    },
+    tick: {
+      name: "マダニ咬傷編",
+      icon: "🕷️",
+      phases: [
+        {
+          phaseName: "フェーズ1: マダニを発見",
+          situation: "山歩き後、皮膚に黒いマダニがガッチリ噛み付いている！",
+          avatar: "😱",
+          options: [
+            { text: "無理に取らず、そのまま皮膚科などの病院へ直行する", isCorrect: true, reason: "医療機関で専用器具を使って除去してもらうのが最善です！" },
+            { text: "指でつまんで力任せに一気に引き抜く", isCorrect: false, reason: "マダニの頭部・口器が皮膚内にちぎれて残り化膿します！" },
+            { text: "ライターの火で炙ってびっくりさせて落とす", isCorrect: false, reason: "皮膚を火傷する上、マダニが体液を逆流させて感染症リスク増！" }
+          ]
+        },
+        {
+          phaseName: "フェーズ2: 緊急の自力除去",
+          situation: "山奥で病院が遠い。持参品で除去するなら？",
+          avatar: "🧐",
+          options: [
+            { text: "マダニ用リムーバーを皮膚に密着させ根元から回転させて抜く", isCorrect: true, reason: "胴体を圧迫せず、口器の根元から外す専用器具が安全です。" },
+            { text: "マダニのお腹をピンセットで強く潰して殺す", isCorrect: false, reason: "お腹を潰すとマダニの病原体を含んだ体液が体内へ注入されます！" },
+            { text: "針を刺してマダニを破裂させる", isCorrect: false, reason: "病原体が傷口全体に広がり極めて危険です！" }
+          ]
+        },
+        {
+          phaseName: "フェーズ3: 除去後の対応",
+          situation: "マダニが取れた！次にするべきことは？",
+          avatar: "🤕",
+          options: [
+            { text: "患部を消毒し、取れたマダニを密閉容器に保存して受診", isCorrect: true, reason: "現物があると医療機関で感染症（SFTS等）の検査・特定が容易になります！" },
+            { text: "毒を出すために患部をナイフで十文字に切り開く", isCorrect: false, reason: "二次感染や大出血のリスクがあり厳禁です！" },
+            { text: "取れたから安心として何事もなかったことにする", isCorrect: false, reason: "潜伏期間を経て発症する重篤感染症を見逃す恐れがあります！" }
+          ]
+        },
+        {
+          phaseName: "フェーズ4: 潜伏期間の警戒",
+          situation: "咬まれてから数日〜数週間。警戒すべき点は？",
+          avatar: "🤒",
+          options: [
+            { text: "発熱、倦怠感、発疹が出ないか数週間観察し、あれば即受診", isCorrect: true, reason: "SFTSや日本紅斑熱などの重篤な感染症を警戒します。" },
+            { text: "翌日に熱がなければ完治と判断して激しい運動をする", isCorrect: false, reason: "マダニ媒介感染症の潜伏期間は数日〜2週間以上あります！" },
+            { text: "記念に献血に行く", isCorrect: false, reason: "血液を介した感染リスクがあるため絶対にNGです！" }
+          ]
+        }
+      ]
+    },
+    heatstroke: {
+      name: "熱中症警戒編",
+      icon: "☀️",
+      phases: [
+        {
+          phaseName: "フェーズ1: 異変の初期対応",
+          situation: "猛暑の屋外。めまいと立ちくらみがして体が熱い！",
+          avatar: "🥵",
+          options: [
+            { text: "涼しい日陰やクーラーの効いた室内へ移動し服を緩める", isCorrect: true, reason: "体熱放散を促すため、即座に涼しい場所へ退避します！" },
+            { text: "気合を入れるため、そのまま直射日光下で運動を続ける", isCorrect: false, reason: "急激に重症化し意識障害・多臓器不全に至る恐れがあります！" },
+            { text: "その場で立ったまま深呼吸を繰り返す", isCorrect: false, reason: "立ちくらみで転倒し頭部を打撲する危険があります！" }
+          ]
+        },
+        {
+          phaseName: "フェーズ2: 水分・塩分補給",
+          situation: "自力で水が飲める状態。何を飲ませるべき？",
+          avatar: "🥤",
+          options: [
+            { text: "経口補水液やスポーツドリンクを少しずつ飲ませる", isCorrect: true, reason: "汗で失われた水分と電解質（塩分）を同時に補給します。" },
+            { text: "キンキンに冷えた缶ビールを一気飲みさせる", isCorrect: false, reason: "アルコールの利尿作用で脱水症状が急速に悪化します！" },
+            { text: "真水だけを短時間で1リットル以上がぶ飲みさせる", isCorrect: false, reason: "血中ナトリウム濃度が急低下し水中毒（痙攣等）を誘発します！" }
+          ]
+        },
+        {
+          phaseName: "フェーズ3: 身体の冷却",
+          situation: "効率的に体温を下げるために冷やすべき部位は？",
+          avatar: "🧊",
+          options: [
+            { text: "首筋の両脇、脇の下、太ももの付け根を保冷剤で冷やす", isCorrect: true, reason: "太い静脈が体表近くを通る部位を冷やすと全身の血液が効率よく冷えます！" },
+            { text: "手先と足の指先だけを冷水につける", isCorrect: false, reason: "末梢血管が収縮し、中心体温が下がりにくくなります！" },
+            { text: "厚着をして汗を限界まで搾り出す", isCorrect: false, reason: "熱がこもり体温が危険域まで急上昇します！" }
+          ]
+        },
+        {
+          phaseName: "フェーズ4: 重症化のサイン",
+          situation: "呼びかけへの反応が鈍く、自力で水が飲めない！",
+          avatar: "🚨",
+          options: [
+            { text: "無理に飲ませず、直ちに119番通報（救急要請）する", isCorrect: true, reason: "意識障害時の経口摂取は窒息・誤嚥の危険大！即救急車です！" },
+            { text: "寝かせたまま口に無理やり水を流し込む", isCorrect: false, reason: "水が気管に入り窒息死する恐れがあります！" },
+            { text: "涼しい部屋で朝まで様子を見る", isCorrect: false, reason: "手遅れになり命に関わる危険な判断です！" }
+          ]
+        }
+      ]
+    }
+  };
+
+  // 状態管理
+  let currentStageKey = 'bee';
+  let timeLimitMs = 5000;
+  let currentPhases = [];
+  let currentPhaseIndex = 0;
+  let hp = 100;
+  let isAnswering = false;
+  let timerId = null;
+  let startTime = 0;
+  let currentShuffledOptions = [];
+
+  // Canvas
+  const container = document.getElementById('game-container');
+  const effectCanvas = document.getElementById('effect-canvas');
+  const ctx = effectCanvas.getContext('2d');
+  function resizeCanvas() {
+    effectCanvas.width = container.clientWidth;
+    effectCanvas.height = container.clientHeight;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  // パーティクルシステム（😭 & 紙吹雪）
+  let particles = [];
+  function spawnParticles(type) {
+    particles = [];
+    if (type === 'cry') {
+      for (let i = 0; i < 14; i++) {
+        particles.push({
+          type: 'cry',
+          x: effectCanvas.width / 2 + (Math.random() - 0.5) * 60,
+          y: effectCanvas.height / 2 - 30,
+          vx: (Math.random() - 0.5) * 14,
+          vy: -Math.random() * 12 - 4,
+          gravity: 0.5,
+          size: Math.random() * 20 + 30,
+          rotation: (Math.random() - 0.5) * 0.4,
+          angle: 0,
+          text: '😭'
+        });
+      }
+    } else if (type === 'confetti') {
+      const colors = ['#ffb703', '#06d6a0', '#4cc9f0', '#e63946', '#ffffff'];
+      for (let i = 0; i < 40; i++) {
+        particles.push({
+          type: 'confetti',
+          x: effectCanvas.width / 2,
+          y: effectCanvas.height / 2 - 80,
+          vx: (Math.random() - 0.5) * 16,
+          vy: -Math.random() * 14 - 6,
+          gravity: 0.4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          w: Math.random() * 8 + 6,
+          h: Math.random() * 8 + 6,
+          angle: Math.random() * Math.PI,
+          va: (Math.random() - 0.5) * 0.2
+        });
+      }
+    }
+  }
+
+  function updateParticles() {
+    ctx.clearRect(0, 0, effectCanvas.width, effectCanvas.height);
+    if (particles.length > 0) {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;
+        p.angle += (p.rotation || p.va || 0);
+
+        if (p.type === 'cry') {
+          if (p.y > effectCanvas.height - 40) {
+            p.y = effectCanvas.height - 40;
+            p.vy *= -0.55;
+            p.vx *= 0.8;
+          }
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.angle);
+          ctx.font = `${p.size}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(p.text, 0, 0);
+          ctx.restore();
+        } else if (p.type === 'confetti') {
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.angle);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        }
+      }
+    }
+    requestAnimationFrame(updateParticles);
+  }
+  requestAnimationFrame(updateParticles);
+
+  // ステージ＆難易度選択
+  function setMode(ms, btn) {
+    timeLimitMs = ms;
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function selectStage(key, el) {
+    currentStageKey = key;
+    document.querySelectorAll('.stage-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    playSE('tick');
+  }
+
+  function updateRecordsUI() {
+    for (const key in STAGES) {
+      const best = localStorage.getItem(`best_${key}`) || '-';
+      const el = document.getElementById(`rec-${key}`);
+      if (el) el.textContent = `Best: ${best}`;
+    }
+  }
+  updateRecordsUI();
+
+  // ゲームループ
+  function startGame() {
+    playSE('alert');
+    document.getElementById('title-screen').classList.add('hidden');
+    document.getElementById('result-screen').classList.add('hidden');
+    hp = 100;
+    currentPhaseIndex = 0;
+    currentPhases = JSON.parse(JSON.stringify(STAGES[currentStageKey].phases));
+    updateHpUI();
+    loadPhase(currentPhaseIndex);
+  }
+
+  function resetGame() { startGame(); }
+  function backToTitle() {
+    document.getElementById('result-screen').classList.add('hidden');
+    document.getElementById('title-screen').classList.remove('hidden');
+    updateRecordsUI();
+  }
+
+  function updateHpUI() {
+    const hpBar = document.getElementById('hp-bar');
+    hpBar.style.width = `${Math.max(0, hp)}%`;
+    if (hp > 60) hpBar.style.backgroundColor = 'var(--safe-green)';
+    else if (hp > 30) hpBar.style.backgroundColor = 'var(--accent-yellow)';
+    else hpBar.style.backgroundColor = 'var(--danger-red)';
+  }
+
+  // 選択肢シャッフル（Fisher-Yates）
+  function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function loadPhase(index) {
+    if (index >= currentPhases.length || hp <= 0) {
+      showResult();
+      return;
+    }
+
+    const data = currentPhases[index];
+    isAnswering = false;
+
+    document.getElementById('phase-indicator').textContent = `PHASE ${index + 1}/${currentPhases.length}`;
+    document.getElementById('phase-badge').textContent = data.phaseName;
+    document.getElementById('character').textContent = data.avatar;
+    document.getElementById('situation-text').innerHTML = data.situation;
+
+    currentShuffledOptions = shuffleArray([...data.options]);
+    for (let i = 0; i < 3; i++) {
+      document.getElementById(`opt-${i}`).textContent = currentShuffledOptions[i].text;
+    }
+
+    startTimer();
+  }
+
+  function startTimer() {
+    startTime = performance.now();
+    cancelAnimationFrame(timerId);
+    let lastTickSec = -1;
+
+    function tick(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.max(0, 1 - (elapsed / timeLimitMs));
+      const timerBar = document.getElementById('timer-bar');
+      timerBar.style.width = `${progress * 100}%`;
+
+      if (progress > 0.4) timerBar.style.backgroundColor = 'var(--accent-yellow)';
+      else timerBar.style.backgroundColor = 'var(--danger-red)';
+
+      const currentSec = Math.floor(elapsed / 1000);
+      if (currentSec !== lastTickSec && progress < 0.6) {
+        lastTickSec = currentSec;
+        playSE('tick');
+      }
+
+      if (elapsed >= timeLimitMs) {
+        handleTimeUp();
+      } else if (!isAnswering) {
+        timerId = requestAnimationFrame(tick);
+      }
+    }
+    timerId = requestAnimationFrame(tick);
+  }
+
+  function handleTimeUp() {
+    if (isAnswering) return;
+    isAnswering = true;
+    cancelAnimationFrame(timerId);
+    triggerWrong("時間切れ！", "迅速な判断が生死を分けます！");
+  }
+
+  function handleSelect(choiceIndex) {
+    if (isAnswering) return;
+    isAnswering = true;
+    cancelAnimationFrame(timerId);
+
+    const selected = currentShuffledOptions[choiceIndex];
+    if (selected.isCorrect) {
+      triggerCorrect(selected.reason);
+    } else {
+      triggerWrong("判断ミス！", selected.reason);
+    }
+  }
+
+  function triggerCorrect(reason) {
+    playSE('correct');
+    document.getElementById('character').textContent = "😆";
+    spawnParticles('confetti');
+
+    const banner = document.getElementById('feedback-banner');
+    const title = document.getElementById('feedback-title');
+    const desc = document.getElementById('feedback-desc');
+    title.textContent = "ナイス判断！✨";
+    title.style.color = "var(--safe-green)";
+    desc.textContent = reason;
+    banner.classList.add('show');
+
+    setTimeout(() => {
+      banner.classList.remove('show');
+      particles = [];
+      currentPhaseIndex++;
+      loadPhase(currentPhaseIndex);
+    }, 1500);
+  }
+
+  function triggerWrong(titleText, reason) {
+    playSE('wrong');
+    document.getElementById('character').textContent = "😭";
+    hp -= 35;
+    updateHpUI();
+
+    container.classList.add('shake');
+    spawnParticles('cry');
+    setTimeout(() => container.classList.remove('shake'), 400);
+
+    const banner = document.getElementById('feedback-banner');
+    const title = document.getElementById('feedback-title');
+    const desc = document.getElementById('feedback-desc');
+    title.textContent = `😭 ${titleText}`;
+    title.style.color = "var(--danger-red)";
+    desc.textContent = reason;
+    banner.classList.add('show');
+
+    setTimeout(() => {
+      banner.classList.remove('show');
+      particles = [];
+      if (hp <= 0) {
+        showResult();
+      } else {
+        currentPhaseIndex++;
+        loadPhase(currentPhaseIndex);
+      }
+    }, 2000);
+  }
+
+  let lastRank = "D";
+  function showResult() {
+    document.getElementById('result-screen').classList.remove('hidden');
+    const resultRank = document.getElementById('result-rank');
+    const resultComment = document.getElementById('result-comment');
+    const resultBadge = document.getElementById('result-badge');
+
+    if (hp >= 100) {
+      lastRank = "RANK S";
+      resultBadge.textContent = "👑";
+      resultRank.textContent = "【 RESULT: RANK S 】";
+      resultComment.textContent = "パーフェクト生還！完璧な応急処置マスターです！";
+    } else if (hp >= 65) {
+      lastRank = "RANK A";
+      resultBadge.textContent = "🏅";
+      resultRank.textContent = "【 RESULT: RANK A 】";
+      resultComment.textContent = "無事に生還！軽傷で処置を完了しました。";
+    } else if (hp > 0) {
+      lastRank = "RANK B";
+      resultBadge.textContent = "⚠️";
+      resultRank.textContent = "【 RESULT: RANK B 】";
+      resultComment.textContent = "なんとか生還！ですが危険なNG行動がありました。要復習！";
+    } else {
+      lastRank = "RANK D";
+      resultBadge.textContent = "🚑";
+      resultRank.textContent = "【 RESULT: RANK D (搬送) 】";
+      resultComment.textContent = "容態悪化により緊急搬送…！正しい手順を学び直しましょう。";
+    }
+
+    // ハイスコア更新
+    const prevBest = localStorage.getItem(`best_${currentStageKey}`) || 'Z';
+    const rankPriority = { 'RANK S': 1, 'RANK A': 2, 'RANK B': 3, 'RANK D': 4, 'Z': 99 };
+    if (rankPriority[lastRank] < (rankPriority[prevBest] || 99)) {
+      localStorage.setItem(`best_${currentStageKey}`, lastRank);
+    }
+  }
+
+  function shareX() {
+    const stageName = STAGES[currentStageKey].name;
+    const modeText = timeLimitMs === 3000 ? "HARD(3秒)" : "NORMAL(5秒)";
+    const text = `🚨『エマージェンシー・サバイバル！』【${stageName} / ${modeText}】で【${lastRank}】を獲得して生還！迫り来るタイムリミットで正しい応急手当を学ぼう！ #エマージェンシーサバイバル #救急処置ゲーム`;
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  }
+
+  // 救急ハンドブックモーダル
+  function openHandbook() {
+    const content = document.getElementById('handbook-content');
+    content.innerHTML = '';
+    for (const key in STAGES) {
+      const stage = STAGES[key];
+      const section = document.createElement('div');
+      section.innerHTML = `<h3 style="color:var(--cyan-btn); margin:10px 0 6px;">${stage.icon} ${stage.name}</h3>`;
+      stage.phases.forEach((p, idx) => {
+        const item = document.createElement('div');
+        item.className = 'handbook-item';
+        const correctOpt = p.options.find(o => o.isCorrect);
+        const wrongOpts = p.options.filter(o => !o.isCorrect);
+        item.innerHTML = `
+          <div class="handbook-q">${p.phaseName}</div>
+          <div class="handbook-a">⭕️ 正解: ${correctOpt.text}<br><span style="font-size:0.75rem;color:#ccc;">（${correctOpt.reason}）</span></div>
+          <div class="handbook-w">❌ NG例: ${wrongOpts.map(w => w.text + ' → ' + w.reason).join('<br>❌ NG例: ')}</div>
+        `;
+        section.appendChild(item);
+      });
+      content.appendChild(section);
+    }
+    document.getElementById('handbook-modal').classList.remove('hidden');
+  }
+
+  function closeHandbook() {
+    document.getElementById('handbook-modal').classList.add('hidden');
+  }
+</script>
+</body>
+</html>

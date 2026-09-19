@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>お絵描きはディナーの後で - Cyber Butler Cooking Full Edition</title>
+  <style>
+    :root {
+      --bg-color: #0b0e14;
+      --card-bg: #151922;
+      --accent-color: #00f0ff;
+      --gold-color: #ffd700;
+      --pink-color: #ff66cc;
+      --text-color: #e0e6ed;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    header {
+      text-align: center;
+      padding: 15px;
+      background: linear-gradient(180deg, #1f2430 0%, var(--bg-color) 100%);
+      width: 100%;
+      box-shadow: 0 2px 10px rgba(0, 240, 255, 0.2);
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      color: var(--accent-color);
+      letter-spacing: 2px;
+      text-shadow: 0 0 8px var(--accent-color);
+    }
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      max-width: 500px;
+      width: 95%;
+      margin-top: 10px;
+    }
+    .ojou-box {
+      background: var(--card-bg);
+      border: 1px solid var(--accent-color);
+      border-radius: 12px;
+      padding: 12px 16px;
+      width: 100%;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    }
+    .ojou-avatar {
+      font-size: 2.5rem;
+      background: #2a2f3d;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--gold-color);
+    }
+    .ojou-speech {
+      flex: 1;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+    .target-badge {
+      display: inline-block;
+      background: var(--gold-color);
+      color: #000;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+    .canvas-wrapper {
+      position: relative;
+      width: 320px;
+      height: 320px;
+      border: 2px solid var(--accent-color);
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+      background: #05070a;
+      overflow: hidden;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      touch-action: none;
+    }
+    /* 【修正】アニメーション用キャンバスはマウス・タッチイベントを透過 */
+    #fourierCanvas {
+      pointer-events: none;
+    }
+    .guide-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 180px;
+      color: rgba(255, 255, 255, 0.08);
+      font-family: 'Kaiti', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+      pointer-events: none;
+      user-select: none;
+    }
+    .cat-noise {
+      position: absolute;
+      font-size: 2.5rem;
+      display: none;
+      pointer-events: none;
+      z-index: 10;
+      transition: all 0.1s linear;
+    }
+    .controls {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+    button {
+      flex: 1;
+      padding: 10px;
+      background: linear-gradient(45deg, #008b99, var(--accent-color));
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      font-weight: bold;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button.sec-btn {
+      background: #2a2f3d;
+      color: var(--text-color);
+      border: 1px solid #444;
+    }
+    button:disabled {
+      background: #333;
+      color: #777;
+      cursor: not-allowed;
+    }
+    .status-bar {
+      font-size: 0.85rem;
+      color: #8899a6;
+      height: 18px;
+    }
+    .result-card {
+      display: none;
+      background: var(--card-bg);
+      border: 2px solid var(--gold-color);
+      border-radius: 12px;
+      padding: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      text-align: center;
+      box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
+    }
+    .rank-badge {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: var(--gold-color);
+      text-shadow: 0 0 10px var(--gold-color);
+    }
+    .dish-title {
+      font-size: 1.2rem;
+      margin: 8px 0;
+      color: var(--accent-color);
+    }
+    .dish-icon {
+      font-size: 3.5rem;
+      margin: 6px 0;
+    }
+    .share-btn {
+      background: #1da1f2;
+      color: #fff;
+      margin-top: 10px;
+    }
+    .gallery-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 450px;
+      margin-top: 15px;
+    }
+    .gallery-item {
+      background: var(--card-bg);
+      border: 1px solid var(--accent-color);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>お絵描きはディナーの後で - Cyber Edition</h1>
+</header>
+
+<div class="game-container">
+  <div class="ojou-box">
+    <div class="ojou-avatar" id="ojouAvatar">👧🏼</div>
+    <div class="ojou-speech" id="ojouSpeech">
+      「執事、今日のディナーは<span class="target-badge" id="targetKanji">肉</span>の気分よ。美しく一筆書きで描きなさいな！」
+    </div>
+  </div>
+
+  <div class="canvas-wrapper">
+    <div class="guide-text" id="guideText">肉</div>
+    <div class="cat-noise" id="catNoise">🐾🐱</div>
+    <canvas id="paintCanvas" width="320" height="320"></canvas>
+    <canvas id="fourierCanvas" width="320" height="320"></canvas>
+  </div>
+
+  <div class="status-bar" id="statusBar">キャンバスを一筆書きでなぞってください</div>
+
+  <div class="controls">
+    <button id="resetBtn">リセット</button>
+    <button id="submitBtn" disabled>AIオーブン起動</button>
+    <button id="galleryBtn" class="sec-btn">🖼 ギャラリー</button>
+  </div>
+
+  <div class="result-card" id="resultCard">
+    <div class="rank-badge" id="resultRank">S</div>
+    <div class="dish-icon" id="dishIcon">🥩</div>
+    <div class="dish-title" id="dishTitle">極上シャトーブリアン</div>
+    <p id="resultComment">「最高よ執事！ 貴方の線、三ツ星ね！」</p>
+    <div style="display:flex; gap:10px;">
+      <button id="shareBtn" class="share-btn">📱 Xに投稿</button>
+      <button id="nextBtn">次のオーダーへ</button>
+    </div>
+  </div>
+</div>
+
+<div class="gallery-modal" id="galleryModal">
+  <h2 style="color: var(--accent-color);">🏛 執事の成果ギャラリー</h2>
+  <div class="gallery-grid" id="galleryGrid"></div>
+  <button id="closeGalleryBtn" style="margin-top: 20px; max-width: 200px;">閉じる</button>
+</div>
+
+<script>
+  const AudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  function playSound(type) {
+    if (AudioCtx.state === 'suspended') AudioCtx.resume();
+    const osc = AudioCtx.createOscillator();
+    const gain = AudioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(AudioCtx.destination);
+
+    if (type === 'draw') {
+      osc.frequency.setValueAtTime(300 + Math.random() * 200, AudioCtx.currentTime);
+      gain.gain.setValueAtTime(0.02, AudioCtx.currentTime);
+      osc.start(); osc.stop(AudioCtx.currentTime + 0.05);
+    } else if (type === 'fourier') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(400 + (time * 100 % 600), AudioCtx.currentTime);
+      gain.gain.setValueAtTime(0.01, AudioCtx.currentTime);
+      osc.start(); osc.stop(AudioCtx.currentTime + 0.04);
+    } else if (type === 'success') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(523.25, AudioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1046.50, AudioCtx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.1, AudioCtx.currentTime);
+      osc.start(); osc.stop(AudioCtx.currentTime + 0.3);
+    } else if (type === 'fail') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, AudioCtx.currentTime);
+      osc.frequency.linearRampToValueAtTime(60, AudioCtx.currentTime + 0.4);
+      gain.gain.setValueAtTime(0.1, AudioCtx.currentTime);
+      osc.start(); osc.stop(AudioCtx.currentTime + 0.4);
+    } else if (type === 'meow') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, AudioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(400, AudioCtx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.08, AudioCtx.currentTime);
+      osc.start(); osc.stop(AudioCtx.currentTime + 0.2);
+    }
+  }
+
+  const targetList = [
+    { kanji: '肉', S: { title: '極上シャトーブリアン', icon: '🥩' }, A: { title: '手ごねハンバーグ', icon: '🍔' }, B: { title: 'ホルモン謎煮込み', icon: '🍲' }, C: { title: 'BBQ網の丸焼き', icon: '🧇' }, Z: { title: '暗黒物質 (Dark Matter)', icon: '⬛' } },
+    { kanji: '魚', S: { title: '極上マグロの姿造り', icon: '🐟' }, A: { title: '焼鮭定食', icon: '🍱' }, B: { title: '小魚の丸かじり', icon: '🐟' }, C: { title: '古びた骨カンパチ', icon: '🦴' }, Z: { title: '謎の深海粘液', icon: '🟣' } },
+    { kanji: '麺', S: { title: '特製トリュフパスタ', icon: '🍝' }, A: { title: '醤油ラーメン', icon: '🍜' }, B: { title: '伸びきったソフトめん', icon: '🥢' }, C: { title: '毛糸の湯通し', icon: '🧶' }, Z: { title: '高次元スパゲッティ', icon: '🌀' } }
+  ];
+
+  let currentTargetIdx = 0;
+  let userPath = [];
+  let isDrawing = false;
+  let hasDrawn = false;
+  let fourierX = [];
+  let gallery = [];
+  let lastResult = {};
+
+  const pCanvas = document.getElementById('paintCanvas');
+  const pCtx = pCanvas.getContext('2d');
+  const fCanvas = document.getElementById('fourierCanvas');
+  const fCtx = fCanvas.getContext('2d');
+  const catNoise = document.getElementById('catNoise');
+
+  const submitBtn = document.getElementById('submitBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const shareBtn = document.getElementById('shareBtn');
+  const galleryBtn = document.getElementById('galleryBtn');
+  const galleryModal = document.getElementById('galleryModal');
+  const closeGalleryBtn = document.getElementById('closeGalleryBtn');
+  const resultCard = document.getElementById('resultCard');
+
+  function startDraw(e) {
+    if (hasDrawn) return;
+    isDrawing = true;
+    userPath = [];
+    pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+    fCtx.clearRect(0, 0, fCanvas.width, fCanvas.height);
+    addPoint(e);
+
+    if (Math.random() < 0.25) triggerCatNoise();
+  }
+
+  function moveDraw(e) {
+    if (!isDrawing) return;
+    addPoint(e);
+    drawUserPath();
+    if (Math.random() < 0.2) playSound('draw');
+  }
+
+  function endDraw() {
+    if (!isDrawing) return;
+    isDrawing = false;
+    if (userPath.length > 10) {
+      hasDrawn = true;
+      submitBtn.disabled = false;
+      document.getElementById('statusBar').innerText = "一筆書き完了！AIオーブンを起動してください。";
+    }
+  }
+
+  function addPoint(e) {
+    const rect = pCanvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    userPath.push({ x, y });
+  }
+
+  function triggerCatNoise() {
+    playSound('meow');
+    catNoise.style.display = 'block';
+    catNoise.style.left = '10px';
+    catNoise.style.top = Math.random() * 200 + 'px';
+
+    let catX = 10;
+    const catInterval = setInterval(() => {
+      catX += 15;
+      catNoise.style.left = catX + 'px';
+      
+      if (isDrawing && userPath.length > 0) {
+        const lastP = userPath[userPath.length - 1];
+        userPath.push({ x: lastP.x + (Math.random() - 0.5) * 40, y: lastP.y + (Math.random() - 0.5) * 40 });
+      }
+
+      if (catX > 280) {
+        clearInterval(catInterval);
+        catNoise.style.display = 'none';
+      }
+    }, 40);
+  }
+
+  function drawUserPath() {
+    pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+    pCtx.strokeStyle = '#00f0ff';
+    pCtx.lineWidth = 4;
+    pCtx.lineCap = 'round';
+    pCtx.lineJoin = 'round';
+    pCtx.beginPath();
+    for (let i = 0; i < userPath.length; i++) {
+      if (i === 0) pCtx.moveTo(userPath[i].x, userPath[i].y);
+      else pCtx.lineTo(userPath[i].x, userPath[i].y);
+    }
+    pCtx.stroke();
+  }
+
+  pCanvas.addEventListener('mousedown', startDraw);
+  pCanvas.addEventListener('mousemove', moveDraw);
+  window.addEventListener('mouseup', endDraw);
+  pCanvas.addEventListener('touchstart', startDraw);
+  pCanvas.addEventListener('touchmove', moveDraw);
+  window.addEventListener('touchend', endDraw);
+
+  resetBtn.addEventListener('click', resetCanvas);
+
+  function resetCanvas() {
+    isDrawing = false;
+    hasDrawn = false;
+    userPath = [];
+    fourierX = [];
+    pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+    fCtx.clearRect(0, 0, fCanvas.width, fCanvas.height);
+    submitBtn.disabled = true;
+    resultCard.style.display = 'none';
+    document.getElementById('statusBar').innerText = "キャンバスを一筆書きでなぞってください";
+  }
+
+  function dft(x) {
+    const X = [];
+    const N = x.length;
+    for (let k = 0; k < N; k++) {
+      let re = 0, im = 0;
+      for (let n = 0; n < N; n++) {
+        const phi = (2 * Math.PI * k * n) / N;
+        re += x[n].x * Math.cos(phi) + x[n].y * Math.sin(phi);
+        im -= x[n].x * Math.sin(phi) - x[n].y * Math.cos(phi);
+      }
+      re /= N; im /= N;
+      X[k] = { re, im, freq: k, amp: Math.sqrt(re*re + im*im), phase: Math.atan2(im, re) };
+    }
+    return X;
+  }
+
+  let animationFrameId = null;
+  let time = 0;
+  let epicyclePath = [];
+
+  submitBtn.addEventListener('click', () => {
+    submitBtn.disabled = true;
+    resetBtn.disabled = true;
+    document.getElementById('statusBar').innerText = "フーリエ・エピサイクル展開中...";
+
+    const sampledPath = resamplePath(userPath, 100);
+    fourierX = dft(sampledPath);
+    fourierX.sort((a, b) => b.amp - a.amp);
+
+    time = 0;
+    epicyclePath = [];
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    animateFourier();
+  });
+
+  function resamplePath(path, numPoints) {
+    const resampled = [];
+    const step = (path.length - 1) / (numPoints - 1);
+    for (let i = 0; i < numPoints; i++) {
+      const idx = Math.floor(i * step);
+      resampled.push(path[idx]);
+    }
+    return resampled;
+  }
+
+  function animateFourier() {
+    fCtx.clearRect(0, 0, fCanvas.width, fCanvas.height);
+    let v = drawEpicycles(160, 160, 0, fourierX);
+    epicyclePath.unshift(v);
+
+    fCtx.strokeStyle = '#ffd700';
+    fCtx.lineWidth = 3;
+    fCtx.beginPath();
+    for (let i = 0; i < epicyclePath.length; i++) {
+      if (i === 0) fCtx.moveTo(epicyclePath[i].x, epicyclePath[i].y);
+      else fCtx.lineTo(epicyclePath[i].x, epicyclePath[i].y);
+    }
+    fCtx.stroke();
+
+    playSound('fourier');
+
+    const dt = (2 * Math.PI) / fourierX.length;
+    time += dt;
+
+    if (time < 2 * Math.PI) {
+      animationFrameId = requestAnimationFrame(animateFourier);
+    } else {
+      setTimeout(evaluateAndShowResult, 300);
+    }
+  }
+
+  function drawEpicycles(x, y, rotation, fourier) {
+    for (let i = 0; i < fourier.length; i++) {
+      let prevx = x, prevy = y;
+      let freq = fourier[i].freq, radius = fourier[i].amp, phase = fourier[i].phase;
+      x += radius * Math.cos(freq * time + phase + rotation);
+      y += radius * Math.sin(freq * time + phase + rotation);
+
+      fCtx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
+      fCtx.lineWidth = 1;
+      fCtx.beginPath();
+      fCtx.arc(prevx, prevy, radius, 0, 2 * Math.PI);
+      fCtx.stroke();
+
+      fCtx.strokeStyle = 'rgba(255, 215, 0, 0.4)';
+      fCtx.beginPath();
+      fCtx.moveTo(prevx, prevy);
+      fCtx.lineTo(x, y);
+      fCtx.stroke();
+    }
+    return { x, y };
+  }
+
+  function evaluateAndShowResult() {
+    resetBtn.disabled = false;
+    const pointCount = userPath.length;
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    userPath.forEach(p => {
+      if(p.x < minX) minX = p.x; if(p.x > maxX) maxX = p.x;
+      if(p.y < minY) minY = p.y; if(p.y > maxY) maxY = p.y;
+    });
+    const area = (maxX - minX) * (maxY - minY);
+
+    let isHiddenSecret = false;
+    if (targetList[currentTargetIdx].kanji === '肉' && area < 3000 && pointCount > 40) {
+      isHiddenSecret = true;
+    }
+
+    let rank = 'B';
+    if (pointCount > 50 && area > 10000) rank = 'S';
+    else if (pointCount > 30 && area > 5000) rank = 'A';
+    else if (pointCount > 15) rank = 'C';
+    else rank = 'Z';
+
+    let resultTitle, resultIcon, comment, avatar;
+
+    if (isHiddenSecret) {
+      rank = 'SECRET';
+      resultTitle = 'オーガニック有機野菜サラダ';
+      resultIcon = '🥗';
+      comment = "「あら？お肉のお題なのに野菜…？ふん、たまにはヘルシーで悪くないじゃない」";
+      avatar = "😏";
+      playSound('success');
+    } else {
+      const targetData = targetList[currentTargetIdx];
+      const res = targetData[rank];
+      resultTitle = res.title;
+      resultIcon = res.icon;
+
+      if (rank === 'S') { comment = "「最高よ執事！ 貴方の線、三ツ星ね！」"; avatar = "😍"; playSound('success'); }
+      else if (rank === 'A') { comment = "「悪くないわ。明日も頑張りなさい」"; avatar = "👧🏼"; playSound('success'); }
+      else if (rank === 'B') { comment = "「ちょっと！ なんで微妙な料理になってるの！」"; avatar = "😠"; playSound('fail'); }
+      else if (rank === 'C') { comment = "「歯が折れるわ！ こんなの料理じゃないわ！」"; avatar = "😡"; playSound('fail'); }
+      else { comment = "「（無言のビンタ）クビよ！！」"; avatar = "💥"; playSound('fail'); }
+    }
+
+    document.getElementById('resultRank').innerText = rank;
+    document.getElementById('dishIcon').innerText = resultIcon;
+    document.getElementById('dishTitle').innerText = resultTitle;
+    document.getElementById('resultComment').innerText = comment;
+    document.getElementById('ojouAvatar').innerText = avatar;
+
+    lastResult = {
+      kanji: targetList[currentTargetIdx].kanji,
+      rank, title: resultTitle, icon: resultIcon
+    };
+    gallery.push(lastResult);
+
+    resultCard.style.display = 'block';
+    document.getElementById('statusBar').innerText = "AI錬成完了！";
+  }
+
+  shareBtn.addEventListener('click', () => {
+    const text = encodeURIComponent(`【お絵描きはディナーの後で】\nお題「${lastResult.kanji}」で一筆書き料理を錬成！\nランク: ${lastResult.rank}\n完成料理: ${lastResult.icon} ${lastResult.title}\n#お絵描きディナー #CyberButler`);
+    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+  });
+
+  galleryBtn.addEventListener('click', () => {
+    const grid = document.getElementById('galleryGrid');
+    grid.innerHTML = '';
+    if (gallery.length === 0) {
+      grid.innerHTML = '<p style="grid-column: span 2; color:#888;">まだ料理の履歴がありません</p>';
+    } else {
+      gallery.forEach((g, i) => {
+        const item = document.createElement('div');
+        item.className = 'gallery-item';
+        item.innerHTML = `<div style="font-size:2rem;">${g.icon}</div><strong>${g.title}</strong><br><small>お題: ${g.kanji} [Rank ${g.rank}]</small>`;
+        grid.appendChild(item);
+      });
+    }
+    galleryModal.style.display = 'flex';
+  });
+
+  closeGalleryBtn.addEventListener('click', () => {
+    galleryModal.style.display = 'none';
+  });
+
+  nextBtn.addEventListener('click', () => {
+    currentTargetIdx = (currentTargetIdx + 1) % targetList.length;
+    const targetData = targetList[currentTargetIdx];
+    document.getElementById('targetKanji').innerText = targetData.kanji;
+    document.getElementById('guideText').innerText = targetData.kanji;
+    document.getElementById('ojouSpeech').innerHTML = `「執事、今日のディナーは<span class="target-badge">${targetData.kanji}</span>の気分よ。美しく一筆書きで描きなさいな！」`;
+    document.getElementById('ojouAvatar').innerText = "👧🏼";
+    resetCanvas();
+  });
+</script>
+</body>
+</html>

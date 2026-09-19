@@ -1,0 +1,2731 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Logic &amp; Bite: 言霊割烹 -数理釣膳録-</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --washi:#EDE6D3;
+  --washi-deep:#E1D7BC;
+  --washi-line:rgba(42,34,22,0.14);
+  --ink:#2A2419;
+  --ink-soft:#5B5140;
+  --indigo:#1F3A52;
+  --indigo-deep:#122333;
+  --indigo-ink:#0B1620;
+  --ocean-deep:#0A1E2E;
+  --ocean-mid:#134156;
+  --ocean-surf:#3E7C8C;
+  --vermillion:#C1442D;
+  --vermillion-deep:#9C3320;
+  --gold:#B8912F;
+  --gold-bright:#E4C767;
+  --matcha:#4B6455;
+  --matcha-deep:#374C3F;
+  --praise-plum:#7D5BA6;
+  --paper-shadow:0 10px 30px rgba(20,15,5,0.25);
+  --font-display:"Shippori Mincho", "Yu Mincho", "Hiragino Mincho ProN", serif;
+  --font-body:"Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+*,*::before,*::after{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  font-family:var(--font-body);
+  color:var(--ink);
+  background:var(--indigo-ink);
+  overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+  touch-action:manipulation;
+  overscroll-behavior:none;
+}
+button{font-family:inherit;}
+::selection{background:var(--gold);color:var(--ink);}
+:focus-visible{outline:2px solid var(--gold-bright);outline-offset:2px;}
+
+#app{
+  position:relative;
+  width:100vw;
+  height:100vh;
+  height:100svh;
+  overflow:hidden;
+  background:var(--washi);
+}
+
+/* ---------- Texture helpers ---------- */
+.washi-bg{
+  background-color:var(--washi);
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 45%),
+    radial-gradient(circle at 85% 80%, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 50%),
+    repeating-linear-gradient(115deg, rgba(120,100,60,0.035) 0px, rgba(120,100,60,0.035) 1px, transparent 1px, transparent 3px);
+}
+.hairline{border:none;border-top:1px solid var(--washi-line);margin:0;}
+
+/* ---------- Screen management ---------- */
+.screen{
+  position:absolute;inset:0;
+  display:none;
+  flex-direction:column;
+}
+.screen.active{display:flex;}
+.screen-fade-in{animation:screenFadeIn .5s ease both;}
+@keyframes screenFadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@media (prefers-reduced-motion: reduce){
+  .screen-fade-in{animation:none;}
+  *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+}
+
+/* ---------- Top currency strip ---------- */
+#currency-strip{
+  position:absolute;
+  top:calc(8px + var(--safe-top));
+  right:10px;
+  z-index:50;
+  display:flex;
+  gap:6px;
+  pointer-events:none;
+}
+.currency-chip{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(20,16,10,0.72);
+  color:#F3E9CE;
+  padding:5px 10px 5px 7px;
+  border-radius:3px;
+  font-size:12.5px;
+  font-weight:700;
+  letter-spacing:.02em;
+  border:1px solid rgba(228,199,103,0.35);
+  backdrop-filter:blur(3px);
+}
+.currency-chip svg{width:15px;height:15px;flex:none;}
+.currency-strip-hidden{display:none;}
+
+/* ---------- Buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-family:var(--font-body);
+  font-weight:700;
+  font-size:15px;
+  padding:13px 26px;
+  border-radius:2px;
+  border:1px solid transparent;
+  cursor:pointer;
+  transition:transform .12s ease, filter .12s ease, box-shadow .12s ease;
+  letter-spacing:.03em;
+  line-height:1.2;
+  -webkit-appearance:none;
+}
+.btn:active{transform:scale(0.97);}
+.btn-primary{background:var(--vermillion);color:#FBF3E4;box-shadow:0 3px 0 var(--vermillion-deep);}
+.btn-primary:hover{filter:brightness(1.06);}
+.btn-primary:active{box-shadow:0 1px 0 var(--vermillion-deep);transform:translateY(2px) scale(0.99);}
+.btn-ghost{background:transparent;color:var(--ink);border-color:var(--ink);}
+.btn-ghost.on-dark{color:#EFE6CC;border-color:rgba(239,230,204,0.55);}
+.btn-gold{background:var(--gold);color:#2A2010;box-shadow:0 3px 0 #8A6B1E;}
+.btn-gold:active{box-shadow:0 1px 0 #8A6B1E;transform:translateY(2px) scale(0.99);}
+.btn-indigo{background:var(--indigo);color:#F3EEDD;box-shadow:0 3px 0 var(--indigo-ink);}
+.btn-indigo:active{box-shadow:0 1px 0 var(--indigo-ink);transform:translateY(2px) scale(0.99);}
+.btn:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.3);box-shadow:none;transform:none;}
+.btn-sm{padding:8px 16px;font-size:13px;}
+.btn-block{width:100%;}
+
+/* ---------- Section label (kanji stamp style, not a generic eyebrow) ---------- */
+.stamp-label{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--font-display);
+  font-size:13px;
+  color:var(--vermillion);
+  border:1.5px solid var(--vermillion);
+  padding:3px 10px;
+  border-radius:2px;
+}
+
+/* ---------- Modal (scroll-unfurl style) ---------- */
+.modal-overlay{
+  position:absolute;inset:0;
+  background:rgba(10,8,4,0.55);
+  z-index:200;
+  display:none;
+  align-items:center;justify-content:center;
+  padding:20px;
+}
+.modal-overlay.active{display:flex;}
+.modal-card{
+  background:var(--washi);
+  width:min(560px,100%);
+  max-height:min(680px,88vh);
+  display:flex;flex-direction:column;
+  border-radius:2px;
+  box-shadow:var(--paper-shadow);
+  overflow:hidden;
+  animation:modalUnfurl .32s cubic-bezier(.2,.8,.3,1) both;
+}
+@keyframes modalUnfurl{from{opacity:0;transform:scaleY(0.85) translateY(10px);}to{opacity:1;transform:scaleY(1) translateY(0);}}
+.modal-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;
+  border-bottom:1px solid var(--washi-line);
+  flex:none;
+}
+.modal-head h2{font-family:var(--font-display);font-size:19px;margin:0;font-weight:700;}
+.modal-close{
+  background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--ink-soft);
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+}
+.modal-body{padding:16px 20px 22px;overflow-y:auto;flex:1;}
+.modal-tabs{display:flex;gap:2px;padding:0 20px;border-bottom:1px solid var(--washi-line);flex:none;}
+.modal-tab{
+  background:none;border:none;padding:10px 4px;margin-right:18px;
+  font-family:var(--font-body);font-weight:700;font-size:13.5px;color:var(--ink-soft);
+  border-bottom:2px solid transparent;cursor:pointer;
+}
+.modal-tab.active{color:var(--vermillion);border-bottom-color:var(--vermillion);}
+
+/* ---------- Toast ---------- */
+#toast{
+  position:absolute;
+  left:50%;
+  bottom:calc(18px + var(--safe-bottom));
+  transform:translateX(-50%) translateY(20px);
+  background:rgba(20,16,10,0.88);
+  color:#F3E9CE;
+  padding:10px 18px;
+  border-radius:3px;
+  font-size:13.5px;
+  z-index:400;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .25s ease, transform .25s ease;
+  border:1px solid rgba(228,199,103,0.3);
+  max-width:88vw;
+  text-align:center;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ==================================================================
+   TITLE SCREEN
+   ================================================================== */
+#screen-title{
+  align-items:center;justify-content:center;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(184,145,47,0.25), transparent 55%),
+    linear-gradient(180deg, var(--indigo-ink) 0%, var(--indigo-deep) 55%, var(--ocean-deep) 100%);
+  color:#EFE6CC;
+  text-align:center;
+  padding:24px;
+}
+.title-mark{
+  font-family:var(--font-display);
+  font-size:14px;
+  letter-spacing:.5em;
+  color:var(--gold-bright);
+  margin:0 0 18px 2px;
+}
+.title-main{
+  font-family:var(--font-display);
+  font-size:clamp(34px,8vw,56px);
+  font-weight:800;
+  margin:0;
+  line-height:1.25;
+  text-shadow:0 2px 18px rgba(0,0,0,.5);
+}
+.title-sub{
+  font-family:var(--font-display);
+  font-size:clamp(13px,2.6vw,16px);
+  color:#B9C6CE;
+  margin:10px 0 44px;
+  letter-spacing:.08em;
+}
+.title-actions{display:flex;flex-direction:column;gap:12px;width:min(300px,80vw);}
+.title-footnote{
+  margin-top:34px;font-size:11.5px;color:#7C8A93;max-width:420px;line-height:1.8;
+}
+.title-koi{position:absolute;opacity:.5;pointer-events:none;}
+
+/* ==================================================================
+   HUB SCREEN (割烹母屋)
+   ================================================================== */
+#screen-hub{
+  background:var(--washi);
+}
+.hub-scroll{flex:1;overflow-y:auto;padding:20px 18px calc(24px + var(--safe-bottom));}
+.hub-header{
+  padding:calc(14px + var(--safe-top)) 18px 10px;
+  display:flex;align-items:baseline;justify-content:space-between;
+  border-bottom:1px solid var(--washi-line);
+  flex:none;
+}
+.hub-title{font-family:var(--font-display);font-size:21px;font-weight:700;margin:0;}
+.hub-rank{font-size:12px;color:var(--ink-soft);}
+.fame-bar-wrap{margin:12px 0 22px;}
+.fame-bar-label{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-soft);margin-bottom:5px;}
+.fame-bar{height:6px;background:var(--washi-deep);border-radius:3px;overflow:hidden;}
+.fame-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));border-radius:3px;transition:width .5s ease;}
+
+.ground-list{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.ground-card{
+  display:flex;align-items:center;gap:12px;
+  background:var(--washi-deep);
+  border:1px solid var(--washi-line);
+  border-radius:2px;
+  padding:12px 14px;
+  cursor:pointer;
+  text-align:left;
+  transition:transform .12s ease;
+}
+.ground-card:active{transform:scale(0.985);}
+.ground-card.selected{border-color:var(--vermillion);box-shadow:inset 0 0 0 1px var(--vermillion);}
+.ground-card.locked{opacity:.55;cursor:default;}
+.ground-card.locked:active{transform:none;}
+.ground-icon{
+  width:44px;height:44px;flex:none;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--indigo);color:#EFE6CC;
+}
+.ground-icon svg{width:24px;height:24px;}
+.ground-info{flex:1;min-width:0;}
+.ground-name{font-family:var(--font-display);font-weight:700;font-size:15px;margin:0 0 2px;}
+.ground-meta{font-size:11.5px;color:var(--ink-soft);}
+.ground-lock-note{font-size:11px;color:var(--vermillion-deep);margin-top:2px;}
+
+.hub-actions-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.action-tile{
+  background:var(--indigo);color:#F3EEDD;
+  border:none;border-radius:2px;
+  padding:16px 10px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  font-size:12.5px;font-weight:700;
+  cursor:pointer;
+}
+.action-tile svg{width:22px;height:22px;}
+.action-tile:active{filter:brightness(1.15);}
+
+.difficulty-toggle{display:flex;gap:8px;margin-bottom:22px;}
+.diff-btn{
+  flex:1;padding:12px 8px;border-radius:2px;border:1px solid var(--washi-line);
+  background:var(--washi-deep);font-weight:700;font-size:13px;cursor:pointer;color:var(--ink-soft);
+}
+.diff-btn.active{background:var(--indigo);color:#F3EEDD;border-color:var(--indigo);}
+.diff-btn small{display:block;font-weight:500;font-size:10.5px;margin-top:2px;opacity:.85;}
+
+.hub-go-fish{position:sticky;bottom:0;padding:14px 0 2px;background:linear-gradient(180deg, rgba(237,230,211,0) 0%, var(--washi) 32%);}
+
+/* ==================================================================
+   PHASE 1: 数理採餌 (SUDOKU)
+   ================================================================== */
+#screen-phase1{background:var(--washi);}
+.p1-header{
+  flex:none;padding:calc(10px + var(--safe-top)) 16px 8px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--washi-line);
+}
+.phase-eyebrow{font-family:var(--font-display);font-size:12.5px;color:var(--ink-soft);}
+.phase-title{font-family:var(--font-display);font-size:17px;font-weight:700;margin:1px 0 0;}
+.p1-body{
+  flex:1;min-height:0;
+  display:flex;gap:16px;
+  padding:16px;
+  overflow-y:auto;
+}
+@media (max-width:720px){
+  .p1-body{flex-direction:column;align-items:stretch;padding:12px;gap:12px;}
+}
+.sudoku-col{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;min-width:0;}
+.sudoku-board{
+  display:grid;
+  gap:1px;
+  background:var(--ink);
+  padding:2px;
+  border-radius:2px;
+  width:min(72vw, 420px);
+  height:min(72vw, 420px);
+  box-shadow:0 6px 20px rgba(30,25,10,0.18);
+}
+@media (max-width:720px){.sudoku-board{width:min(94vw,420px);height:min(94vw,420px);}}
+.sudoku-cell{
+  background:var(--washi);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-body);
+  font-weight:700;
+  font-size:clamp(14px,3.6vw,24px);
+  color:var(--indigo);
+  cursor:pointer;
+  position:relative;
+  transition:background .12s ease;
+}
+.sudoku-cell.given{color:var(--ink);background:var(--washi-deep);cursor:default;}
+.sudoku-cell.selected{background:#F6E7B8;box-shadow:inset 0 0 0 2px var(--vermillion);}
+.sudoku-cell.error{color:var(--vermillion);animation:shakeCell .3s ease;}
+.sudoku-cell.block-shade{background:#E6DEC7;}
+.sudoku-cell.given.block-shade{background:#D8CCA9;}
+.sudoku-cell.bonus-line::after{
+  content:"";position:absolute;inset:3px;border:1.5px solid var(--gold);border-radius:1px;pointer-events:none;opacity:.75;
+}
+@keyframes shakeCell{0%,100%{transform:translateX(0);}25%{transform:translateX(-3px);}75%{transform:translateX(3px);}}
+.sudoku-block-border-r{box-shadow:inset -1.5px 0 0 var(--ink);}
+.sudoku-block-border-b{box-shadow:inset 0 -1.5px 0 var(--ink);}
+
+.numpad{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;justify-content:center;width:min(72vw,420px);}
+@media (max-width:720px){.numpad{width:min(94vw,420px);}}
+.num-btn{
+  flex:1 1 auto;min-width:34px;min-height:34px;
+  border-radius:2px;
+  border:1px solid var(--washi-line);
+  background:var(--washi-deep);
+  font-family:var(--font-body);font-weight:700;font-size:17px;
+  cursor:pointer;color:var(--ink);
+}
+.num-btn:active{background:var(--indigo);color:#fff;}
+.num-btn.erase{color:var(--vermillion);font-size:13px;}
+
+.p1-side{
+  flex:0 0 240px;
+  display:flex;flex-direction:column;gap:12px;
+}
+@media (max-width:720px){.p1-side{flex:none;width:100%;}}
+.bait-card{
+  background:var(--indigo);color:#F3EEDD;
+  border-radius:2px;padding:14px 16px;
+}
+.bait-card h3{font-family:var(--font-display);font-size:14.5px;margin:0 0 10px;font-weight:700;display:flex;align-items:center;gap:6px;}
+.bait-stat{display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:12.5px;}
+.bait-stat svg{width:15px;height:15px;flex:none;opacity:.85;}
+.bait-stat-bar{flex:1;height:5px;background:rgba(255,255,255,0.15);border-radius:3px;overflow:hidden;}
+.bait-stat-fill{height:100%;background:var(--gold-bright);border-radius:3px;transition:width .35s ease;}
+.bait-stat-val{width:50px;text-align:right;flex:none;font-variant-numeric:tabular-nums;font-size:11.5px;opacity:.9;}
+.ability-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;}
+.ability-tag{
+  font-size:10.5px;padding:3px 7px;border-radius:2px;
+  background:rgba(228,199,103,0.18);color:var(--gold-bright);
+  border:1px solid rgba(228,199,103,0.35);
+}
+.p1-footer{flex:none;padding:10px 16px calc(12px + var(--safe-bottom));display:flex;gap:10px;border-top:1px solid var(--washi-line);}
+.combo-indicator{font-size:11px;color:var(--matcha-deep);min-height:14px;text-align:center;margin-top:4px;}
+
+/* ==================================================================
+   PHASE 2: 臨場釣魚 (FISHING)
+   ================================================================== */
+#screen-phase2{background:var(--ocean-deep);color:#EAF2F4;}
+#fishing-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+.p2-hud-top{
+  position:absolute;top:calc(10px + var(--safe-top));left:10px;right:10px;
+  display:flex;justify-content:space-between;align-items:flex-start;
+  z-index:20;pointer-events:none;
+}
+.p2-ground-tag{
+  background:rgba(10,15,20,0.5);backdrop-filter:blur(2px);
+  padding:6px 12px;border-radius:2px;font-size:12px;font-family:var(--font-display);
+  border:1px solid rgba(255,255,255,0.15);
+}
+.fish-radar{
+  position:absolute; left:50%; top:calc(14px + var(--safe-top)); transform:translateX(-50%);
+  width:min(70vw,320px); height:34px;
+  background:rgba(6,10,14,0.55); border:1px solid rgba(255,255,255,0.18); border-radius:20px;
+  overflow:hidden; z-index:20;
+}
+.fish-radar-fill{position:absolute;top:0;bottom:0;left:0;background:radial-gradient(circle,rgba(228,199,103,.55),transparent 70%);transition:width .3s ease;}
+.fish-radar-icon{position:absolute;top:50%;transform:translate(-50%,-50%);font-size:16px;transition:left .3s ease;}
+.fish-radar-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:#CFE3EA;letter-spacing:.08em;pointer-events:none;}
+
+.state-banner{
+  position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);
+  font-family:var(--font-display);font-size:clamp(20px,5vw,30px);
+  color:#FCEFC6;text-shadow:0 2px 14px rgba(0,0,0,.6);
+  z-index:30;opacity:0;pointer-events:none;
+  transition:opacity .25s ease, transform .25s ease;
+}
+.state-banner.show{opacity:1;transform:translate(-50%,-56%);}
+
+#hookset-btn{
+  position:absolute;left:50%;top:56%;transform:translate(-50%,-50%) scale(0.7);
+  z-index:35; display:none;
+  padding:18px 34px;border-radius:50px;
+  background:var(--vermillion);color:#fff;border:3px solid #FCEFC6;
+  font-family:var(--font-display);font-size:20px;font-weight:700;
+  box-shadow:0 0 0 rgba(193,68,45,.6);
+  animation:hooksetPulse 0.55s ease-in-out infinite;
+}
+#hookset-btn.show{display:block;}
+@keyframes hooksetPulse{0%{box-shadow:0 0 0 0 rgba(193,68,45,.55);transform:translate(-50%,-50%) scale(0.94);}70%{box-shadow:0 0 0 22px rgba(193,68,45,0);transform:translate(-50%,-50%) scale(1.03);}100%{box-shadow:0 0 0 0 rgba(193,68,45,0);transform:translate(-50%,-50%) scale(0.94);}}
+
+#jump-btn{
+  position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);
+  z-index:35;display:none;
+  padding:16px 30px;border-radius:50px;
+  background:#EAF2F4;color:var(--indigo-ink);border:3px solid var(--vermillion);
+  font-family:var(--font-display);font-size:18px;font-weight:700;
+}
+#jump-btn.show{display:block;animation:hooksetPulse 0.45s ease-in-out infinite;}
+
+.p2-hud-bottom{
+  position:absolute;left:0;right:0;bottom:0;
+  padding:10px 12px calc(12px + var(--safe-bottom));
+  background:linear-gradient(180deg, rgba(10,20,28,0) 0%, rgba(6,14,20,0.72) 40%, rgba(6,14,20,0.88) 100%);
+  z-index:25;
+}
+.tension-wrap{margin-bottom:8px;}
+.tension-labels{display:flex;justify-content:space-between;font-size:10px;color:#B9CBD2;margin-bottom:3px;letter-spacing:.05em;}
+.tension-gauge{
+  position:relative;height:16px;border-radius:8px;overflow:hidden;
+  background:linear-gradient(90deg, var(--matcha) 0%, var(--matcha) 55%, #C7A93B 55%, #C7A93B 78%, var(--vermillion) 78%, var(--vermillion) 100%);
+  border:1px solid rgba(255,255,255,0.25);
+}
+.tension-marker{
+  position:absolute;top:-3px;bottom:-3px;width:3px;background:#fff;box-shadow:0 0 6px #fff;
+  transition:left .08s linear;
+}
+.tension-drag-limit{position:absolute;top:0;bottom:0;width:2px;background:rgba(0,0,0,0.55);}
+.stamina-wrap{margin-bottom:10px;}
+.stamina-bar{height:8px;border-radius:4px;background:rgba(255,255,255,0.15);overflow:hidden;}
+.stamina-fill{height:100%;background:linear-gradient(90deg,#7FB88A,#B7D98F);border-radius:4px;transition:width .25s ease;}
+.p2-controls{display:flex;align-items:flex-end;gap:10px;}
+.rod-lean-group{display:flex;gap:6px;}
+.lean-btn{
+  width:56px;height:56px;border-radius:50%;
+  background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.35);
+  color:#EAF2F4;font-size:22px;display:flex;align-items:center;justify-content:center;
+  touch-action:none;
+}
+.lean-btn.active-lean{background:var(--gold);border-color:var(--gold-bright);color:#2A2010;}
+#reel-btn{
+  flex:1;height:64px;border-radius:8px;
+  background:var(--vermillion);color:#fff;font-family:var(--font-display);font-size:17px;font-weight:700;
+  border:none; letter-spacing:.1em;
+  box-shadow:0 4px 0 var(--vermillion-deep);
+  touch-action:none;
+}
+#reel-btn:active, #reel-btn.reeling{box-shadow:0 1px 0 var(--vermillion-deep);transform:translateY(3px);filter:brightness(1.08);}
+.drag-mini{display:flex;flex-direction:column;align-items:center;gap:4px;color:#EAF2F4;}
+.drag-mini label{font-size:9.5px;color:#B9CBD2;}
+.drag-buttons{display:flex;flex-direction:column;gap:3px;}
+.drag-buttons button{width:34px;height:22px;border:1px solid rgba(255,255,255,0.35);background:rgba(255,255,255,0.08);color:#EAF2F4;border-radius:3px;font-size:12px;}
+.drag-mini .drag-val{font-size:12px;font-weight:700;}
+
+.p2-give-up{position:absolute;top:calc(10px + var(--safe-top));left:10px;z-index:26;}
+.p2-give-up button{background:rgba(6,10,14,0.5);color:#CFE3EA;border:1px solid rgba(255,255,255,0.25);border-radius:20px;padding:6px 12px;font-size:11px;}
+
+.splash-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:60;}
+.splash-flash.flash{animation:flashPop .3s ease;}
+@keyframes flashPop{0%{opacity:.75;}100%{opacity:0;}}
+
+/* ==================================================================
+   PHASE 3: 言霊創味 (WORD COOKING)
+   ================================================================== */
+#screen-phase3{background:var(--washi);}
+.p3-header{
+  flex:none;padding:calc(10px + var(--safe-top)) 16px 8px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--washi-line);
+}
+.p3-timer{font-variant-numeric:tabular-nums;font-weight:700;color:var(--vermillion);font-size:15px;}
+.p3-timer.low{animation:blink 0.5s step-start infinite;}
+@keyframes blink{50%{opacity:.3;}}
+.p3-body{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;padding:10px 10px 0;overflow:hidden;}
+.p3-stats-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;justify-content:center;}
+.p3-stat-pill{
+  background:var(--washi-deep);border:1px solid var(--washi-line);border-radius:20px;
+  padding:4px 11px;font-size:11px;display:flex;align-items:center;gap:5px;
+}
+.p3-stat-pill b{font-size:12.5px;}
+
+.formed-words-strip{
+  display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;
+  width:min(88vw, 460px);
+  padding:6px 2px;margin-bottom:6px;
+  min-height:30px;
+  scrollbar-width:thin;
+}
+.formed-words-strip:empty::before{
+  content:"成立した言葉がここに並びます";
+  font-size:11px;color:var(--ink-soft);opacity:.55;white-space:nowrap;
+  display:flex;align-items:center;padding-left:4px;
+}
+.formed-word-chip{
+  flex:none;display:flex;align-items:baseline;gap:4px;
+  background:var(--washi-deep);
+  border-left:3px solid var(--ink-soft);
+  border-radius:2px;
+  padding:4px 9px 4px 7px;
+  font-size:12.5px;font-weight:700;white-space:nowrap;
+  animation:chipDrop .25s ease both;
+}
+.formed-word-chip .hint{font-size:10px;font-weight:500;color:var(--ink-soft);}
+.formed-word-chip.cat-TECHNIQUE{border-left-color:var(--vermillion);}
+.formed-word-chip.cat-SEASONING{border-left-color:var(--gold);}
+.formed-word-chip.cat-TEXTURE{border-left-color:var(--matcha);}
+.formed-word-chip.cat-PRAISE{border-left-color:var(--praise-plum);}
+.formed-word-chip.cat-SPECIALTY{border-left-color:var(--indigo);}
+@keyframes chipDrop{from{opacity:0;transform:translateY(-6px) scale(0.9);}to{opacity:1;transform:translateY(0) scale(1);}}
+.word-board{
+  display:grid;
+  gap:2px;
+  background:var(--ink);
+  padding:2px;
+  border-radius:2px;
+  width:min(88vw, 460px);
+  height:min(88vw, 460px);
+  margin-bottom:10px;
+}
+.word-cell{
+  background:var(--washi);
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(11px,3.4vw,19px);
+  font-weight:700;color:var(--ink);
+  position:relative;
+  cursor:pointer;
+}
+.word-cell.anchor{background:var(--indigo);color:#FCEFC6;cursor:default;}
+.word-cell.anchor::after{content:"";position:absolute;inset:1px;border:1px dashed rgba(252,239,198,0.4);pointer-events:none;}
+.word-cell.special-heat{background:#F4D9C6;}
+.word-cell.special-heat::before{content:"火";position:absolute;font-size:8px;top:1px;left:2px;color:var(--vermillion-deep);opacity:.6;}
+.word-cell.special-secret{background:#E6D9F0;}
+.word-cell.special-secret::before{content:"秘";position:absolute;font-size:8px;top:1px;left:2px;color:#6B4E8C;opacity:.6;}
+.word-cell.special-spring{background:#CFE3D8;}
+.word-cell.special-spring::before{content:"泉";position:absolute;font-size:8px;top:1px;left:2px;color:var(--matcha-deep);opacity:.6;}
+.word-cell.placed{background:#F6E7B8;animation:tilePlace .2s ease;}
+.word-cell.selectable:hover{background:#F0E4C4;}
+.word-cell.just-scored{animation:scorePulse .55s ease;}
+@keyframes tilePlace{from{transform:scale(0.4);opacity:0;}to{transform:scale(1);opacity:1;}}
+@keyframes scorePulse{0%{box-shadow:inset 0 0 0 2px var(--gold-bright);}100%{box-shadow:inset 0 0 0 0px transparent;}}
+
+.tile-hand-wrap{flex:none;width:min(88vw,460px);padding:6px 0 10px;}
+.tile-hand{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;min-height:52px;}
+.hand-tile{
+  width:44px;height:44px;border-radius:5px;
+  background:var(--indigo);color:#FCEFC6;
+  display:flex;align-items:center;justify-content:center;
+  font-size:19px;font-weight:700;
+  cursor:pointer;border:2px solid transparent;
+  transition:transform .1s ease;
+}
+.hand-tile.selected{border-color:var(--vermillion);transform:translateY(-6px);box-shadow:0 4px 8px rgba(0,0,0,.25);}
+.hand-tile:active{transform:scale(0.93);}
+
+.word-toast-layer{position:absolute;top:18%;left:50%;transform:translateX(-50%);z-index:40;pointer-events:none;text-align:center;}
+.word-pop{
+  font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--vermillion);
+  text-shadow:0 1px 0 #fff, 0 0 12px rgba(255,255,255,0.8);
+  animation:wordPopUp 1.1s ease forwards;
+  margin-bottom:2px;
+}
+@keyframes wordPopUp{0%{opacity:0;transform:translateY(10px) scale(0.8);}15%{opacity:1;transform:translateY(-6px) scale(1.08);}30%{transform:translateY(-10px) scale(1);}80%{opacity:1;}100%{opacity:0;transform:translateY(-30px) scale(0.95);}}
+.chain-pop{font-family:var(--font-display);font-weight:800;font-size:26px;color:#fff;-webkit-text-stroke:1px var(--vermillion);text-shadow:0 0 16px rgba(193,68,45,.8);animation:wordPopUp 1.3s ease forwards;}
+
+.p3-footer{flex:none;padding:8px 16px calc(12px + var(--safe-bottom));display:flex;gap:10px;border-top:1px solid var(--washi-line);}
+
+/* ==================================================================
+   PHASE 4: 割烹供膳 (SERVE & REWARD)
+   ================================================================== */
+#screen-phase4{
+  background:linear-gradient(180deg, var(--indigo-ink), var(--indigo-deep) 40%, #1b2c22 100%);
+  color:#F3EEDD;align-items:center;
+}
+.p4-scroll{flex:1;width:100%;overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:calc(20px + var(--safe-top)) 18px calc(24px + var(--safe-bottom));}
+.dish-card{
+  width:min(420px,100%);
+  background:var(--washi);color:var(--ink);
+  border-radius:3px;
+  box-shadow:var(--paper-shadow);
+  overflow:hidden;
+  margin-bottom:18px;
+}
+.dish-visual{
+  height:180px;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 30%, #fff 0%, #EDE6D3 45%, #DCCFA4 100%);
+  display:flex;align-items:center;justify-content:center;
+}
+.dish-star-badge{
+  position:absolute;top:10px;right:10px;
+  background:var(--vermillion);color:#fff;font-family:var(--font-display);font-weight:700;
+  padding:5px 11px;border-radius:2px;font-size:13px;letter-spacing:.05em;
+  box-shadow:0 2px 6px rgba(0,0,0,.25);
+}
+.dish-info{padding:16px 18px 18px;}
+.dish-name{font-family:var(--font-display);font-size:19px;font-weight:700;margin:0 0 4px;}
+.dish-sub{font-size:12px;color:var(--ink-soft);margin:0 0 14px;}
+.score-breakdown{border-top:1px dashed var(--washi-line);padding-top:10px;}
+.score-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--ink-soft);}
+.score-row b{color:var(--ink);font-variant-numeric:tabular-nums;}
+.score-row.total{border-top:1px solid var(--washi-line);margin-top:6px;padding-top:8px;font-size:14px;}
+.score-row.total b{color:var(--vermillion);font-size:16px;}
+
+.reward-strip{display:flex;gap:10px;width:min(420px,100%);margin-bottom:20px;}
+.reward-pill{
+  flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);
+  border-radius:3px;padding:10px 8px;text-align:center;
+}
+.reward-pill svg{width:20px;height:20px;margin-bottom:4px;}
+.reward-pill .val{display:block;font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;}
+.reward-pill .lbl{font-size:10px;color:#C7CFC9;}
+
+.new-fish-note, .new-word-note{font-size:12px;color:var(--gold-bright);margin-bottom:6px;text-align:center;}
+.p4-actions{display:flex;flex-direction:column;gap:10px;width:min(420px,100%);}
+
+/* ==================================================================
+   SHOP / COMPENDIUM / DICTIONARY shared list styles
+   ================================================================== */
+.shop-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 4px;border-bottom:1px solid var(--washi-line);
+}
+.shop-item:last-child{border-bottom:none;}
+.shop-icon{width:38px;height:38px;flex:none;border-radius:50%;background:var(--indigo);color:#F3EEDD;display:flex;align-items:center;justify-content:center;}
+.shop-icon svg{width:20px;height:20px;}
+.shop-info{flex:1;min-width:0;}
+.shop-name{font-weight:700;font-size:13.5px;margin:0 0 2px;}
+.shop-desc{font-size:11px;color:var(--ink-soft);margin:0;}
+.shop-level{font-size:10.5px;color:var(--matcha-deep);margin-top:2px;}
+.shop-buy-btn{
+  flex:none;padding:9px 13px;border-radius:2px;border:1px solid var(--gold);
+  background:#fff;color:#7A5E1D;font-weight:700;font-size:12px;display:flex;flex-direction:column;align-items:center;line-height:1.15;
+}
+.shop-buy-btn:disabled{opacity:.4;}
+.shop-buy-btn small{font-weight:500;font-size:9.5px;}
+
+.compendium-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;}
+.compendium-item{
+  background:var(--washi-deep);border-radius:2px;padding:10px 8px;text-align:center;border:1px solid var(--washi-line);
+}
+.compendium-item.undiscovered{opacity:.4;}
+.compendium-fish-emoji{font-size:26px;display:block;margin-bottom:4px;}
+.compendium-name{font-size:11px;font-weight:700;}
+.compendium-meta{font-size:9.5px;color:var(--ink-soft);margin-top:2px;}
+
+.dict-category-group{margin-bottom:16px;}
+.dict-category-title{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--indigo);margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid var(--washi-line);}
+.dict-word-row{display:flex;justify-content:space-between;align-items:center;padding:6px 2px;font-size:12.5px;}
+.dict-word-row.locked{opacity:.35;}
+.dict-word-kana{font-weight:700;}
+.dict-word-hint{font-size:10.5px;color:var(--ink-soft);}
+
+.ground-select-list{display:flex;flex-direction:column;gap:8px;}
+
+/* scrollbar tidy */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.2);border-radius:3px;}
+
+.center-note{text-align:center;color:var(--ink-soft);font-size:12.5px;padding:20px 10px;}
+.mute-btn{position:absolute;top:calc(8px + var(--safe-top));left:10px;z-index:60;background:rgba(20,16,10,0.55);border:1px solid rgba(255,255,255,0.2);color:#F3E9CE;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;}
+</style>
+</head>
+<body>
+<div id="app" class="washi-bg">
+
+<svg style="display:none" aria-hidden="true">
+  <symbol id="ic-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.5v9M9.3 9.3c0-1 1-1.8 2.7-1.8s2.7.8 2.7 1.7c0 2.4-5.4 1-5.4 3.4 0 1 1.1 1.8 2.7 1.8s2.7-.8 2.7-1.8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></symbol>
+  <symbol id="ic-soul" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 9h6M9 12.5h6M9 16h3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+  <symbol id="ic-chip" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 8h2v2H8zM14 8h2v2h-2zM8 14h2v2H8zM14 14h2v2h-2z" fill="currentColor"/></symbol>
+  <symbol id="ic-drop" viewBox="0 0 24 24"><path d="M12 3.5c3 4 6 7.6 6 11a6 6 0 1 1-12 0c0-3.4 3-7 6-11z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+  <symbol id="ic-depth" viewBox="0 0 24 24"><path d="M12 3v13M7 12l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20.5h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="ic-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.6L19.5 10l-5.7 1.8L12 17.5l-1.8-5.7L4.5 10l5.7-1.4z" fill="currentColor"/></symbol>
+  <symbol id="ic-light" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2.5M12 19v2.5M4.5 12H2M22 12h-2.5M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="ic-fish" viewBox="0 0 24 24"><path d="M3 12c3-4 8-6 13-4-1 1.6-1 6.4 0 8-5 2-10 0-13-4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M16 9.5L21 7v10l-5-2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="7.6" cy="11.3" r="0.9" fill="currentColor"/></symbol>
+  <symbol id="ic-flame" viewBox="0 0 24 24"><path d="M12 2.5c1 3-3 4-3 8a3 3 0 0 0 6 0c1 .8 1.5 2 1.5 3.2A5 5 0 0 1 7 17c0-2.4 1.2-3.8 2-5.4C7.7 13 7 14 7 14c-1-4 1.6-8 5-11.5z" fill="currentColor"/></symbol>
+  <symbol id="ic-rod" viewBox="0 0 24 24"><path d="M3 21L18 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M18 4c1.5 3 1 8-4 12.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.5 2" stroke-linecap="round"/><circle cx="14" cy="16.5" r="1.3" fill="currentColor"/></symbol>
+  <symbol id="ic-bag" viewBox="0 0 24 24"><path d="M6 8h12l-1 12.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 20.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+  <symbol id="ic-book" viewBox="0 0 24 24"><path d="M4 5.2C6 4.3 9 4 12 5.3V19c-3-1.3-6-1-8 0z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M20 5.2c-2-.9-5-1.2-8 .1V19c3-1.3 6-1 8 0z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+  <symbol id="ic-scroll" viewBox="0 0 24 24"><path d="M6 4h11a2.5 2.5 0 0 1 2.5 2.5V7H8" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 4a2.5 2.5 0 0 0-2.5 2.5V17A2.5 2.5 0 0 0 6 19.5h11" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M18 20a2.5 2.5 0 0 0 2.5-2.5V17H8v2.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 10h8M9 13.5h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></symbol>
+  <symbol id="ic-wave" viewBox="0 0 24 24"><path d="M2 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0M2 14c2-2 4-2 6 0s4 2 6 0 4-2 6 0M2 19c2-2 4-2 6 0s4 2 6 0 4-2 6 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="ic-mountain" viewBox="0 0 24 24"><path d="M2 19l6-10 4 6 2.5-3L22 19z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+  <symbol id="ic-abyss" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
+  <symbol id="ic-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+</svg>
+
+<div id="currency-strip">
+  <div class="currency-chip" title="金貨"><svg><use href="#ic-coin"/></svg><span id="cur-gold">0</span></div>
+  <div class="currency-chip" title="言霊文字牌"><svg><use href="#ic-soul"/></svg><span id="cur-soul">0</span></div>
+  <div class="currency-chip" title="数理チップ"><svg><use href="#ic-chip"/></svg><span id="cur-chip">0</span></div>
+</div>
+<button class="mute-btn" id="mute-btn" title="音量">🔊</button>
+
+<!-- ================= TITLE ================= -->
+<section id="screen-title" class="screen active">
+  <p class="title-mark">言霊割烹</p>
+  <h1 class="title-main">Logic &amp; Bite</h1>
+  <p class="title-sub">— 数理釣膳録 —</p>
+  <div class="title-actions">
+    <button class="btn btn-primary" id="btn-start-game">暖簾をくぐる</button>
+    <button class="btn btn-ghost on-dark" id="btn-how-to">遊び方</button>
+  </div>
+  <p class="title-footnote">数独で餌を編み、荒波で魚と渡り合い、言の葉で膳を極める。<br>一周およそ3〜5分の割烹経営ループです。</p>
+</section>
+
+<!-- ================= HUB ================= -->
+<section id="screen-hub" class="screen">
+  <div class="hub-header">
+    <div>
+      <h2 class="hub-title">割烹 言霊庵</h2>
+      <div class="hub-rank" id="hub-rank-label">並膳 見習い</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="btn-title-return" title="タイトルへ">タイトル</button>
+  </div>
+  <div class="hub-scroll">
+    <div class="fame-bar-wrap">
+      <div class="fame-bar-label"><span>名声</span><span id="fame-label">0 / 5</span></div>
+      <div class="fame-bar"><div class="fame-bar-fill" id="fame-bar-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="stamp-label" style="margin-bottom:10px;">漁場を選ぶ</div>
+    <div class="ground-list" id="ground-list"></div>
+
+    <div class="stamp-label" style="margin-bottom:10px;">数独の難度</div>
+    <div class="difficulty-toggle" id="difficulty-toggle">
+      <button class="diff-btn" data-diff="6">6×6 <small>手軽・浅場向き</small></button>
+      <button class="diff-btn" data-diff="9">9×9 <small>本格・大物向き</small></button>
+    </div>
+
+    <div class="stamp-label" style="margin-bottom:10px;">帳場</div>
+    <div class="hub-actions-grid">
+      <button class="action-tile" id="btn-open-shop"><svg><use href="#ic-bag"/></svg>道具屋</button>
+      <button class="action-tile" id="btn-open-dict"><svg><use href="#ic-book"/></svg>言霊大辞典</button>
+      <button class="action-tile" id="btn-open-compendium"><svg><use href="#ic-scroll"/></svg>魚図鑑</button>
+      <button class="action-tile" id="btn-reset-save"><svg><use href="#ic-lock"/></svg>データ初期化</button>
+    </div>
+  </div>
+  <div class="hub-go-fish" style="padding:0 16px calc(14px + var(--safe-bottom));">
+    <button class="btn btn-primary btn-block" id="btn-go-fish">この漁場へ出る</button>
+  </div>
+</section>
+
+<!-- ================= PHASE 1: SUDOKU ================= -->
+<section id="screen-phase1" class="screen">
+  <div class="p1-header">
+    <div><p class="phase-eyebrow">Phase 1 — 数理採餌</p><h2 class="phase-title" id="p1-ground-name">漁場</h2></div>
+    <button class="btn btn-ghost btn-sm" id="btn-p1-giveup">諦めて餌を作る</button>
+  </div>
+  <div class="p1-body">
+    <div class="sudoku-col">
+      <div class="sudoku-board" id="sudoku-board"></div>
+      <div class="numpad" id="numpad"></div>
+      <div class="combo-indicator" id="combo-indicator"></div>
+    </div>
+    <div class="p1-side">
+      <div class="bait-card">
+        <h3><svg><use href="#ic-drop"/></svg>調合プレビュー</h3>
+        <div class="bait-stat"><svg><use href="#ic-drop"/></svg><span>香り</span><div class="bait-stat-bar"><div class="bait-stat-fill" id="stat-scent" style="width:0%"></div></div><span class="bait-stat-val" id="stat-scent-val">0.0m</span></div>
+        <div class="bait-stat"><svg><use href="#ic-depth"/></svg><span>深度</span><div class="bait-stat-bar"><div class="bait-stat-fill" id="stat-depth" style="width:0%"></div></div><span class="bait-stat-val" id="stat-depth-val">0.0m</span></div>
+        <div class="bait-stat"><svg><use href="#ic-spark"/></svg><span>集魚</span><div class="bait-stat-bar"><div class="bait-stat-fill" id="stat-attract" style="width:0%"></div></div><span class="bait-stat-val" id="stat-attract-val">1.0</span></div>
+        <div class="bait-stat"><svg><use href="#ic-light"/></svg><span>発光</span><div class="bait-stat-bar"><div class="bait-stat-fill" id="stat-lum" style="width:0%"></div></div><span class="bait-stat-val" id="stat-lum-val">0%</span></div>
+        <div class="ability-tags" id="ability-tags"></div>
+      </div>
+    </div>
+  </div>
+  <div class="p1-footer">
+    <button class="btn btn-ghost btn-sm" id="btn-p1-hint">ヒント<br><small style="font-weight:500;">(数理チップ1)</small></button>
+    <button class="btn btn-primary btn-block" id="btn-p1-tofish" disabled>この餌で漁へ</button>
+  </div>
+</section>
+
+<!-- ================= PHASE 2: FISHING ================= -->
+<section id="screen-phase2" class="screen">
+  <canvas id="fishing-canvas"></canvas>
+  <div class="splash-flash" id="splash-flash"></div>
+  <div class="p2-give-up"><button id="btn-p2-giveup">竿を置く</button></div>
+  <div class="p2-hud-top">
+    <div class="p2-ground-tag" id="p2-ground-tag">漁場</div>
+    <div style="width:1px;"></div>
+  </div>
+  <div class="fish-radar" id="fish-radar">
+    <div class="fish-radar-fill" id="fish-radar-fill" style="width:0%"></div>
+    <div class="fish-radar-icon" id="fish-radar-icon" style="left:0%;">🐟</div>
+    <div class="fish-radar-label" id="fish-radar-label">回遊を待つ…</div>
+  </div>
+  <div class="state-banner" id="state-banner"></div>
+  <button id="hookset-btn">アワセる！</button>
+  <button id="jump-btn">竿を下げろ！</button>
+  <div class="p2-hud-bottom" id="p2-hud-bottom" style="display:none;">
+    <div class="tension-wrap">
+      <div class="tension-labels"><span>ライン張力</span><span id="tension-num">0%</span></div>
+      <div class="tension-gauge"><div class="tension-drag-limit" id="tension-drag-limit"></div><div class="tension-marker" id="tension-marker" style="left:0%"></div></div>
+    </div>
+    <div class="stamina-wrap">
+      <div class="tension-labels"><span>魚の体力</span><span id="stamina-num">100%</span></div>
+      <div class="stamina-bar"><div class="stamina-fill" id="stamina-fill" style="width:100%"></div></div>
+    </div>
+    <div class="p2-controls">
+      <div class="rod-lean-group">
+        <button class="lean-btn" id="lean-left">◀</button>
+        <button class="lean-btn" id="lean-right">▶</button>
+      </div>
+      <button id="reel-btn">巻く</button>
+      <div class="drag-mini">
+        <label>ドラグ</label>
+        <div class="drag-buttons">
+          <button id="drag-up">＋</button>
+          <button id="drag-down">－</button>
+        </div>
+        <span class="drag-val" id="drag-val">50</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PHASE 3: WORD COOKING ================= -->
+<section id="screen-phase3" class="screen">
+  <div class="p3-header">
+    <div><p class="phase-eyebrow">Phase 3 — 言霊創味</p><h2 class="phase-title" id="p3-fish-name">仕込み中</h2></div>
+    <div class="p3-timer" id="p3-timer">60</div>
+  </div>
+  <div class="p3-body">
+    <div class="p3-stats-row">
+      <div class="p3-stat-pill"><svg width="13" height="13"><use href="#ic-flame"/></svg>熱量 <b id="p3-heat">0</b></div>
+      <div class="p3-stat-pill">旨味 <b id="p3-umami">0</b></div>
+      <div class="p3-stat-pill">連鎖倍率 <b id="p3-chain">×1.0</b></div>
+      <div class="p3-stat-pill">残り牌 <b id="p3-tiles-left">16</b></div>
+    </div>
+    <div class="formed-words-strip" id="formed-words-strip"></div>
+    <div class="word-board" id="word-board"></div>
+    <div class="tile-hand-wrap">
+      <div class="tile-hand" id="tile-hand"></div>
+    </div>
+  </div>
+  <div class="word-toast-layer" id="word-toast-layer"></div>
+  <div class="p3-footer">
+    <button class="btn btn-ghost btn-sm" id="btn-shuffle-hand">手駒を入替 (数理チップ1)</button>
+    <button class="btn btn-primary btn-block" id="btn-p3-finish">盛り付ける</button>
+  </div>
+</section>
+
+<!-- ================= PHASE 4: SERVE ================= -->
+<section id="screen-phase4" class="screen">
+  <div class="p4-scroll">
+    <div class="dish-card">
+      <div class="dish-visual" id="dish-visual">
+        <div class="dish-star-badge" id="dish-star-badge">★1</div>
+        <div id="dish-emoji-display" style="font-size:74px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.15));"></div>
+      </div>
+      <div class="dish-info">
+        <h3 class="dish-name" id="dish-name">料理名</h3>
+        <p class="dish-sub" id="dish-sub">説明</p>
+        <div class="score-breakdown" id="score-breakdown"></div>
+      </div>
+    </div>
+    <div class="reward-strip">
+      <div class="reward-pill"><svg><use href="#ic-coin"/></svg><span class="val" id="reward-gold">+0</span><span class="lbl">金貨</span></div>
+      <div class="reward-pill"><svg><use href="#ic-soul"/></svg><span class="val" id="reward-soul">+0</span><span class="lbl">言霊牌</span></div>
+      <div class="reward-pill"><svg><use href="#ic-chip"/></svg><span class="val" id="reward-chip">+0</span><span class="lbl">数理チップ</span></div>
+    </div>
+    <div id="p4-notes"></div>
+    <div class="p4-actions">
+      <button class="btn btn-primary btn-block" id="btn-next-cycle">次の周へ（同じ漁場）</button>
+      <button class="btn btn-indigo btn-block" id="btn-to-hub">母屋へ戻る</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MODALS ================= -->
+<div class="modal-overlay" id="modal-shop">
+  <div class="modal-card">
+    <div class="modal-head"><h2>道具屋</h2><button class="modal-close" data-close="modal-shop">×</button></div>
+    <div class="modal-body" id="shop-body"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-dict">
+  <div class="modal-card">
+    <div class="modal-head"><h2>言霊大辞典</h2><button class="modal-close" data-close="modal-dict">×</button></div>
+    <div class="modal-body" id="dict-body"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-compendium">
+  <div class="modal-card">
+    <div class="modal-head"><h2>魚図鑑</h2><button class="modal-close" data-close="modal-compendium">×</button></div>
+    <div class="modal-body" id="compendium-body"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-howto">
+  <div class="modal-card">
+    <div class="modal-head"><h2>遊び方</h2><button class="modal-close" data-close="modal-howto">×</button></div>
+    <div class="modal-body" id="howto-body"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-catch">
+  <div class="modal-card">
+    <div class="modal-head"><h2 id="catch-title">釣果</h2><button class="modal-close" data-close="modal-catch">×</button></div>
+    <div class="modal-body" id="catch-body"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+</div>
+<script>
+"use strict";
+/* ============================================================================
+   Logic & Bite: 言霊割烹 -数理釣膳録-
+   Web implementation faithfully deriving its mathematics from the master
+   specification (数理採餌 → 臨場釣魚 → 言霊創味 → 割烹供膳), adapted to a
+   single-file browser build (Canvas2D instead of custom GLSL/WebGL PBR,
+   which the source spec itself scopes as a multi-month pipeline).
+   ========================================================================= */
+
+/* ---------------------------------------------------------------------
+   SECTION 0: Utilities
+   --------------------------------------------------------------------- */
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const rand = (lo, hi) => lo + Math.random() * (hi - lo);
+const randInt = (lo, hi) => Math.floor(rand(lo, hi + 1));
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+function weightedPick(items, weightFn) {
+  const weights = items.map(weightFn);
+  const total = weights.reduce((a, b) => a + b, 0);
+  if (total <= 0) return pick(items);
+  let r = Math.random() * total;
+  for (let i = 0; i < items.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return items[i];
+  }
+  return items[items.length - 1];
+}
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function fmt1(n) { return (Math.round(n * 10) / 10).toFixed(1); }
+function fmtInt(n) { return Math.round(n).toLocaleString('ja-JP'); }
+function el(tag, cls, html) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html !== undefined) e.innerHTML = html;
+  return e;
+}
+function showToast(msg, ms) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._h);
+  showToast._h = setTimeout(() => t.classList.remove('show'), ms || 2200);
+}
+
+/* ---------------------------------------------------------------------
+   SECTION 1: マスターデータ (Fishing Grounds / Fish / Kotodama Dictionary)
+   --------------------------------------------------------------------- */
+const GROUNDS = [
+  { id:'FG-01', name:'清流・山女魚の瀬', icon:'ic-mountain', depthMin:0, depthMax:3,
+    unlockFame:0, fishIds:['iwana','amago','ayu'], grid:6,
+    flavor:'透き通った急流。数理チップで水温を読む。' },
+  { id:'FG-02', name:'沿岸・波花磯', icon:'ic-wave', depthMin:2, depthMax:15,
+    unlockFame:5, fishIds:['maaji','kurodai','sayori'], grid:6,
+    flavor:'潮の干満と岩礁。夕マズメが狙い目。' },
+  { id:'FG-03', name:'外洋・黒潮の渦', icon:'ic-wave', depthMin:10, depthMax:80,
+    unlockFame:15, fishIds:['madai','buri','kuromaguro'], grid:9,
+    flavor:'強烈な潮流と大波。大物には9×9推奨。' },
+  { id:'FG-04', name:'深海・海溝の淵', icon:'ic-abyss', depthMin:200, depthMax:1000,
+    unlockFame:30, fishIds:['akamutsu','kinmedai'], grid:9,
+    flavor:'完全暗黒・高水圧。発光する餌が要。' },
+  { id:'FG-05', name:'霊界・常世の海', icon:'ic-abyss', depthMin:0, depthMax:9999,
+    unlockFame:9999, fishIds:[], grid:9,
+    flavor:'図鑑を極めし者のみが辿り着く幻の海域。' },
+];
+
+// texture: FIRM(締まった白身) / TENDER(柔らかい赤身) / FLAKY(ほろほろ深海)
+const FISH = {
+  iwana:  { id:'iwana',  name:'岩魚',   kana:'いわな',     ground:'FG-01', baseWeight:0.4,  basePrice:320,  texture:'FIRM',   pref:[1,2,3], match:['いわな'],           fight:0.45, star:1, emoji:'🐟' },
+  amago:  { id:'amago',  name:'天魚',   kana:'あまご',     ground:'FG-01', baseWeight:0.35, basePrice:300,  texture:'FIRM',   pref:[1,2,3], match:['あまご'],           fight:0.40, star:1, emoji:'🐟' },
+  ayu:    { id:'ayu',    name:'鮎',     kana:'あゆ',       ground:'FG-01', baseWeight:0.15, basePrice:480,  texture:'TENDER', pref:[2,3,4], match:['あゆ'],             fight:0.35, star:2, emoji:'🐠' },
+  maaji:  { id:'maaji',  name:'真鯵',   kana:'まあじ',     ground:'FG-02', baseWeight:0.3,  basePrice:280,  texture:'TENDER', pref:[2,3,4], match:['あじ'],             fight:0.50, star:1, emoji:'🐟' },
+  kurodai:{ id:'kurodai',name:'黒鯛',   kana:'くろだい',   ground:'FG-02', baseWeight:1.3,  basePrice:700,  texture:'FIRM',   pref:[4,5,6], match:['くろだい'],         fight:0.65, star:2, emoji:'🐠' },
+  sayori: { id:'sayori', name:'細魚',   kana:'さより',     ground:'FG-02', baseWeight:0.2,  basePrice:380,  texture:'FIRM',   pref:[1,2,3], match:['さより'],           fight:0.30, star:2, emoji:'🐟' },
+  madai:  { id:'madai',  name:'真鯛',   kana:'まだい',     ground:'FG-03', baseWeight:3.5,  basePrice:1400, texture:'FIRM',   pref:[1,5,9], match:['たい','まだい'],    fight:0.70, star:3, emoji:'🐡' },
+  buri:   { id:'buri',   name:'鰤',     kana:'ぶり',       ground:'FG-03', baseWeight:5.0,  basePrice:1600, texture:'TENDER', pref:[4,5,6], match:['ぶり'],             fight:0.75, star:3, emoji:'🐟' },
+  kuromaguro:{id:'kuromaguro',name:'黒鮪',kana:'くろまぐろ',ground:'FG-03', baseWeight:60.0, basePrice:6000, texture:'TENDER', pref:[7,8,9], match:['まぐろ','くろまぐろ'], fight:0.95, star:4, emoji:'🐟' },
+  akamutsu:{id:'akamutsu',name:'喉黒',  kana:'あかむつ',   ground:'FG-04', baseWeight:0.8,  basePrice:2200, texture:'FLAKY',  pref:[3,5,7], match:['あかむつ','のどぐろ'], fight:0.60, star:4, emoji:'🐡' },
+  kinmedai:{id:'kinmedai',name:'金目鯛',kana:'きんめだい', ground:'FG-04', baseWeight:1.5,  basePrice:1800, texture:'FLAKY',  pref:[3,5,7], match:['きんめ','きんめだい'], fight:0.55, star:3, emoji:'🐠' },
+};
+
+// KotodamaWordEntry: word(かな), category, heatScore(-50~100), umamiBonus, richnessBonus, aromaBonus, priceMultiplier, hint(表示用)
+function W(word, category, heat, umami, rich, aroma, price, hint) {
+  return { word, category, heatScore:heat, umamiBonus:umami, richnessBonus:rich, aromaBonus:aroma, priceMultiplier:price, hint };
+}
+const KOTODAMA_DICTIONARY = [
+  // ---- TECHNIQUE 調理技法 ----
+  W('やく','TECHNIQUE',40,4,4,6,1.05,'焼く'),
+  W('にる','TECHNIQUE',25,6,8,3,1.05,'煮る'),
+  W('あぶる','TECHNIQUE',55,5,3,10,1.1,'炙る'),
+  W('しめる','TECHNIQUE',5,8,5,4,1.1,'締める'),
+  W('すし','TECHNIQUE',10,10,4,5,1.2,'寿司'),
+  W('つくり','TECHNIQUE',5,7,3,3,1.1,'お造り'),
+  W('さしみ','TECHNIQUE',0,9,3,4,1.15,'刺身'),
+  W('たたき','TECHNIQUE',30,8,6,8,1.15,'叩き'),
+  W('むす','TECHNIQUE',35,4,6,3,1.05,'蒸す'),
+  W('あげる','TECHNIQUE',60,3,7,7,1.05,'揚げる'),
+  W('にえる','TECHNIQUE',20,5,7,2,1.0,'煮える'),
+  W('こげる','TECHNIQUE',-30,-4,-2,2,0.85,'焦げる…火の通し過ぎ'),
+  W('うすづくり','TECHNIQUE',5,9,3,4,1.25,'薄造り'),
+  W('こんぶじめ','TECHNIQUE',8,10,5,6,1.3,'昆布締め'),
+  W('しおやき','TECHNIQUE',45,6,4,8,1.25,'塩焼き'),
+  W('にこみ','TECHNIQUE',30,7,9,4,1.2,'煮込み'),
+  W('つけ','TECHNIQUE',5,9,6,4,1.15,'漬け'),
+  W('つよびやき','TECHNIQUE',65,3,3,9,1.1,'強火焼き'),
+  W('につけ','TECHNIQUE',35,8,8,5,1.25,'煮付け'),
+  W('さかむし','TECHNIQUE',30,6,5,9,1.25,'酒蒸し'),
+  W('あげもの','TECHNIQUE',60,4,7,6,1.2,'揚げ物'),
+  W('せいしょく','TECHNIQUE',-5,7,2,3,1.1,'生食'),
+  // ---- SEASONING 調味料・出汁 ----
+  W('しお','SEASONING',5,5,2,3,1.05,'塩'),
+  W('しょうゆ','SEASONING',5,8,5,6,1.1,'醤油'),
+  W('みそ','SEASONING',10,7,9,5,1.1,'味噌'),
+  W('すだち','SEASONING',-5,3,1,9,1.1,'酢橘'),
+  W('わさび','SEASONING',5,4,1,10,1.15,'山葵'),
+  W('だし','SEASONING',5,9,6,4,1.1,'出汁'),
+  W('こんぶ','SEASONING',0,9,4,3,1.1,'昆布'),
+  W('みりん','SEASONING',5,4,6,3,1.05,'味醂'),
+  W('さけ','SEASONING',10,3,5,7,1.1,'酒'),
+  W('ゆず','SEASONING',-5,2,1,9,1.15,'柚子'),
+  W('しょうが','SEASONING',10,2,2,8,1.05,'生姜'),
+  W('さんしょう','SEASONING',5,2,1,8,1.1,'山椒'),
+  W('ねぎ','SEASONING',0,3,2,6,1.0,'葱'),
+  W('ごま','SEASONING',5,5,7,5,1.05,'胡麻'),
+  W('みつば','SEASONING',-5,2,1,6,1.05,'三つ葉'),
+  W('おろし','SEASONING',-5,3,1,5,1.0,'おろし'),
+  // ---- TEXTURE 食感・状態 ----
+  W('こりこり','TEXTURE',0,4,3,2,1.15,'食感：こりこり'),
+  W('ふわふわ','TEXTURE',10,3,6,3,1.15,'食感：ふわふわ'),
+  W('とろり','TEXTURE',0,8,10,4,1.2,'食感：とろり'),
+  W('ぷりぷり','TEXTURE',0,6,4,2,1.15,'食感：ぷりぷり'),
+  W('じゅわ','TEXTURE',20,5,8,6,1.15,'食感：じゅわっと'),
+  W('しっとり','TEXTURE',5,5,6,3,1.15,'食感：しっとり'),
+  W('あつあつ','TEXTURE',35,3,4,5,1.1,'食感：あつあつ'),
+  W('さくさく','TEXTURE',25,3,2,5,1.15,'食感：さくさく'),
+  W('ほくほく','TEXTURE',30,4,5,3,1.15,'食感：ほくほく'),
+  W('つるつる','TEXTURE',-5,3,2,2,1.05,'食感：つるつる'),
+  W('ねっとり','TEXTURE',0,7,9,3,1.2,'食感：ねっとり'),
+  W('ぱりぱり','TEXTURE',20,2,2,4,1.1,'食感：ぱりぱり'),
+  W('あまい','TEXTURE',0,4,5,2,1.1,'味：甘い'),
+  W('からい','TEXTURE',5,1,2,6,1.05,'味：辛い'),
+  W('にがい','TEXTURE',-5,1,3,3,0.95,'味：苦い'),
+  W('すっぱい','TEXTURE',-5,1,1,7,1.0,'味：酸っぱい'),
+  // ---- PRAISE 賛辞・情景 ----
+  W('うまい','PRAISE',5,6,4,3,1.25,'旨い！'),
+  W('きわみ','PRAISE',5,5,5,5,1.5,'極み'),
+  W('ぜっぴん','PRAISE',5,6,5,5,1.55,'絶品'),
+  W('しゅん','PRAISE',0,6,3,4,1.4,'旬'),
+  W('めいじん','PRAISE',0,4,4,3,1.35,'名人の仕事'),
+  W('てんか','PRAISE',5,5,4,4,1.5,'天下一品'),
+  W('みやび','PRAISE',-5,3,3,6,1.35,'雅'),
+  W('さくれつ','PRAISE',15,4,3,5,1.45,'味が炸裂'),
+  W('さいこう','PRAISE',5,5,4,4,1.4,'最高'),
+  W('みごと','PRAISE',0,4,4,3,1.35,'見事'),
+  W('いっぴん','PRAISE',0,5,5,4,1.45,'逸品'),
+  W('かんげき','PRAISE',0,3,3,3,1.3,'感激'),
+  W('かんぺき','PRAISE',0,5,6,4,1.5,'完璧'),
+  W('しんせん','PRAISE',-5,4,2,5,1.3,'新鮮そのもの'),
+  // ---- SPECIALTY 魚介専門 ----
+  W('えんがわ','SPECIALTY',0,9,7,2,1.3,'縁側'),
+  W('とろ','SPECIALTY',0,10,10,3,1.4,'トロ'),
+  W('かま','SPECIALTY',40,6,7,4,1.2,'カマ'),
+  W('あら','SPECIALTY',30,6,8,3,1.15,'あら'),
+  W('たい','SPECIALTY',0,6,4,3,1.2,'鯛'),
+  W('まぐろ','SPECIALTY',0,8,7,2,1.25,'鮪'),
+  W('ひらめ','SPECIALTY',0,7,3,2,1.2,'鮃'),
+  W('すずき','SPECIALTY',0,6,3,3,1.2,'鱸'),
+  W('なめろう','SPECIALTY',-5,8,6,7,1.3,'なめろう'),
+  W('あじ','SPECIALTY',0,6,4,4,1.15,'鯵'),
+  W('さば','SPECIALTY',15,7,8,6,1.2,'鯖'),
+  W('いわし','SPECIALTY',10,6,7,3,1.1,'鰯'),
+  W('かつお','SPECIALTY',20,7,5,5,1.25,'鰹'),
+  W('うに','SPECIALTY',0,10,9,3,1.4,'雲丹'),
+  W('いくら','SPECIALTY',0,8,6,2,1.3,'いくら'),
+  W('あなご','SPECIALTY',25,7,6,4,1.25,'穴子'),
+  W('はも','SPECIALTY',20,6,5,5,1.25,'鱧'),
+  W('しゃこ','SPECIALTY',10,5,4,3,1.15,'蝦蛄'),
+  W('ぶり','SPECIALTY',5,7,8,3,1.2,'鰤'),
+  W('かんぱち','SPECIALTY',0,7,5,3,1.2,'間八'),
+  W('きんめ','SPECIALTY',0,6,5,3,1.2,'金目'),
+  W('いわな','SPECIALTY',0,5,3,4,1.15,'岩魚'),
+  W('あまご','SPECIALTY',0,5,3,4,1.15,'天魚'),
+  W('あゆ','SPECIALTY',15,6,3,6,1.25,'鮎'),
+  W('くろだい','SPECIALTY',0,6,4,3,1.2,'黒鯛'),
+  W('さより','SPECIALTY',0,5,2,4,1.15,'細魚'),
+  W('まだい','SPECIALTY',0,7,4,4,1.3,'真鯛'),
+  W('くろまぐろ','SPECIALTY',0,9,8,3,1.45,'黒鮪'),
+  W('あかむつ','SPECIALTY',0,8,6,4,1.35,'アカムツ'),
+  W('のどぐろ','SPECIALTY',0,8,6,4,1.35,'喉黒'),
+  W('きんめだい','SPECIALTY',0,7,5,4,1.3,'金目鯛'),
+];
+const WORD_MAP = new Map(KOTODAMA_DICTIONARY.map(w => [w.word, w]));
+
+// 技法→肉質相性 (section 6.1(1) の厳密対応)
+const TEXTURE_FIT_TABLE = {
+  FIRM:  { 'うすづくり':1.5, 'こんぶじめ':1.5, 'しおやき':1.5, 'にこみ':0.9 },
+  TENDER:{ 'さしみ':1.5, 'つけ':1.5, 'たたき':1.5, 'つよびやき':0.8 },
+  FLAKY: { 'につけ':1.5, 'さかむし':1.5, 'あげもの':1.5, 'せいしょく':0.7 },
+};
+function textureFitFor(texture, usedWords) {
+  const table = TEXTURE_FIT_TABLE[texture] || {};
+  // 複数の技法語が使われた場合、1.0から最も離れた（=最も方向性が明確な）
+  // ものを採用する。「相性の良い技法を一つでも決めれば、その皿の個性になる」
+  // という直感に合わせるための選択で、平均化すると印象がぼやけてしまうため。
+  let decisive = null;
+  for (const w of usedWords) {
+    if (table[w] !== undefined) {
+      if (decisive === null || Math.abs(table[w] - 1.0) > Math.abs(decisive - 1.0)) decisive = table[w];
+    }
+  }
+  return decisive === null ? 1.0 : decisive;
+}
+
+/* ---------------------------------------------------------------------
+   SECTION 2: 数独生成エンジン (Backtracking Generator + Unique-Solution Digger)
+   --------------------------------------------------------------------- */
+const Sudoku = (() => {
+  function makeEmpty(n) { return Array.from({ length: n }, () => Array(n).fill(0)); }
+
+  function isValid(grid, r, c, val, n, boxH, boxW) {
+    for (let i = 0; i < n; i++) { if (grid[r][i] === val) return false; if (grid[i][c] === val) return false; }
+    const br = Math.floor(r / boxH) * boxH, bc = Math.floor(c / boxW) * boxW;
+    for (let i = 0; i < boxH; i++) for (let j = 0; j < boxW; j++) { if (grid[br + i][bc + j] === val) return false; }
+    return true;
+  }
+
+  function fillRandom(grid, n, boxH, boxW) {
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      if (grid[r][c] === 0) {
+        const nums = shuffle(Array.from({ length: n }, (_, i) => i + 1));
+        for (const v of nums) {
+          if (isValid(grid, r, c, v, n, boxH, boxW)) {
+            grid[r][c] = v;
+            if (fillRandom(grid, n, boxH, boxW)) return true;
+            grid[r][c] = 0;
+          }
+        }
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // MRV backtracking solution counter, stops early at `limit`
+  function countSolutions(grid, n, boxH, boxW, limit) {
+    let count = 0;
+    function step() {
+      if (count >= limit) return;
+      let br = -1, bc = -1, best = null;
+      for (let r = 0; r < n; r++) {
+        for (let c = 0; c < n; c++) {
+          if (grid[r][c] === 0) {
+            const cands = [];
+            for (let v = 1; v <= n; v++) if (isValid(grid, r, c, v, n, boxH, boxW)) cands.push(v);
+            if (cands.length === 0) return;
+            if (best === null || cands.length < best.length) {
+              best = cands; br = r; bc = c;
+              if (cands.length === 1) { r = n; break; }
+            }
+          }
+        }
+      }
+      if (br === -1) { count++; return; }
+      for (const v of best) {
+        grid[br][bc] = v;
+        step();
+        grid[br][bc] = 0;
+        if (count >= limit) return;
+      }
+    }
+    step();
+    return count;
+  }
+
+  function dig(fullGrid, n, boxH, boxW, targetGivens) {
+    const grid = fullGrid.map(row => row.slice());
+    const cells = shuffle(Array.from({ length: n * n }, (_, i) => [Math.floor(i / n), i % n]));
+    let givens = n * n;
+    for (const [r, c] of cells) {
+      if (givens <= targetGivens) break;
+      const backup = grid[r][c];
+      grid[r][c] = 0;
+      const test = grid.map(row => row.slice());
+      const solCount = countSolutions(test, n, boxH, boxW, 2);
+      if (solCount === 1) { givens--; } else { grid[r][c] = backup; }
+    }
+    return grid;
+  }
+
+  function generate(size) {
+    const n = size, boxH = (n === 6) ? 2 : 3, boxW = (n === 6) ? 3 : 3;
+    const solution = makeEmpty(n);
+    fillRandom(solution, n, boxH, boxW);
+    const targetGivens = (n === 6) ? 16 : 32;
+    const puzzle = dig(solution, n, boxH, boxW, targetGivens);
+    const given = puzzle.map(row => row.map(v => v !== 0));
+    return { n, boxH, boxW, solution, puzzle, given };
+  }
+
+  return { generate, isValid };
+})();
+
+/* ---------------------------------------------------------------------
+   SECTION 3: 数理成分抽出エンジン (BaitFormula) & フェロモン判定
+   --------------------------------------------------------------------- */
+function centralityWeight(r, c, n) {
+  const cx = (n - 1) / 2, cy = (n - 1) / 2;
+  const maxDist = Math.sqrt(cx * cx + cy * cy) || 1;
+  const d = Math.sqrt((r - cx) ** 2 + (c - cy) ** 2);
+  return 1.3 - 0.6 * (d / maxDist);
+}
+
+function collectLines(grid, n) {
+  const lines = [];
+  for (let r = 0; r < n; r++) lines.push(Array.from({ length: n }, (_, c) => grid[r][c]));
+  for (let c = 0; c < n; c++) lines.push(Array.from({ length: n }, (_, r) => grid[r][c]));
+  return lines;
+}
+
+function detectSum15Lines(grid, n) {
+  // NOTE: a fully-filled valid sudoku row/column is always a permutation of 1..n,
+  // so its total is fixed at n(n+1)/2 (21 for 6x6, 45 for 9x9) and can never equal
+  // 15 as a whole line. We therefore scan contiguous sub-runs of each line for a
+  // segment summing to 15 (min length 2), which is achievable on both grid sizes
+  // and mirrors how the odd-chain / Fibonacci detectors already read "a line" as
+  // a run of consecutive cells rather than the entire row. This directly resolves
+  // ISSUE-01 from the workflow spec's backlog (6x6 sum-15 rarity).
+  let count = 0;
+  for (const line of collectLines(grid, n)) {
+    for (let i = 0; i < n; i++) {
+      if (line[i] <= 0) continue;
+      let sum = line[i];
+      for (let j = i + 1; j < n; j++) {
+        if (line[j] <= 0) break;
+        sum += line[j];
+        if (sum === 15) { count++; break; }
+        if (sum > 15) break;
+      }
+    }
+  }
+  return count;
+}
+
+const ODD_CHAIN_SETS = [[1, 3, 5], [3, 5, 7], [5, 7, 9]].map(a => a.join(','));
+function detectOddChains(grid, n) {
+  let count = 0;
+  for (const line of collectLines(grid, n)) {
+    for (let i = 0; i + 2 < n; i++) {
+      const a = line[i], b = line[i + 1], c = line[i + 2];
+      if (a > 0 && b > 0 && c > 0) {
+        const key = [a, b, c].slice().sort((x, y) => x - y).join(',');
+        if (ODD_CHAIN_SETS.includes(key)) count++;
+      }
+    }
+  }
+  return count;
+}
+
+const FIB_TRIPLES = [[1, 1, 2], [1, 2, 3], [2, 3, 5], [3, 5, 8]];
+function detectFibonacci(grid, n) {
+  let count = 0;
+  for (const line of collectLines(grid, n)) {
+    for (let i = 0; i + 2 < n; i++) {
+      const a = line[i], b = line[i + 1], c = line[i + 2];
+      if (a > 0 && b > 0 && c > 0) {
+        if (FIB_TRIPLES.some(t => t[0] === a && t[1] === b && t[2] === c)) count++;
+      }
+    }
+  }
+  return count;
+}
+
+// grid: 現在表示中の盤面（given+ユーザー入力を統合、空セルは0） / ground: 選択中の漁場
+// comboBonusTotal: Phase1セッション中に蓄積したノーミス連続入力ボーナス
+// perfectSoFar: このセッションで一度も誤答していないか
+function evaluateBaitPreview(grid, n, ground, comboBonusTotal, perfectSoFar, isComplete) {
+  let filled = 0, S = 0, weightedSum = 0;
+  const freq = {};
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    const v = grid[r][c];
+    if (v > 0) {
+      filled++; S += v; weightedSum += v * centralityWeight(r, c, n);
+      freq[v] = (freq[v] || 0) + 1;
+    }
+  }
+  const totalCells = n * n;
+  const sum15Lines = detectSum15Lines(grid, n);
+  const oddChains = detectOddChains(grid, n);
+  const fibCount = detectFibonacci(grid, n);
+
+  const R_base = 5.0, alpha = 0.15;
+  const R_scent = R_base + alpha * weightedSum + 3.0 * sum15Lines;
+
+  const outerVals = [];
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    if (r === 0 || r === n - 1 || c === 0 || c === n - 1) { const v = grid[r][c]; if (v > 0) outerVals.push(v); }
+  }
+  const outerAvg = outerVals.length ? outerVals.reduce((a, b) => a + b, 0) / outerVals.length : 1;
+  const normOuter = clamp((outerAvg - 1) / (n - 1), 0, 1);
+  const D_target = ground.depthMin + (ground.depthMax - ground.depthMin) * Math.pow(normOuter, 1.5);
+
+  const maxVal = filled ? Math.max(...Object.keys(freq).map(Number)) : 0;
+  const V_sink = 0.5 + 0.3 * Math.log2(1 + maxVal);
+
+  const A_attract = 1.0 + 0.5 * (filled / totalCells) + comboBonusTotal;
+
+  const count7to9 = Object.entries(freq).reduce((a, [k, v]) => a + (Number(k) >= 7 ? v : 0), 0);
+  const L_lum = clamp(0.2 * oddChains + 0.1 * count7to9, 0, 1);
+
+  // 実測トリガー率に基づく調整: 完成盤面では奇数連鎖・和15はほぼ必発するため
+  // （満杯グリッドは3連窓の総数が多く、組合せ上ほぼ必ず一致してしまう）、
+  // 「特別感のある達成」として演出するにはしきい値を平均より高く設定する。
+  // 黄金比（順序固定の3連続）と完全結晶化は元々十分に希少なため据え置き。
+  const oddThresh = (n === 6) ? 2 : 4;
+  const sum15Thresh = (n === 6) ? 2 : 6;
+  const abilities = [];
+  if (oddChains >= oddThresh) abilities.push({ id: 'plankton', name: '発光プランクトンエキス', desc: '深海視認性+50% / 夜間バイト率+40%' });
+  if (sum15Lines >= sum15Thresh) abilities.push({ id: 'amino', name: '熟成アミノ酸オイル', desc: '匂い半径+5m / 警戒心蓄積-30%' });
+  if (fibCount > 0) abilities.push({ id: 'fibonacci', name: '黄金比の練り込み', desc: 'レア度抽選が1ランク上昇' });
+  if (isComplete && perfectSoFar) abilities.push({ id: 'perfect', name: '完全結晶化', desc: '食いつき待機-50% / 初期テンション安定' });
+
+  let dominant = [];
+  if (Object.keys(freq).length) {
+    const maxCount = Math.max(...Object.values(freq));
+    dominant = Object.entries(freq).filter(([, c]) => c === maxCount).map(([k]) => Number(k));
+  }
+
+  return {
+    scent: R_scent, depth: D_target, sink: V_sink, attract: A_attract, lum: L_lum,
+    abilities, dominant, sum15Lines, oddChains, fibCount, filled, totalCells,
+  };
+}
+
+/* ---------------------------------------------------------------------
+   SECTION 4: 言霊創味エンジン (Word Grid / Trie相当の走査 / 連鎖計算)
+   --------------------------------------------------------------------- */
+function buildTileBagWeights(dictionary) {
+  const freq = {};
+  for (const w of dictionary) for (const ch of w.word) freq[ch] = (freq[ch] || 0) + 1;
+  return freq;
+}
+const TILE_BAG_WEIGHTS = buildTileBagWeights(KOTODAMA_DICTIONARY);
+function drawTileChar() { return weightedPick(Object.keys(TILE_BAG_WEIGHTS), ch => TILE_BAG_WEIGHTS[ch]); }
+
+function createWordBoard(size, fish) {
+  const grid = [];
+  for (let r = 0; r < size; r++) { const row = []; for (let c = 0; c < size; c++) row.push({ char: null, locked: false, special: null }); grid.push(row); }
+  const anchorRow = Math.floor(size / 2);
+  const kana = fish.kana;
+  const startCol = Math.max(0, Math.floor((size - kana.length) / 2));
+  const anchorCoords = [];
+  for (let i = 0; i < kana.length && startCol + i < size; i++) {
+    grid[anchorRow][startCol + i] = { char: kana[i], locked: true, special: null };
+    anchorCoords.push([anchorRow, startCol + i]);
+  }
+  const free = [];
+  for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (!grid[r][c].locked) free.push([r, c]);
+  const shuffled = shuffle(free);
+  const numHeat = Math.max(2, Math.round(size * 0.55));
+  const numSecret = Math.max(1, Math.round(size * 0.3));
+  const numSpring = Math.max(1, Math.round(size * 0.22));
+  let idx = 0;
+  for (let i = 0; i < numHeat && idx < shuffled.length; i++, idx++) { const [r, c] = shuffled[idx]; grid[r][c].special = 'heat'; }
+  for (let i = 0; i < numSecret && idx < shuffled.length; i++, idx++) { const [r, c] = shuffled[idx]; grid[r][c].special = 'secret'; }
+  for (let i = 0; i < numSpring && idx < shuffled.length; i++, idx++) { const [r, c] = shuffled[idx]; grid[r][c].special = 'spring'; }
+  return { size, grid, anchorCoords, fish };
+}
+
+// 縦横フォワード走査（マスター仕様書 DoubleArrayTrie.searchBoardWords と同じ探索方向）
+function scanBoardWords(grid, size) {
+  const results = [];
+  const tryMatch = (s, coords) => { if (s.length >= 2 && WORD_MAP.has(s)) results.push({ word: s, entry: WORD_MAP.get(s), coords: coords.slice() }); };
+  // 横方向：左→右 と 右→左（逆読みも正式に判定する）
+  for (let r = 0; r < size; r++) {
+    for (let startCol = 0; startCol < size; startCol++) {
+      let s = ''; const coords = [];
+      for (let c = startCol; c < size; c++) {
+        const ch = grid[r][c].char; if (!ch) break;
+        s += ch; coords.push([r, c]); tryMatch(s, coords);
+      }
+    }
+    for (let startCol = size - 1; startCol >= 0; startCol--) {
+      let s = ''; const coords = [];
+      for (let c = startCol; c >= 0; c--) {
+        const ch = grid[r][c].char; if (!ch) break;
+        s += ch; coords.push([r, c]); tryMatch(s, coords);
+      }
+    }
+  }
+  // 縦方向：上→下 と 下→上
+  for (let c = 0; c < size; c++) {
+    for (let startRow = 0; startRow < size; startRow++) {
+      let s = ''; const coords = [];
+      for (let r = startRow; r < size; r++) {
+        const ch = grid[r][c].char; if (!ch) break;
+        s += ch; coords.push([r, c]); tryMatch(s, coords);
+      }
+    }
+    for (let startRow = size - 1; startRow >= 0; startRow--) {
+      let s = ''; const coords = [];
+      for (let r = startRow; r >= 0; r--) {
+        const ch = grid[r][c].char; if (!ch) break;
+        s += ch; coords.push([r, c]); tryMatch(s, coords);
+      }
+    }
+  }
+  return results;
+}
+function coordSig(coords) { return coords.map(([r, c]) => r + '_' + c).join(','); }
+
+function chainMultiplier(count) {
+  if (count <= 0) return 1.0;
+  let m = 1.0;
+  for (let k = 1; k <= count; k++) m *= (1.0 + 0.35 * k);
+  return m;
+}
+
+/* ---------------------------------------------------------------------
+   SECTION 5: 総合料理格付けエンジン (CookingEvaluator)
+   --------------------------------------------------------------------- */
+// 各定数は本ゲームの語彙・魚価に合わせたバランス初期値。★閾値(1000/3500/10000/30000)
+// は仕様書の明示値をそのまま採用し、下記係数側で難度を調整する。
+const SCORE_TUNING = { wordLenCoef: 0.045, wordLenPow: 1.5, wordStatCoef: 0.004, wordHeatCoef: 0.0025 };
+function wordScoreOf(entry) {
+  const len = entry.word.length;
+  return SCORE_TUNING.wordLenCoef * Math.pow(len, SCORE_TUNING.wordLenPow)
+    + (entry.umamiBonus + entry.richnessBonus + entry.aromaBonus) * SCORE_TUNING.wordStatCoef
+    + Math.max(0, entry.heatScore) * SCORE_TUNING.wordHeatCoef;
+}
+const STAR_PRICE_MULT = { 1: 1.0, 2: 1.5, 3: 2.5, 4: 5.0, 5: 10.0 };
+function starRatingFor(score) {
+  if (score >= 30000) return 5;
+  if (score >= 10000) return 4;
+  if (score >= 3500) return 3;
+  if (score >= 1000) return 2;
+  return 1;
+}
+function evaluateDish({ fish, weight, freshness, usedWordEntries, bestChainMultiplier }) {
+  const BaseFishValue = fish.basePrice * Math.pow(weight / fish.baseWeight, 1.2);
+  const usedWords = usedWordEntries.map(e => e.word);
+  const TextureFit = textureFitFor(fish.texture, usedWords);
+  const SumWordScore = usedWordEntries.reduce((a, e) => a + wordScoreOf(e), 0) || 0.1;
+  const ChainMultiplier = Math.max(1.0, bestChainMultiplier || 1.0);
+  let matchedPrimary = false, otherSpecialty = 0;
+  for (const e of usedWordEntries) {
+    if (e.category === 'SPECIALTY') { if (fish.match.includes(e.word)) matchedPrimary = true; else otherSpecialty++; }
+  }
+  const AffinityRate = clamp(1.0 + (matchedPrimary ? 1.0 : 0) + 0.15 * otherSpecialty, 0.5, 2.0);
+  const PriceMultiplierTotal = usedWordEntries.length
+    ? usedWordEntries.reduce((a, e) => a + e.priceMultiplier, 0) / usedWordEntries.length
+    : 1.0;
+  const Score = BaseFishValue * freshness * TextureFit * SumWordScore * ChainMultiplier * AffinityRate * PriceMultiplierTotal;
+  const star = starRatingFor(Score);
+  return { BaseFishValue, Freshness: freshness, TextureFit, SumWordScore, ChainMultiplier, AffinityRate, PriceMultiplierTotal, Score, star, matchedPrimary };
+}
+
+/* ---------------------------------------------------------------------
+   SECTION 6: 臨場釣魚 物理エンジン (Tension ODE / 魚AI状態機械)
+   仕様書 4.3 の微分方程式 dT/dt = K_reel*I_reel + F_fish*cos(θ) - D_drag(T) - μ*T
+   を離散時間積分として実装。ロッド角度は「魚の走行方向に対する左右カウンター」
+   に単純化（田舎の釣り任天堂系ゲームで言う「魚の引きをいなす」操作）。
+   --------------------------------------------------------------------- */
+const FISHCFG = {
+  reelRate: 2.1,           // m/s, 全力巻き取り時の距離短縮速度
+  K_reel: 46,              // 巻き取りによる張力上昇率 (%/s)
+  muLine: 0.22,            // 張力の自然減衰係数
+  dragReleaseK: 3.2,       // ドラグ上限超過分の張力抑制係数
+  slackThreshold: 8,       // これ以下が続くとバレる
+  breakHoldTime: 0.8,      // 張力100%継続でラインブレイクするまでの秒数
+  slackHoldTime: 1.5,      // 張力スラック継続でバレるまでの秒数
+  landDistance: 1.0,       // この距離以下 & スタミナ低下で取り込み成功
+  landStamina: 15,
+  nibbleWindowBase: 2.0,   // アワセ猶予（秒）
+  jumpWindowTime: 1.2,
+};
+
+function createFishingSession(fish, bait, ground, abilities) {
+  const hasPerfect = abilities.some(a => a.id === 'perfect');
+  const hasPlankton = abilities.some(a => a.id === 'plankton');
+  const baseWait = rand(6, 13) * (hasPerfect ? 0.5 : 1.0) * (hasPlankton ? 0.75 : 1.0) / clamp(bait.attract, 0.5, 3.5);
+  return {
+    fish, bait, ground,
+    phase: 'PATROL',       // PATROL -> NIBBLE -> FIGHT -> LANDED / LOST
+    subState: null,        // null | RUN | THRASH | JUMP
+    distance: rand(14, 26),
+    waitTimer: Math.max(2.5, baseWait),
+    nibbleTimer: 0,
+    jumpTimer: 0,
+    subTimer: 0,
+    subCooldown: rand(2.0, 3.5),
+    fishDir: pick([-1, 1]),
+    fishDirTimer: rand(1.5, 3.5),
+    tension: 15,
+    dragSetting: 50,
+    fishStamina: 100,
+    overTensionTimer: 0,
+    slackTimer: 0,
+    fightTimeElapsed: 0,
+    tensionOvershootCount: 0,
+    hadHookset: false,
+    result: null,           // null | 'LANDED' | 'LINE_BREAK' | 'HOOKOUT' | 'SPOOKED'
+  };
+}
+
+function fishPullForce(fish) {
+  const rodLv = (GameState.save && GameState.save.upgrades.rod) || 0;
+  return (14 + fish.fight * 46) * (1 - 0.035 * rodLv);
+}
+
+// state を破壊的に更新し、今フレームで発生したイベント文字列配列を返す
+function tickFishing(state, dt, input) {
+  const events = [];
+  if (state.result) return events;
+
+  if (state.phase === 'PATROL') {
+    state.waitTimer -= dt;
+    const approachSpeed = 2.4 * clamp(state.bait.attract, 0.6, 3.5) / 10;
+    state.distance = Math.max(1.5, state.distance - approachSpeed * dt - Math.sin(Date.now() / 900) * 0.02);
+    if (state.waitTimer <= 0 || state.distance <= 2.0) {
+      state.phase = 'NIBBLE';
+      state.nibbleTimer = FISHCFG.nibbleWindowBase + (1 - state.fish.fight) * 0.8;
+      events.push('BITE');
+    }
+    return events;
+  }
+
+  if (state.phase === 'NIBBLE') {
+    state.nibbleTimer -= dt;
+    if (input.hookset) {
+      state.phase = 'FIGHT';
+      state.hadHookset = true;
+      events.push('HOOKSET_OK');
+    } else if (state.nibbleTimer <= 0) {
+      state.result = 'SPOOKED';
+      events.push('SPOOKED');
+    }
+    return events;
+  }
+
+  if (state.phase === 'FIGHT') {
+    state.fightTimeElapsed += dt;
+
+    // 魚の進行方向の更新
+    state.fishDirTimer -= dt;
+    if (state.fishDirTimer <= 0) { state.fishDir = pick([-1, 1]); state.fishDirTimer = rand(1.4, 3.2); }
+
+    // サブステート（RUN/THRASH/JUMP）の発生・進行
+    if (!state.subState) {
+      state.subCooldown -= dt;
+      if (state.subCooldown <= 0 && state.fightTimeElapsed > 1.0) {
+        state.subState = weightedPick(['RUN', 'THRASH', 'JUMP'], s => s === 'JUMP' ? 0.7 + state.fish.fight : 1.0);
+        state.subTimer = state.subState === 'JUMP' ? FISHCFG.jumpWindowTime : rand(1.6, 3.2);
+        if (state.subState === 'JUMP') { events.push('JUMP_START'); state._jumpHandled = false; }
+        else events.push(state.subState + '_START');
+      }
+    } else {
+      state.subTimer -= dt;
+      if (state.subState === 'JUMP') {
+        if (input.jumpRespond && !state._jumpHandled) { state._jumpHandled = true; events.push('JUMP_OK'); }
+        if (state.subTimer <= 0) {
+          if (!state._jumpHandled) { state.result = 'HOOKOUT'; events.push('HOOKOUT'); return events; }
+          state.subState = null; state.subCooldown = rand(2.2, 4.0);
+        }
+      } else if (state.subTimer <= 0) {
+        state.subState = null; state.subCooldown = rand(2.0, 4.2);
+      }
+    }
+
+    // 張力ODE
+    const staminaRatio = clamp(state.fishStamina / 100, 0.15, 1);
+    const leanDir = input.lean || 0;
+    let angleFactor;
+    if (leanDir === -state.fishDir) angleFactor = -0.5;
+    else if (leanDir === state.fishDir) angleFactor = 1.3;
+    else angleFactor = 0.55;
+    let subMult = 1.0;
+    if (state.subState === 'RUN') subMult = 1.7;
+    else if (state.subState === 'THRASH') subMult = 1.0 + Math.sin(Date.now() / 60) * 0.5;
+    else if (state.subState === 'JUMP') subMult = 0.25;
+
+    const F_fish = fishPullForce(state.fish) * staminaRatio * angleFactor * subMult;
+    const dragOverage = Math.max(0, state.tension - state.dragSetting);
+    const D_drag = dragOverage * FISHCFG.dragReleaseK;
+    const dT = FISHCFG.K_reel * (input.reel ? 1 : 0) + F_fish - D_drag - FISHCFG.muLine * state.tension;
+    state.tension = clamp(state.tension + dT * dt, 0, 100);
+
+    if (dragOverage > 0) state.distance += dragOverage * 0.03 * dt;
+    if (state.subState === 'RUN') state.distance += 1.5 * dt;
+    if (input.reel) {
+      const eff = 1 - clamp(state.tension / 100, 0, 1) * 0.3;
+      const reelLv = (typeof GameState !== 'undefined' && GameState.save && GameState.save.upgrades.reel) || 0;
+      const effRate = FISHCFG.reelRate * (1 + 0.08 * reelLv);
+      state.distance -= effRate * dt * eff;
+    }
+    state.distance = clamp(state.distance, 0, 40);
+
+    // スタミナ増減
+    if (state.tension < 14) {
+      state.fishStamina = clamp(state.fishStamina + 1.1 * dt, 0, 100);
+    } else {
+      const drain = (2.3 + 5.2 * clamp(state.tension / 100, 0, 1)) * (state.subState ? 1.35 : 1.0);
+      state.fishStamina = clamp(state.fishStamina - drain * dt, 0, 100);
+    }
+
+    // ブレイク/バレ判定
+    if (state.tension >= 99.5) { state.overTensionTimer += dt; } else { state.overTensionTimer = 0; }
+    if (state.tension <= FISHCFG.slackThreshold) { state.slackTimer += dt; } else { state.slackTimer = 0; }
+    if (state.overTensionTimer >= FISHCFG.breakHoldTime) { state.result = 'LINE_BREAK'; events.push('LINE_BREAK'); return events; }
+    if (state.slackTimer >= FISHCFG.slackHoldTime) { state.result = 'HOOKOUT'; events.push('HOOKOUT'); return events; }
+    if (state.tension >= 92) state.tensionOvershootCount += dt * 2;
+
+    if (state.fishStamina <= FISHCFG.landStamina && state.distance <= FISHCFG.landDistance) {
+      state.result = 'LANDED'; events.push('LANDED');
+    }
+    return events;
+  }
+
+  return events;
+}
+
+function computeFreshness(fightTimeElapsed, tensionOvershootCount) {
+  return 1.0 - Math.min(0.6, (fightTimeElapsed / 120.0) * 0.4 + tensionOvershootCount * 0.05);
+}
+
+/* ---------------------------------------------------------------------
+   SECTION 7: サウンドマネージャー (Web Audio API, 完全プロシージャル合成)
+   外部音声ファイル不要。仕様書 9.2 のペンタトニック(ヨナ抜き長音階)連鎖音を実装。
+   --------------------------------------------------------------------- */
+const SoundManager = (() => {
+  let ctx = null, muted = false, masterGain = null;
+  function ensureCtx() {
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = ctx.createGain();
+      masterGain.gain.value = 0.55;
+      masterGain.connect(ctx.destination);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function tone(freq, dur, type, gainPeak, delay) {
+    if (muted) return;
+    const c = ensureCtx();
+    const t0 = c.currentTime + (delay || 0);
+    const osc = c.createOscillator();
+    const g = c.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gainPeak || 0.35, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g); g.connect(masterGain);
+    osc.start(t0); osc.stop(t0 + dur + 0.02);
+  }
+  function noiseBurst(dur, gainPeak, delay) {
+    if (muted) return;
+    const c = ensureCtx();
+    const t0 = c.currentTime + (delay || 0);
+    const bufSize = Math.floor(c.sampleRate * dur);
+    const buf = c.createBuffer(1, bufSize, c.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufSize);
+    const src = c.createBufferSource(); src.buffer = buf;
+    const g = c.createGain(); g.gain.setValueAtTime(gainPeak || 0.3, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    const filt = c.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 1200;
+    src.connect(filt); filt.connect(g); g.connect(masterGain);
+    src.start(t0);
+  }
+  const PENTATONIC = [261.63, 293.66, 349.23, 392.00, 440.00, 523.25]; // ド レ ファ ソ ラ ド (陽旋法)
+  return {
+    setMuted(v) { muted = v; },
+    isMuted() { return muted; },
+    init() { ensureCtx(); },
+    reelClick(speed) { tone(180 + (speed || 0) * 60, 0.05, 'triangle', 0.18); },
+    uiTick() { tone(720, 0.045, 'sine', 0.12); },
+    sudokuCorrect() { tone(880, 0.09, 'sine', 0.16); },
+    sudokuError() { tone(140, 0.16, 'sawtooth', 0.16); },
+    biteAlert() { tone(660, 0.11, 'square', 0.2); tone(880, 0.11, 'square', 0.18, 0.09); },
+    hooksetSuccess() { tone(523.25, 0.1, 'triangle', 0.28); tone(783.99, 0.16, 'triangle', 0.24, 0.07); },
+    lineBreak() { noiseBurst(0.35, 0.35); tone(110, 0.3, 'sawtooth', 0.2, 0.02); },
+    hookout() { tone(300, 0.22, 'sine', 0.18); tone(220, 0.26, 'sine', 0.16, 0.08); },
+    landed() { [0, 2, 4, 5].forEach((idx, i) => tone(PENTATONIC[idx], 0.22, 'triangle', 0.26, i * 0.09)); },
+    wordFormed(len) { tone(PENTATONIC[clamp(len - 2, 0, 5)], 0.16, 'sine', 0.22); },
+    kotodamaChain(chainCount) {
+      const notes = Math.min(chainCount + 1, PENTATONIC.length);
+      for (let i = 0; i < notes; i++) tone(PENTATONIC[i], 0.18, 'sine', 0.26, i * 0.075);
+    },
+    dishReveal(star) {
+      const notes = PENTATONIC.slice(0, clamp(star + 1, 2, 6));
+      notes.forEach((f, i) => tone(f, 0.28, 'triangle', 0.3, i * 0.1));
+      if (star >= 5) tone(1046.5, 0.4, 'sine', 0.3, notes.length * 0.1);
+    },
+    coinGain() { tone(988, 0.08, 'square', 0.15); tone(1318.5, 0.1, 'square', 0.14, 0.06); },
+  };
+})();
+
+/* ---------------------------------------------------------------------
+   SECTION 8: 永続化レイヤー (window.storage ラッパー)
+   --------------------------------------------------------------------- */
+const SAVE_KEY = 'lb_save_v1';
+function defaultSaveData() {
+  return {
+    version: 1,
+    gold: 300, soul: 5, chips: 3,
+    fame: 0, bestStar: 0,
+    unlockedGrounds: ['FG-01'],
+    selectedGround: 'FG-01',
+    difficulty: 6,
+    fishCompendium: {},
+    wordDiscovered: {},
+    upgrades: { rod: 0, reel: 0, dict: 0 },
+    totalDishesServed: 0,
+    dragDefault: 50,
+  };
+}
+const Persistence = {
+  async load() {
+    try {
+      if (!window.storage) return defaultSaveData();
+      const res = await window.storage.get(SAVE_KEY, false);
+      if (!res || !res.value) return defaultSaveData();
+      const parsed = JSON.parse(res.value);
+      return Object.assign(defaultSaveData(), parsed);
+    } catch (e) { return defaultSaveData(); }
+  },
+  async save(data) {
+    try {
+      if (!window.storage) return false;
+      await window.storage.set(SAVE_KEY, JSON.stringify(data), false);
+      return true;
+    } catch (e) { console.warn('save failed', e); return false; }
+  },
+  async reset() {
+    try { if (window.storage) await window.storage.delete(SAVE_KEY, false); } catch (e) { /* noop */ }
+    return defaultSaveData();
+  }
+};
+
+/* ---------------------------------------------------------------------
+   SECTION 9: ゲーム状態 & 画面コントローラ
+   --------------------------------------------------------------------- */
+const GameState = {
+  save: null,
+  p1: null, p2: null, p3: null, p4: null,
+};
+
+function $(id) { return document.getElementById(id); }
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active', 'screen-fade-in'));
+  const target = $(id);
+  target.classList.add('active', 'screen-fade-in');
+  const hideCurrency = (id === 'screen-title' || id === 'screen-phase2');
+  $('currency-strip').classList.toggle('currency-strip-hidden', hideCurrency);
+  $('mute-btn').style.display = (id === 'screen-title') ? 'none' : 'flex';
+}
+function openModal(id) { $(id).classList.add('active'); }
+function closeModal(id) { $(id).classList.remove('active'); }
+
+function currentGround() { return GROUNDS.find(g => g.id === GameState.save.selectedGround) || GROUNDS[0]; }
+function fishOf(id) { return FISH[id]; }
+function groundFishList(ground) { return ground.fishIds.map(id => FISH[id]); }
+
+function refreshCurrencyBar() {
+  $('cur-gold').textContent = fmtInt(GameState.save.gold);
+  $('cur-soul').textContent = fmtInt(GameState.save.soul);
+  $('cur-chip').textContent = fmtInt(GameState.save.chips);
+}
+function persistNow() { Persistence.save(GameState.save); }
+
+function kappoRankLabel(fame) {
+  if (fame >= 30) return '一子相伝 割烹';
+  if (fame >= 15) return '名代 板前';
+  if (fame >= 5) return '中堅 割烹人';
+  return '並膳 見習い';
+}
+function fameThresholdNext(fame) {
+  if (fame < 5) return 5;
+  if (fame < 15) return 15;
+  if (fame < 30) return 30;
+  return fame;
+}
+
+/* ============ HUB ============ */
+function renderHub() {
+  $('hub-rank-label').textContent = kappoRankLabel(GameState.save.fame);
+  const next = fameThresholdNext(GameState.save.fame);
+  $('fame-label').textContent = `${GameState.save.fame} / ${next}`;
+  $('fame-bar-fill').style.width = clamp((GameState.save.fame / next) * 100, 0, 100) + '%';
+
+  const list = $('ground-list'); list.innerHTML = '';
+  GROUNDS.forEach(g => {
+    const unlocked = GameState.save.unlockedGrounds.includes(g.id) || g.unlockFame <= GameState.save.fame;
+    if (unlocked && !GameState.save.unlockedGrounds.includes(g.id)) GameState.save.unlockedGrounds.push(g.id);
+    const card = el('div', 'ground-card' + (unlocked ? '' : ' locked') + (GameState.save.selectedGround === g.id ? ' selected' : ''));
+    const fishNames = g.fishIds.map(id => FISH[id].name).join('・') || '???';
+    card.innerHTML = `
+      <div class="ground-icon"><svg width="24" height="24"><use href="#${g.icon}"/></svg></div>
+      <div class="ground-info">
+        <p class="ground-name">${g.name}</p>
+        <p class="ground-meta">${unlocked ? fishNames : '未開放'}</p>
+        ${unlocked ? '' : `<p class="ground-lock-note">名声 ${g.unlockFame} で解放</p>`}
+      </div>`;
+    if (unlocked) card.addEventListener('click', () => { GameState.save.selectedGround = g.id; persistNow(); renderHub(); });
+    list.appendChild(card);
+  });
+
+  document.querySelectorAll('.diff-btn').forEach(btn => {
+    btn.classList.toggle('active', Number(btn.dataset.diff) === GameState.save.difficulty);
+  });
+  refreshCurrencyBar();
+}
+
+function initHubEvents() {
+  document.querySelectorAll('.diff-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      GameState.save.difficulty = Number(btn.dataset.diff);
+      persistNow(); renderHub();
+    });
+  });
+  $('btn-go-fish').addEventListener('click', () => { startPhase1(); });
+  $('btn-open-shop').addEventListener('click', () => { renderShop(); openModal('modal-shop'); });
+  $('btn-open-dict').addEventListener('click', () => { renderDictionary(); openModal('modal-dict'); });
+  $('btn-open-compendium').addEventListener('click', () => { renderCompendium(); openModal('modal-compendium'); });
+  $('btn-reset-save').addEventListener('click', async () => {
+    if (!confirm('全ての進行状況（金貨・言霊牌・図鑑・辞典）を消去します。よろしいですか？')) return;
+    GameState.save = await Persistence.reset();
+    renderHub(); showToast('データを初期化しました');
+  });
+  $('btn-title-return').addEventListener('click', () => showScreen('screen-title'));
+  document.querySelectorAll('.modal-close').forEach(btn => btn.addEventListener('click', () => closeModal(btn.dataset.close)));
+  $('mute-btn').addEventListener('click', () => {
+    const m = !SoundManager.isMuted();
+    SoundManager.setMuted(m);
+    $('mute-btn').textContent = m ? '🔇' : '🔊';
+  });
+  $('btn-start-game').addEventListener('click', () => {
+    SoundManager.init();
+    showScreen('screen-hub'); renderHub();
+  });
+  $('btn-how-to').addEventListener('click', () => { renderHowTo(); openModal('modal-howto'); });
+}
+
+function renderHowTo() {
+  $('howto-body').innerHTML = `
+    <div class="dict-category-group">
+      <p class="dict-category-title">Phase 1 — 数理採餌</p>
+      <p style="font-size:13px;line-height:1.8;">数独を解くと、盤面の数字から餌の「香り・深度・集魚力・発光」が自動で決まります。中央に寄せる、和が15の並びを作る、奇数の3連続を作る、黄金比(1,1,2 / 1,2,3 / 2,3,5 / 3,5,8)を並べる、ノーミスで完成——それぞれが特殊な効果を生みます。</p>
+    </div>
+    <div class="dict-category-group">
+      <p class="dict-category-title">Phase 2 — 臨場釣魚</p>
+      <p style="font-size:13px;line-height:1.8;">魚が餌に近づいたら「アワセる！」でフッキング。あとはライン張力を緑〜黄色の範囲に保ちながら巻きましょう。魚が引く方向と逆に竿を傾けると張力が下がります。張力が振り切れるとラインブレイク、緩みすぎるとバラシます。ジャンプ時は素早く「竿を下げろ」。</p>
+    </div>
+    <div class="dict-category-group">
+      <p class="dict-category-title">Phase 3 — 言霊創味</p>
+      <p style="font-size:13px;line-height:1.8;">釣った魚の名前が盤面中央に固定されます。手駒のかな牌を置いて、縦か横に実在の言葉（調理技法・調味料・食感・賛辞・魚介専門用語）を作りましょう。1手で複数の言葉が同時に完成すると連鎖倍率が跳ね上がります。</p>
+    </div>
+    <div class="dict-category-group">
+      <p class="dict-category-title">Phase 4 — 割烹供膳</p>
+      <p style="font-size:13px;line-height:1.8;">魚の価値・鮮度・肉質との相性・言霊の連鎖・魚種一致ボーナスをすべて掛け合わせて一皿の評価が決まります。★が高いほど高額で買い取られ、金貨・言霊文字牌・数理チップを獲得できます。</p>
+    </div>`;
+}
+
+/* ============ PHASE 1: 数理採餌 (SUDOKU) ============ */
+function startPhase1() {
+  const ground = currentGround();
+  const n = GameState.save.difficulty;
+  const gen = Sudoku.generate(n);
+  GameState.p1 = {
+    ground, n, boxH: gen.boxH, boxW: gen.boxW,
+    solution: gen.solution, given: gen.given,
+    display: gen.puzzle.map(row => row.slice()),
+    selected: null,
+    hadMistake: false, comboStreak: 0, comboBonusTotal: 0,
+    isComplete: false, bait: null,
+  };
+  $('p1-ground-name').textContent = ground.name + `（${n}×${n}）`;
+  $('btn-p1-tofish').disabled = true;
+  $('combo-indicator').textContent = '';
+  renderSudokuBoard();
+  renderNumpad();
+  updateBaitPreview();
+  showScreen('screen-phase1');
+}
+
+function sizeSquareBoard(boardEl, vwFraction, maxPx) {
+  const vw = Math.min(window.innerWidth || document.documentElement.clientWidth, document.documentElement.clientWidth || 9999);
+  const vh = window.innerHeight || document.documentElement.clientHeight || 9999;
+  const px = Math.max(160, Math.min(vw * vwFraction, maxPx, vh * 0.55));
+  boardEl.style.width = px + 'px';
+  boardEl.style.height = px + 'px';
+}
+function renderSudokuBoard() {
+  const { n, boxH, boxW, given, display } = GameState.p1;
+  const board = $('sudoku-board');
+  sizeSquareBoard(board, window.innerWidth <= 720 ? 0.94 : 0.72, 420);
+  board.innerHTML = '';
+  board.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+  board.style.gridTemplateRows = `repeat(${n}, 1fr)`;
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const cell = el('div', 'sudoku-cell');
+      const blockIdx = Math.floor(r / boxH) * (n / boxW) + Math.floor(c / boxW);
+      if (blockIdx % 2 === 1) cell.classList.add('block-shade');
+      if (given[r][c]) cell.classList.add('given');
+      if ((c + 1) % boxW === 0 && c !== n - 1) cell.classList.add('sudoku-block-border-r');
+      if ((r + 1) % boxH === 0 && r !== n - 1) cell.classList.add('sudoku-block-border-b');
+      cell.dataset.r = r; cell.dataset.c = c;
+      cell.textContent = display[r][c] || '';
+      cell.addEventListener('click', () => onSudokuCellClick(r, c));
+      board.appendChild(cell);
+    }
+  }
+}
+function onSudokuCellClick(r, c) {
+  if (GameState.p1.given[r][c]) return;
+  GameState.p1.selected = [r, c];
+  document.querySelectorAll('.sudoku-cell').forEach(el => el.classList.remove('selected'));
+  const idx = r * GameState.p1.n + c;
+  $('sudoku-board').children[idx].classList.add('selected');
+}
+function renderNumpad() {
+  const n = GameState.p1.n;
+  const pad = $('numpad'); pad.innerHTML = '';
+  for (let v = 1; v <= n; v++) {
+    const b = el('button', 'num-btn', v);
+    b.addEventListener('click', () => onNumpadInput(v));
+    pad.appendChild(b);
+  }
+  const erase = el('button', 'num-btn erase', '消');
+  erase.addEventListener('click', () => onNumpadInput(0));
+  pad.appendChild(erase);
+}
+function onNumpadInput(v) {
+  const p1 = GameState.p1;
+  if (!p1.selected || p1.isComplete) return;
+  const [r, c] = p1.selected;
+  if (p1.given[r][c]) return;
+  const idx = r * p1.n + c;
+  const cellEl = $('sudoku-board').children[idx];
+  if (v === 0) { p1.display[r][c] = 0; cellEl.textContent = ''; updateBaitPreview(); return; }
+  p1.display[r][c] = v;
+  cellEl.textContent = v;
+  if (v === p1.solution[r][c]) {
+    p1.comboStreak++;
+    SoundManager.sudokuCorrect();
+    if (p1.comboStreak > 0 && p1.comboStreak % 3 === 0) {
+      p1.comboBonusTotal += 0.1;
+      $('combo-indicator').textContent = `ノーミス${p1.comboStreak}連続！ 集魚+0.1`;
+      SoundManager.uiTick();
+    }
+  } else {
+    p1.hadMistake = true; p1.comboStreak = 0;
+    cellEl.classList.add('error');
+    SoundManager.sudokuError();
+    setTimeout(() => cellEl.classList.remove('error'), 320);
+  }
+  checkSudokuCompletion();
+  updateBaitPreview();
+}
+function checkSudokuCompletion() {
+  const p1 = GameState.p1;
+  let complete = true;
+  for (let r = 0; r < p1.n; r++) for (let c = 0; c < p1.n; c++) if (p1.display[r][c] !== p1.solution[r][c]) complete = false;
+  p1.isComplete = complete;
+  $('btn-p1-tofish').disabled = !complete;
+  if (complete) $('btn-p1-tofish').textContent = 'この餌で漁へ';
+}
+function updateBaitPreview() {
+  const p1 = GameState.p1;
+  const evalResult = evaluateBaitPreview(p1.display, p1.n, p1.ground, p1.comboBonusTotal, !p1.hadMistake, p1.isComplete);
+  p1.bait = evalResult;
+  const scentMax = p1.n === 6 ? 35 : 75;
+  $('stat-scent').style.width = clamp(evalResult.scent / scentMax * 100, 2, 100) + '%';
+  $('stat-scent-val').textContent = fmt1(evalResult.scent) + 'm';
+  $('stat-depth').style.width = clamp((evalResult.depth - p1.ground.depthMin) / Math.max(1, (p1.ground.depthMax - p1.ground.depthMin)) * 100, 2, 100) + '%';
+  $('stat-depth-val').textContent = fmt1(evalResult.depth) + 'm';
+  $('stat-attract').style.width = clamp((evalResult.attract - 1) / 1.5 * 100, 2, 100) + '%';
+  $('stat-attract-val').textContent = fmt1(evalResult.attract);
+  $('stat-lum').style.width = clamp(evalResult.lum * 100, 0, 100) + '%';
+  $('stat-lum-val').textContent = Math.round(evalResult.lum * 100) + '%';
+  const tagsWrap = $('ability-tags'); tagsWrap.innerHTML = '';
+  evalResult.abilities.forEach(a => {
+    const t = el('span', 'ability-tag', a.name);
+    t.title = a.desc;
+    tagsWrap.appendChild(t);
+  });
+}
+function giveUpPhase1() {
+  const p1 = GameState.p1;
+  const ground = p1.ground;
+  const genericBait = { scent: 6, depth: (ground.depthMin + ground.depthMax) / 2, sink: 0.6, attract: 1.0, lum: 0.05, abilities: [] };
+  showToast('汎用練り餌で漁へ出ます');
+  proceedToPhase2(genericBait);
+}
+function proceedToPhase2FromP1() { proceedToPhase2(GameState.p1.bait); }
+
+function initPhase1Events() {
+  $('btn-p1-giveup').addEventListener('click', giveUpPhase1);
+  $('btn-p1-tofish').addEventListener('click', proceedToPhase2FromP1);
+  $('btn-p1-hint').addEventListener('click', useSudokuHint);
+}
+function useSudokuHint() {
+  const p1 = GameState.p1;
+  if (!p1 || p1.isComplete) return;
+  if (GameState.save.chips < 1) { showToast('数理チップが足りません'); return; }
+  const empties = [];
+  for (let r = 0; r < p1.n; r++) for (let c = 0; c < p1.n; c++) if (!p1.given[r][c] && p1.display[r][c] !== p1.solution[r][c]) empties.push([r, c]);
+  if (!empties.length) return;
+  const [r, c] = pick(empties);
+  GameState.save.chips--; persistNow(); refreshCurrencyBar();
+  p1.display[r][c] = p1.solution[r][c];
+  const idx = r * p1.n + c;
+  $('sudoku-board').children[idx].textContent = p1.solution[r][c];
+  p1.comboStreak = 0;
+  checkSudokuCompletion();
+  updateBaitPreview();
+  showToast('ヒントでマスを1つ埋めた');
+}
+
+/* ============ PHASE 2: 臨場釣魚 (FISHING) — Canvas演出 + 物理ループ ============ */
+const GROUND_THEME = {
+  'FG-01': { sky: ['#DCEFE4', '#BFE0D2'], water: ['#3E7C8C', '#134156'], accent: '#E9F5EC' },
+  'FG-02': { sky: ['#FBE3C7', '#F4B999'], water: ['#2E6B7A', '#0F3444'], accent: '#FFF0DC' },
+  'FG-03': { sky: ['#1C3550', '#0E1F33'], water: ['#0F3A52', '#081826'], accent: '#8FB4CC' },
+  'FG-04': { sky: ['#0A1420', '#050A12'], water: ['#081420', '#02060B'], accent: '#3E5A70' },
+  'FG-05': { sky: ['#241238', '#100819'], water: ['#1B0F2E', '#0A0512'], accent: '#7A5FA8' },
+};
+const CONSOLATION_POOL = [
+  { id: 'zatsugyo', name: '雑魚', kana: 'ざこ', baseWeight: 0.08, basePrice: 40, texture: 'FIRM', pref: [], match: [], fight: 0.1, star: 1, emoji: '🐟' },
+  { id: 'kaisou', name: '海藻', kana: 'かいそう', baseWeight: 0.05, basePrice: 30, texture: 'FLAKY', pref: [], match: [], fight: 0.05, star: 1, emoji: '🌿' },
+];
+
+function selectFishForGround(ground, bait) {
+  const candidates = groundFishList(ground);
+  const hasFib = bait.abilities && bait.abilities.some(a => a.id === 'fibonacci');
+  return weightedPick(candidates, f => {
+    let w = 1.0;
+    const overlap = f.pref.filter(p => (bait.dominant || []).includes(p)).length;
+    w *= (1 + 0.8 * overlap);
+    if (bait.lum > 0.4 && f.texture === 'FLAKY') w *= 1.3;
+    if (hasFib) w *= (1 + f.star * 0.4);
+    return w;
+  });
+}
+
+function proceedToPhase2(bait) { startPhase2(bait); }
+function startPhase2(bait) {
+  const ground = currentGround();
+  const fish = selectFishForGround(ground, bait);
+  const session = createFishingSession(fish, bait, ground, bait.abilities || []);
+  GameState.p2 = {
+    ground, fish, bait, session,
+    canvas: $('fishing-canvas'), ctx: null,
+    raf: null, lastTime: performance.now(), tAccum: 0,
+    input: { reel: false, lean: 0, hookset: false, jumpRespond: false },
+    lureBobPhase: Math.random() * 10,
+    particles: Array.from({ length: 22 }, () => ({ x: Math.random(), y: Math.random(), r: rand(1, 3), s: rand(0.02, 0.06) })),
+    ended: false,
+  };
+  const cv = GameState.p2.canvas;
+  GameState.p2.ctx = cv.getContext('2d');
+  resizeFishingCanvas();
+  $('p2-ground-tag').textContent = ground.name;
+  $('p2-hud-bottom').style.display = 'none';
+  $('hookset-btn').classList.remove('show');
+  $('jump-btn').classList.remove('show');
+  $('fish-radar').style.opacity = '1';
+  $('tension-drag-limit').style.left = '50%';
+  $('drag-val').textContent = '50';
+  showScreen('screen-phase2');
+  if (GameState.p2.raf) cancelAnimationFrame(GameState.p2.raf);
+  GameState.p2.lastTime = performance.now();
+  GameState.p2.raf = requestAnimationFrame(phase2Loop);
+}
+function resizeFishingCanvas() {
+  const cv = GameState.p2.canvas;
+  const rect = cv.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(rect.width * dpr);
+  cv.height = Math.round(rect.height * dpr);
+  GameState.p2.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  GameState.p2.cw = rect.width; GameState.p2.ch = rect.height;
+}
+window.addEventListener('resize', () => {
+  if (GameState.p2 && GameState.p2.ctx) resizeFishingCanvas();
+  if (GameState.p1 && $('screen-phase1').classList.contains('active')) sizeSquareBoard($('sudoku-board'), window.innerWidth <= 720 ? 0.94 : 0.72, 420);
+  if (GameState.p3 && $('screen-phase3').classList.contains('active')) sizeSquareBoard($('word-board'), window.innerWidth <= 720 ? 0.9 : 0.6, 460);
+});
+
+function flashStateBanner(text, ms) {
+  const b = $('state-banner');
+  b.textContent = text; b.classList.add('show');
+  clearTimeout(flashStateBanner._h);
+  flashStateBanner._h = setTimeout(() => b.classList.remove('show'), ms || 1100);
+}
+function flashSplash() { const s = $('splash-flash'); s.classList.remove('flash'); void s.offsetWidth; s.classList.add('flash'); }
+
+function phase2Loop(now) {
+  const p2 = GameState.p2;
+  if (!p2 || p2.ended) return;
+  const dt = Math.min(0.05, (now - p2.lastTime) / 1000);
+  p2.lastTime = now; p2.tAccum += dt;
+  const s = p2.session;
+  const prevPhase = s.phase, prevSub = s.subState;
+
+  const events = tickFishing(s, dt, p2.input);
+  handleFishingEvents(events);
+
+  if (s.phase !== prevPhase) onFishingPhaseChange(prevPhase, s.phase);
+  if (s.subState !== prevSub && s.subState) onFishingSubStateChange(s.subState);
+
+  drawFishingScene(p2.ctx, p2.cw, p2.ch, p2.tAccum, s, p2.ground);
+  updateFishingHUD(s);
+
+  if (s.result) { onFishingResolved(s.result); return; }
+  p2.raf = requestAnimationFrame(phase2Loop);
+}
+
+function handleFishingEvents(events) {
+  events.forEach(ev => {
+    if (ev === 'BITE') { flashStateBanner('食いついた！'); SoundManager.biteAlert(); $('hookset-btn').classList.add('show'); }
+    if (ev === 'HOOKSET_OK') { flashStateBanner('ヒット！'); SoundManager.hooksetSuccess(); $('hookset-btn').classList.remove('show'); flashSplash(); $('p2-hud-bottom').style.display = 'block'; }
+    if (ev === 'RUN_START') flashStateBanner('魚が走る！');
+    if (ev === 'THRASH_START') flashStateBanner('暴れている！');
+    if (ev === 'JUMP_START') { flashStateBanner('ジャンプ！'); $('jump-btn').classList.add('show'); }
+    if (ev === 'JUMP_OK') { $('jump-btn').classList.remove('show'); }
+    if (ev === 'LANDED') SoundManager.landed();
+    if (ev === 'LINE_BREAK') SoundManager.lineBreak();
+    if (ev === 'HOOKOUT') SoundManager.hookout();
+    if (ev === 'SPOOKED') SoundManager.hookout();
+  });
+}
+function onFishingPhaseChange(prev, next) {
+  if (next === 'NIBBLE') $('fish-radar-label').textContent = '食いついた！';
+  if (next === 'FIGHT') $('fish-radar').style.opacity = '0';
+}
+function onFishingSubStateChange(sub) { /* イベント音・表示は handleFishingEvents 側で対応済み */ }
+
+function updateFishingHUD(s) {
+  if (s.phase === 'PATROL' || s.phase === 'NIBBLE') {
+    const pct = clamp(100 - (s.distance / 26) * 100, 3, 96);
+    $('fish-radar-fill').style.width = pct + '%';
+    $('fish-radar-icon').style.left = pct + '%';
+    if (s.phase === 'PATROL') $('fish-radar-label').textContent = '回遊を待つ…';
+  }
+  if (s.phase === 'FIGHT') {
+    $('tension-num').textContent = Math.round(s.tension) + '%';
+    $('tension-marker').style.left = clamp(s.tension, 0, 100) + '%';
+    $('tension-drag-limit').style.left = clamp(s.dragSetting, 0, 100) + '%';
+    $('stamina-num').textContent = Math.round(s.fishStamina) + '%';
+    $('stamina-fill').style.width = clamp(s.fishStamina, 0, 100) + '%';
+    document.querySelectorAll('.lean-btn').forEach(b => b.classList.remove('active-lean'));
+    if (GameState.p2.input.lean === -1) $('lean-left').classList.add('active-lean');
+    if (GameState.p2.input.lean === 1) $('lean-right').classList.add('active-lean');
+  }
+}
+
+function onFishingResolved(result) {
+  GameState.p2.ended = true;
+  cancelAnimationFrame(GameState.p2.raf);
+  $('p2-hud-bottom').style.display = 'none';
+  $('hookset-btn').classList.remove('show'); $('jump-btn').classList.remove('show');
+  const s = GameState.p2.session;
+  let caughtFish, weight, freshness, isGeneric = false;
+  if (result === 'LANDED') {
+    caughtFish = s.fish;
+    const hasFib = s.bait.abilities && s.bait.abilities.some(a => a.id === 'fibonacci');
+    weight = s.fish.baseWeight * (0.75 + Math.random() * 0.65) * (hasFib ? 1.15 : 1.0);
+    freshness = computeFreshness(s.fightTimeElapsed, s.tensionOvershootCount);
+    if (!GameState.save.fishCompendium[caughtFish.id]) {
+      GameState.save.fishCompendium[caughtFish.id] = true;
+      showToast(`図鑑に「${caughtFish.name}」を記録しました`);
+    }
+    flashSplash();
+  } else {
+    caughtFish = pick(CONSOLATION_POOL);
+    weight = caughtFish.baseWeight;
+    freshness = 0.5;
+    isGeneric = true;
+  }
+  showCatchModal(result, caughtFish, weight, freshness, isGeneric);
+}
+
+function showCatchModal(result, fish, weight, freshness, isGeneric) {
+  const titles = { LANDED: '取り込み成功！', LINE_BREAK: 'ラインブレイク…', HOOKOUT: 'バラした…', SPOOKED: '見切られた…' };
+  $('catch-title').textContent = titles[result] || '結果';
+  const body = $('catch-body');
+  const msg = isGeneric
+    ? `<p style="font-size:13px;color:var(--ink-soft);margin-bottom:10px;">本命は逃したが、<b>${fish.name}</b>を持ち帰る。仕込みは続けられる。</p>`
+    : `<p style="font-size:13px;color:var(--ink-soft);margin-bottom:10px;">${fish.name}（${fish.kana}）を釣り上げた！</p>`;
+  body.innerHTML = `
+    <div style="text-align:center;font-size:52px;margin-bottom:6px;">${fish.emoji || '🐟'}</div>
+    ${msg}
+    <div class="score-row"><span>推定重量</span><b>${fmt1(weight)} kg</b></div>
+    <div class="score-row"><span>鮮度</span><b>${Math.round(freshness * 100)}%</b></div>
+    <button class="btn btn-primary btn-block" id="btn-catch-continue" style="margin-top:16px;">仕込み場へ</button>`;
+  openModal('modal-catch');
+  $('btn-catch-continue').addEventListener('click', () => {
+    closeModal('modal-catch');
+    startPhase3(fish, weight, freshness);
+  }, { once: true });
+}
+
+function giveUpPhase2() {
+  if (GameState.p2 && !GameState.p2.ended) {
+    GameState.p2.ended = true;
+    cancelAnimationFrame(GameState.p2.raf);
+    $('p2-hud-bottom').style.display = 'none';
+    $('hookset-btn').classList.remove('show'); $('jump-btn').classList.remove('show');
+    const fish = pick(CONSOLATION_POOL);
+    showCatchModal('HOOKOUT', fish, fish.baseWeight, 0.5, true);
+  }
+}
+
+/* ---- Canvas rendering ---- */
+function drawFishingScene(ctx, w, h, t, s, ground) {
+  const theme = GROUND_THEME[ground.id] || GROUND_THEME['FG-01'];
+  const horizon = h * 0.36;
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, horizon);
+  skyGrad.addColorStop(0, theme.sky[0]); skyGrad.addColorStop(1, theme.sky[1]);
+  ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, w, horizon);
+
+  const waterGrad = ctx.createLinearGradient(0, horizon, 0, h);
+  waterGrad.addColorStop(0, theme.water[0]); waterGrad.addColorStop(1, theme.water[1]);
+  ctx.fillStyle = waterGrad; ctx.fillRect(0, horizon, w, h - horizon);
+
+  ctx.save();
+  ctx.globalAlpha = 0.22;
+  for (let layer = 0; layer < 3; layer++) {
+    ctx.beginPath();
+    const amp = 5 + layer * 3, speed = 0.6 + layer * 0.35, yOff = horizon + layer * 14;
+    ctx.moveTo(0, yOff);
+    for (let x = 0; x <= w; x += 16) ctx.lineTo(x, yOff + Math.sin(x * 0.02 + t * speed + layer) * amp);
+    ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+    ctx.fillStyle = theme.accent; ctx.fill();
+  }
+  ctx.restore();
+
+  GameState.p2.particles.forEach(p => {
+    p.y -= p.s * 0.01;
+    if (p.y < 0) p.y = 1;
+    ctx.beginPath();
+    ctx.arc(p.x * w, horizon + p.y * (h - horizon), p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${s.phase === 'FIGHT' ? 0.12 : 0.06})`;
+    ctx.fill();
+  });
+
+  const rodX = w * 0.5, rodY = h - 6;
+  if (s.phase === 'PATROL' || s.phase === 'NIBBLE') {
+    const lureY = horizon + 10 + Math.sin(t * 2 + GameState.p2.lureBobPhase) * (s.phase === 'NIBBLE' ? 7 : 3);
+    ctx.beginPath(); ctx.moveTo(rodX, rodY); ctx.lineTo(rodX, lureY); ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(rodX, lureY, s.phase === 'NIBBLE' ? 6 : 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#FCEFC6'; ctx.fill();
+  } else if (s.phase === 'FIGHT') {
+    const distRatio = clamp(s.distance / 26, 0, 1);
+    const fx = w * 0.5 + Math.sin(t * 3 + (s.fishDir * 8)) * (18 + distRatio * 40) * (s.subState === 'THRASH' ? 1.8 : 1);
+    const fy = horizon + 24 + (1 - distRatio) * (h - horizon - 60);
+    const scale = lerp(0.55, 1.7, 1 - distRatio);
+    let jumpLift = 0;
+    if (s.subState === 'JUMP') jumpLift = Math.sin(clamp(1 - s.subTimer / FISHCFG.jumpWindowTime, 0, 1) * Math.PI) * 46;
+    ctx.beginPath(); ctx.moveTo(rodX, rodY); ctx.quadraticCurveTo((rodX + fx) / 2, Math.min(rodY, fy) - 20, fx, fy - jumpLift);
+    ctx.strokeStyle = `rgba(255,255,255,${clamp(0.35 + s.tension / 200, 0.3, 0.9)})`;
+    ctx.lineWidth = 1 + s.tension / 60; ctx.stroke();
+    drawFishSprite(ctx, fx, fy - jumpLift, scale, s.fishDir, theme, s.subState);
+  }
+
+  if (s.phase === 'PATROL' || s.phase === 'NIBBLE') {
+    ctx.save(); ctx.globalAlpha = 0.5; ctx.beginPath(); ctx.arc(rodX, horizon + 10, 60 + Math.sin(t * 1.5) * 6, 0, Math.PI * 2);
+    ctx.strokeStyle = '#FCEFC6'; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
+  }
+}
+function drawFishSprite(ctx, x, y, scale, dir, theme, subState) {
+  ctx.save();
+  ctx.translate(x, y); ctx.scale(scale * (dir < 0 ? -1 : 1), scale);
+  if (subState === 'THRASH') ctx.rotate(Math.sin(Date.now() / 40) * 0.25);
+  ctx.beginPath();
+  ctx.moveTo(-18, 0);
+  ctx.quadraticCurveTo(-8, -12, 12, -6);
+  ctx.quadraticCurveTo(20, 0, 12, 6);
+  ctx.quadraticCurveTo(-8, 12, -18, 0);
+  ctx.closePath();
+  ctx.fillStyle = '#E9EEF1'; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-16, 0); ctx.lineTo(-30, -10); ctx.lineTo(-30, 10); ctx.closePath();
+  ctx.fillStyle = '#CBD6DA'; ctx.fill();
+  ctx.beginPath(); ctx.arc(8, -2, 1.6, 0, Math.PI * 2); ctx.fillStyle = '#20313A'; ctx.fill();
+  ctx.restore();
+}
+
+function initPhase2Events() {
+  const reelBtn = $('reel-btn');
+  const setReel = (v) => { GameState.p2.input.reel = v; reelBtn.classList.toggle('reeling', v); if (v) SoundManager.reelClick(1); };
+  ['pointerdown'].forEach(ev => reelBtn.addEventListener(ev, (e) => { e.preventDefault(); setReel(true); }));
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => reelBtn.addEventListener(ev, () => setReel(false)));
+
+  $('lean-left').addEventListener('pointerdown', () => { GameState.p2.input.lean = -1; });
+  $('lean-right').addEventListener('pointerdown', () => { GameState.p2.input.lean = 1; });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => {
+    $('lean-left').addEventListener(ev, () => { if (GameState.p2.input.lean === -1) GameState.p2.input.lean = 0; });
+    $('lean-right').addEventListener(ev, () => { if (GameState.p2.input.lean === 1) GameState.p2.input.lean = 0; });
+  });
+  $('drag-up').addEventListener('click', () => { const s = GameState.p2.session; s.dragSetting = clamp(s.dragSetting + 5, 10, 95); $('drag-val').textContent = Math.round(s.dragSetting); });
+  $('drag-down').addEventListener('click', () => { const s = GameState.p2.session; s.dragSetting = clamp(s.dragSetting - 5, 10, 95); $('drag-val').textContent = Math.round(s.dragSetting); });
+
+  $('hookset-btn').addEventListener('click', () => { GameState.p2.input.hookset = true; setTimeout(() => { GameState.p2.input.hookset = false; }, 60); });
+  $('jump-btn').addEventListener('click', () => { GameState.p2.input.jumpRespond = true; setTimeout(() => { GameState.p2.input.jumpRespond = false; }, 60); });
+  $('btn-p2-giveup').addEventListener('click', giveUpPhase2);
+
+  window.addEventListener('keydown', (e) => {
+    if (!$('screen-phase2').classList.contains('active')) return;
+    if (e.code === 'Space') { e.preventDefault(); setReel(true); }
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') GameState.p2.input.lean = -1;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') GameState.p2.input.lean = 1;
+    if (e.code === 'Enter') { GameState.p2.input.hookset = true; GameState.p2.input.jumpRespond = true; }
+  });
+  window.addEventListener('keyup', (e) => {
+    if (!GameState.p2) return;
+    if (e.code === 'Space') setReel(false);
+    if ((e.code === 'ArrowLeft' || e.code === 'KeyA') && GameState.p2.input.lean === -1) GameState.p2.input.lean = 0;
+    if ((e.code === 'ArrowRight' || e.code === 'KeyD') && GameState.p2.input.lean === 1) GameState.p2.input.lean = 0;
+  });
+}
+
+/* ============ PHASE 3: 言霊創味 (WORD COOKING) ============ */
+const P3_TOTAL_TILES = 16;
+const P3_TIME_LIMIT = 75;
+const P3_BOARD_SIZE = 8;
+
+function startPhase3(fish, weight, freshness) {
+  const board = createWordBoard(P3_BOARD_SIZE, fish);
+  const preExisting = scanBoardWords(board.grid, P3_BOARD_SIZE);
+  const scoredSignatures = new Set();
+  const usedWordEntries = [];
+  preExisting.forEach(m => { scoredSignatures.add(coordSig(m.coords)); usedWordEntries.push(m.entry); });
+
+  GameState.p3 = {
+    fish, weight, freshness, board,
+    scoredSignatures, usedWordEntries,
+    heatTotal: preExisting.reduce((a, m) => a + m.entry.heatScore, 0),
+    umamiTotal: preExisting.reduce((a, m) => a + m.entry.umamiBonus, 0),
+    bestChain: 1.0,
+    hand: [], selectedIdx: null,
+    tilesLeft: P3_TOTAL_TILES,
+    timerSec: P3_TIME_LIMIT,
+    timerId: null, finished: false,
+  };
+  const handSize = 8 + (GameState.save.upgrades.dict || 0);
+  for (let i = 0; i < handSize; i++) GameState.p3.hand.push(drawTileChar());
+
+  $('p3-fish-name').textContent = `${fish.name}（${fish.kana}）の仕込み`;
+  $('formed-words-strip').innerHTML = '';
+  preExisting.forEach(m => addFormedWordChip(m.entry));
+  renderWordBoard();
+  renderTileHand();
+  updateP3Stats();
+  $('p3-timer').textContent = P3_TIME_LIMIT;
+  $('p3-timer').classList.remove('low');
+  showScreen('screen-phase3');
+  clearInterval(GameState.p3.timerId);
+  GameState.p3.timerId = setInterval(p3TimerTick, 1000);
+}
+
+function p3TimerTick() {
+  const p3 = GameState.p3;
+  if (!p3 || p3.finished) { clearInterval(p3.timerId); return; }
+  p3.timerSec--;
+  $('p3-timer').textContent = Math.max(0, p3.timerSec);
+  if (p3.timerSec <= 10) $('p3-timer').classList.add('low');
+  if (p3.timerSec <= 0) finishPhase3();
+}
+
+function renderWordBoard() {
+  const p3 = GameState.p3;
+  const boardEl = $('word-board');
+  sizeSquareBoard(boardEl, window.innerWidth <= 720 ? 0.9 : 0.6, 460);
+  boardEl.innerHTML = '';
+  boardEl.style.gridTemplateColumns = `repeat(${P3_BOARD_SIZE}, 1fr)`;
+  boardEl.style.gridTemplateRows = `repeat(${P3_BOARD_SIZE}, 1fr)`;
+  for (let r = 0; r < P3_BOARD_SIZE; r++) {
+    for (let c = 0; c < P3_BOARD_SIZE; c++) {
+      const cellData = p3.board.grid[r][c];
+      const cell = el('div', 'word-cell');
+      if (cellData.locked) cell.classList.add('anchor');
+      else if (cellData.special === 'heat') cell.classList.add('special-heat');
+      else if (cellData.special === 'secret') cell.classList.add('special-secret');
+      else if (cellData.special === 'spring') cell.classList.add('special-spring');
+      if (cellData.char) { cell.textContent = cellData.char; if (!cellData.locked) cell.classList.add('placed'); }
+      else cell.classList.add('selectable');
+      cell.dataset.r = r; cell.dataset.c = c;
+      cell.addEventListener('click', () => onWordCellClick(r, c));
+      boardEl.appendChild(cell);
+    }
+  }
+}
+function renderTileHand() {
+  const wrap = $('tile-hand'); wrap.innerHTML = '';
+  GameState.p3.hand.forEach((ch, idx) => {
+    const t = el('div', 'hand-tile' + (GameState.p3.selectedIdx === idx ? ' selected' : ''), ch);
+    t.addEventListener('click', () => onHandTileClick(idx));
+    wrap.appendChild(t);
+  });
+  $('p3-tiles-left').textContent = GameState.p3.tilesLeft;
+}
+function onHandTileClick(idx) {
+  GameState.p3.selectedIdx = (GameState.p3.selectedIdx === idx) ? null : idx;
+  renderTileHand();
+}
+function onWordCellClick(r, c) {
+  const p3 = GameState.p3;
+  if (p3.finished) return;
+  const cellData = p3.board.grid[r][c];
+  if (cellData.locked || cellData.char) return;
+  if (p3.selectedIdx === null) { showToast('先に手駒を選んでください'); return; }
+  const ch = p3.hand[p3.selectedIdx];
+  cellData.char = ch;
+  const specialHit = cellData.special;
+  p3.hand.splice(p3.selectedIdx, 1);
+  p3.selectedIdx = null;
+  p3.tilesLeft--;
+  if (p3.tilesLeft > 0) p3.hand.push(drawTileChar());
+
+  renderWordBoard();
+  renderTileHand();
+
+  const allMatches = scanBoardWords(p3.board.grid, P3_BOARD_SIZE);
+  const fresh = allMatches.filter(m => !p3.scoredSignatures.has(coordSig(m.coords)));
+  fresh.forEach(m => p3.scoredSignatures.add(coordSig(m.coords)));
+  if (fresh.length > 0) applyNewWordMatches(fresh, specialHit);
+  else if (p3.tilesLeft <= 0 && p3.hand.length === 0) finishPhase3();
+
+  if (p3.tilesLeft <= 0 && p3.hand.length === 0) finishPhase3();
+}
+
+function applyNewWordMatches(matches, specialHit) {
+  const p3 = GameState.p3;
+  const mult = chainMultiplier(matches.length);
+  p3.bestChain = Math.max(p3.bestChain, mult);
+  matches.forEach(m => {
+    p3.usedWordEntries.push(m.entry);
+    let heatAdd = m.entry.heatScore, umamiAdd = m.entry.umamiBonus;
+    const passesSpecial = m.coords.some(([r, c]) => p3.board.grid[r][c].special);
+    if (passesSpecial) { heatAdd *= 1.4; umamiAdd *= 1.25; }
+    p3.heatTotal += heatAdd; p3.umamiTotal += umamiAdd;
+    if (m.word.length >= 4 && m.coords.some(([r, c]) => p3.board.grid[r][c].special === 'spring') && p3.tilesLeft > 0) {
+      p3.hand.push(drawTileChar()); showToast('言霊の泉：牌を1枚授かった！');
+    }
+    m.coords.forEach(([r, c]) => {
+      const idx = r * P3_BOARD_SIZE + c;
+      const cellEl = $('word-board').children[idx];
+      if (cellEl) { cellEl.classList.add('just-scored'); setTimeout(() => cellEl.classList.remove('just-scored'), 600); }
+    });
+    addFormedWordChip(m.entry);
+  });
+  renderTileHand();
+  showWordToasts(matches, mult);
+  SoundManager.wordFormed(matches[0].word.length);
+  if (matches.length > 1) SoundManager.kotodamaChain(matches.length);
+  updateP3Stats();
+}
+function addFormedWordChip(entry) {
+  const strip = $('formed-words-strip');
+  const chip = el('div', `formed-word-chip cat-${entry.category}`);
+  chip.innerHTML = `<span>${entry.word}</span><span class="hint">${entry.hint}</span>`;
+  strip.appendChild(chip);
+  strip.scrollLeft = strip.scrollWidth;
+}
+function showWordToasts(matches, mult) {
+  const layer = $('word-toast-layer');
+  matches.forEach((m, i) => {
+    const p = el('div', 'word-pop', `${m.word}「${m.entry.hint}」`);
+    p.style.animationDelay = (i * 0.08) + 's';
+    layer.appendChild(p);
+    setTimeout(() => p.remove(), 1300);
+  });
+  if (matches.length > 1) {
+    const c = el('div', 'chain-pop', `${matches.length}連鎖！ ×${mult.toFixed(2)}`);
+    layer.appendChild(c);
+    setTimeout(() => c.remove(), 1500);
+  }
+}
+function updateP3Stats() {
+  $('p3-heat').textContent = Math.round(GameState.p3.heatTotal);
+  $('p3-umami').textContent = Math.round(GameState.p3.umamiTotal);
+  $('p3-chain').textContent = '×' + GameState.p3.bestChain.toFixed(2);
+}
+function shuffleHand() {
+  const p3 = GameState.p3;
+  if (p3.finished) return;
+  if (GameState.save.chips < 1) { showToast('数理チップが足りません'); return; }
+  GameState.save.chips--; persistNow(); refreshCurrencyBar();
+  p3.hand = p3.hand.map(() => drawTileChar());
+  p3.selectedIdx = null;
+  renderTileHand();
+  showToast('手駒を入れ替えました');
+}
+function finishPhase3() {
+  const p3 = GameState.p3;
+  if (p3.finished) return;
+  p3.finished = true;
+  clearInterval(p3.timerId);
+  const result = evaluateDish({
+    fish: p3.fish, weight: p3.weight, freshness: p3.freshness,
+    usedWordEntries: p3.usedWordEntries, bestChainMultiplier: p3.bestChain,
+  });
+  startPhase4(result, p3);
+}
+function initPhase3Events() {
+  $('btn-p3-finish').addEventListener('click', finishPhase3);
+  $('btn-shuffle-hand').addEventListener('click', shuffleHand);
+}
+
+/* ============ PHASE 4: 割烹供膳 (SERVE & REWARD) ============ */
+function generateDishName(fish, usedWordEntries) {
+  const byCat = (cat) => usedWordEntries.filter(e => e.category === cat).sort((a, b) => b.priceMultiplier - a.priceMultiplier);
+  const tech = byCat('TECHNIQUE')[0], season = byCat('SEASONING')[0], praise = byCat('PRAISE')[0];
+  let name = fish.name;
+  if (season) name += ' ' + season.hint;
+  if (tech) name += ' ' + tech.hint; else if (!season) name += ' 姿造り';
+  if (praise) name = praise.hint + '級：' + name;
+  return name;
+}
+const SCORE_ROW_LABELS = {
+  BaseFishValue: '魚の価値', Freshness: '鮮度', TextureFit: '肉質適性',
+  SumWordScore: '言霊の総和', ChainMultiplier: '連鎖倍率', AffinityRate: '一致補正', PriceMultiplierTotal: '風味倍率',
+};
+function startPhase4(result, p3ctx) {
+  GameState.p4 = { result, p3ctx };
+  const fish = p3ctx.fish;
+  const dishName = generateDishName(fish, p3ctx.usedWordEntries);
+  $('dish-name').textContent = dishName;
+  $('dish-sub').textContent = `${fish.name}(${fmt1(p3ctx.weight)}kg) を使った一皿`;
+  $('dish-star-badge').textContent = '★' + result.star;
+  $('dish-star-badge').textContent = '★' + result.star;
+  $('dish-emoji-display').textContent = fish.emoji || '🍽️';
+
+  const rows = ['BaseFishValue', 'Freshness', 'TextureFit', 'SumWordScore', 'ChainMultiplier', 'AffinityRate', 'PriceMultiplierTotal'];
+  let html = '';
+  rows.forEach(k => {
+    let val = result[k];
+    let display = (k === 'Freshness') ? Math.round(val * 100) + '%' : (k === 'BaseFishValue' || k === 'SumWordScore') ? fmtInt(val) : '×' + val.toFixed(2);
+    html += `<div class="score-row"><span>${SCORE_ROW_LABELS[k]}</span><b>${display}</b></div>`;
+  });
+  html += `<div class="score-row total"><span>総合評価点</span><b>${fmtInt(result.Score)}</b></div>`;
+  $('score-breakdown').innerHTML = html;
+
+  const goldReward = Math.round(result.BaseFishValue * STAR_PRICE_MULT[result.star] * 0.25);
+  const soulReward = Math.max(1, p3ctx.usedWordEntries.length - 1) + p3ctx.usedWordEntries.filter(e => e.category === 'PRAISE').length;
+  const chipReward = 1 + (GameState.p1 && !GameState.p1.hadMistake ? 1 : 0) + (GameState.p1 && GameState.p1.n === 9 ? 1 : 0);
+  $('reward-gold').textContent = '+' + fmtInt(goldReward);
+  $('reward-soul').textContent = '+' + fmtInt(soulReward);
+  $('reward-chip').textContent = '+' + fmtInt(chipReward);
+
+  GameState.save.gold += goldReward; GameState.save.soul += soulReward; GameState.save.chips += chipReward;
+  GameState.save.fame += result.star;
+  GameState.save.bestStar = Math.max(GameState.save.bestStar, result.star);
+  GameState.save.totalDishesServed++;
+  let newWordNote = '';
+  p3ctx.usedWordEntries.forEach(e => { if (!GameState.save.wordDiscovered[e.word]) { GameState.save.wordDiscovered[e.word] = true; } });
+  persistNow(); refreshCurrencyBar();
+
+  $('p4-notes').innerHTML = result.matchedPrimary ? `<p class="new-fish-note">魚種一致ボーナス発動！</p>` : '';
+  showScreen('screen-phase4');
+  SoundManager.dishReveal(result.star);
+  setTimeout(() => SoundManager.coinGain(), 260);
+}
+function initPhase4Events() {
+  $('btn-next-cycle').addEventListener('click', () => startPhase1());
+  $('btn-to-hub').addEventListener('click', () => { showScreen('screen-hub'); renderHub(); });
+}
+
+/* ============ 道具屋 / 言霊大辞典 / 魚図鑑 ============ */
+function shopUpgradeCost(base, level) { return Math.round(base * Math.pow(level + 1, 1.6)); }
+const SHOP_ITEMS = [
+  { key: 'rod', name: '竿の強化', desc: '魚の引く力を軽減し、ファイトを安定させる', max: 5, base: 150, icon: 'ic-rod' },
+  { key: 'reel', name: 'リールの強化', desc: '巻き取り速度が上昇する', max: 5, base: 150, icon: 'ic-rod' },
+  { key: 'dict', name: '言霊辞典の拡張', desc: '仕込みの手駒が1枚増える', max: 3, base: 220, icon: 'ic-book' },
+];
+function renderShop() {
+  const body = $('shop-body'); body.innerHTML = '';
+  SHOP_ITEMS.forEach(item => {
+    const level = GameState.save.upgrades[item.key];
+    const maxed = level >= item.max;
+    const cost = maxed ? 0 : shopUpgradeCost(item.base, level);
+    const row = el('div', 'shop-item');
+    row.innerHTML = `
+      <div class="shop-icon"><svg width="20" height="20"><use href="#${item.icon}"/></svg></div>
+      <div class="shop-info">
+        <p class="shop-name">${item.name}</p>
+        <p class="shop-desc">${item.desc}</p>
+        <p class="shop-level">Lv.${level} / ${item.max}</p>
+      </div>
+      <button class="shop-buy-btn" ${maxed || GameState.save.gold < cost ? 'disabled' : ''}>${maxed ? 'MAX' : fmtInt(cost)}<small>${maxed ? '' : '金貨'}</small></button>`;
+    if (!maxed) {
+      row.querySelector('.shop-buy-btn').addEventListener('click', () => {
+        if (GameState.save.gold < cost) return;
+        GameState.save.gold -= cost; GameState.save.upgrades[item.key]++;
+        persistNow(); refreshCurrencyBar(); renderShop();
+        showToast(`${item.name} Lv.${GameState.save.upgrades[item.key]} になった`);
+      });
+    }
+    body.appendChild(row);
+  });
+}
+
+const CATEGORY_LABELS = { TECHNIQUE: '調理技法', SEASONING: '調味料・出汁', TEXTURE: '食感・味覚', PRAISE: '賛辞・情景', SPECIALTY: '魚介専門' };
+function renderDictionary() {
+  const body = $('dict-body'); body.innerHTML = '';
+  const discoveredCount = Object.keys(GameState.save.wordDiscovered).length;
+  const summary = el('p', 'center-note', `${discoveredCount} / ${KOTODAMA_DICTIONARY.length} 語を発見済み`);
+  summary.style.padding = '0 0 12px'; body.appendChild(summary);
+  Object.keys(CATEGORY_LABELS).forEach(cat => {
+    const group = el('div', 'dict-category-group');
+    const title = el('p', 'dict-category-title', CATEGORY_LABELS[cat]);
+    group.appendChild(title);
+    KOTODAMA_DICTIONARY.filter(w => w.category === cat).forEach(w => {
+      const discovered = !!GameState.save.wordDiscovered[w.word];
+      const row = el('div', 'dict-word-row' + (discovered ? '' : ' locked'));
+      row.innerHTML = discovered
+        ? `<span class="dict-word-kana">${w.word}</span><span class="dict-word-hint">${w.hint}</span>`
+        : `<span class="dict-word-kana">${'？'.repeat(Math.min(w.word.length, 4))}</span><span class="dict-word-hint">未発見</span>`;
+      group.appendChild(row);
+    });
+    body.appendChild(group);
+  });
+}
+
+function renderCompendium() {
+  const body = $('compendium-body'); body.innerHTML = '';
+  const grid = el('div', 'compendium-grid');
+  Object.values(FISH).forEach(f => {
+    const caught = !!GameState.save.fishCompendium[f.id];
+    const item = el('div', 'compendium-item' + (caught ? '' : ' undiscovered'));
+    item.innerHTML = caught
+      ? `<span class="compendium-fish-emoji">${f.emoji}</span><span class="compendium-name">${f.name}</span><span class="compendium-meta">${f.kana} / ${fmt1(f.baseWeight)}kg級</span>`
+      : `<span class="compendium-fish-emoji">❔</span><span class="compendium-name">？？？</span><span class="compendium-meta">${GROUNDS.find(g=>g.id===f.ground)?.name || ''}</span>`;
+    grid.appendChild(item);
+  });
+  body.appendChild(grid);
+  const caughtCount = Object.keys(GameState.save.fishCompendium).length;
+  const summary = el('p', 'center-note', `${caughtCount} / ${Object.keys(FISH).length} 種を記録済み`);
+  body.prepend(summary);
+}
+
+/* ---------------------------------------------------------------------
+   SECTION 10: BOOT
+   --------------------------------------------------------------------- */
+async function boot() {
+  GameState.save = await Persistence.load();
+  window.GameState = GameState; // devtools/debug introspection hook
+  initHubEvents();
+  initPhase1Events();
+  initPhase2Events();
+  initPhase3Events();
+  initPhase4Events();
+  refreshCurrencyBar();
+  showScreen('screen-title');
+}
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>

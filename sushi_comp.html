@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>廻転覇道寿司：チェーン・ウォーズ</title>
+  <style>
+    :root {
+      --gold: #f39c12;
+      --red: #e74c3c;
+      --blue: #3498db;
+      --dark: #121212;
+      --card-bg: #2c3e50;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: #181818;
+      color: #fff;
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+      margin: 0;
+      padding: 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    #game-app {
+      width: 100%;
+      max-width: 900px;
+      background: #222;
+      border: 4px solid var(--gold);
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(243, 156, 18, 0.3);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    header {
+      text-align: center;
+      border-bottom: 2px solid var(--gold);
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+    h1 { margin: 0; color: var(--gold); font-size: 26px; letter-spacing: 2px; }
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      background: #333;
+      padding: 10px 15px;
+      border-radius: 6px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    .phase-panel {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 15px;
+      min-height: 280px;
+    }
+    .btn {
+      background: var(--red);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin: 5px;
+    }
+    .btn:hover { background: #ff5252; transform: translateY(-2px); }
+    .btn-gold { background: var(--gold); color: #000; }
+    .btn-gold:hover { background: #f1c40f; }
+    .btn-diff {
+      display: block;
+      width: 90%;
+      margin: 10px auto;
+      background: #34495e;
+      border: 2px solid var(--gold);
+      color: #fff;
+      text-align: left;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-diff:hover { background: #2c3e50; border-color: #f1c40f; transform: translateX(5px); }
+
+    /* TRPG Phase */
+    .dice-box {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .dice-val {
+      font-size: 48px;
+      color: var(--gold);
+      font-weight: bold;
+      display: inline-block;
+      width: 80px;
+      height: 80px;
+      line-height: 80px;
+      border: 3px solid var(--gold);
+      border-radius: 12px;
+      background: #000;
+    }
+
+    /* Conveyor Belt & Battle */
+    .belt-container {
+      background: #444;
+      border: 4px solid #666;
+      border-radius: 40px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      margin: 20px 0;
+      position: relative;
+    }
+    .lane-slot {
+      background: #fff8dc;
+      color: #222;
+      padding: 12px;
+      border-radius: 15px;
+      font-weight: bold;
+      min-width: 140px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .slot-player { border: 3px solid var(--red); }
+    .slot-rival { border: 3px solid var(--blue); }
+
+    /* Cards */
+    .card-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .card-item {
+      background: var(--card-bg);
+      border: 2px solid var(--gold);
+      border-radius: 8px;
+      padding: 10px;
+      width: 150px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .card-item:hover { transform: scale(1.05); }
+    .card-item.selected { border-color: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
+
+    /* Log Box */
+    #log-area {
+      background: #111;
+      color: #2ecc71;
+      font-family: monospace;
+      padding: 10px;
+      height: 120px;
+      overflow-y: auto;
+      border-radius: 6px;
+      border: 1px solid #333;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    /* Cutin Overlay */
+    #cutin-overlay {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.88);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    .cutin-title {
+      font-size: 46px;
+      font-weight: 900;
+      color: #ffe600;
+      text-shadow: 0 0 20px #e74c3c, 4px 4px 0px #000;
+      transform: rotate(-4deg);
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      from { transform: scale(0) rotate(-20deg); }
+      to { transform: scale(1) rotate(-4deg); }
+    }
+    .shake { animation: shakeAnim 0.3s; }
+    @keyframes shakeAnim {
+      0%{transform:translate(0);}
+      20%{transform:translate(-6px, 6px);}
+      40%{transform:translate(6px, -6px);}
+      60%{transform:translate(-6px, -6px);}
+      80%{transform:translate(6px, 6px);}
+      100%{transform:translate(0);}
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-app">
+  <header>
+    <h1>🍣 廻転覇道寿司：チェーン・ウォーズ 🍣</h1>
+  </header>
+
+  <div class="status-bar">
+    <div>難易度: <span id="diff-disp" style="color:var(--gold);">未選択</span></div>
+    <div>自店売上: <span id="player-score" style="color:var(--gold);">0</span>円</div>
+    <div>ライバル売上: <span id="rival-score" style="color:var(--blue);">0</span>円</div>
+  </div>
+
+  <div id="main-panel" class="phase-panel">
+    <!-- JSで動的描画 -->
+  </div>
+
+  <div id="log-area">対戦するライバルチェーンの難易度を選択してください。</div>
+
+  <!-- ド派手カットイン表示用 -->
+  <div id="cutin-overlay">
+    <div id="cutin-text" class="cutin-title">極上コンボ爆誕！</div>
+  </div>
+</div>
+
+<script>
+  const DIFFICULTIES = [
+    { id: 1, name: '個人経営', desc: '【初級】ライバルの売上が低く、仕込み判定に+3のボーナス。', rivalMult: 0.7, diceBonus: 3, rivalName: '町すし太郎' },
+    { id: 2, name: 'ローカルチェーン', desc: '【中級】標準的なバランス。手応えのある経営バトル。', rivalMult: 1.0, diceBonus: 2, rivalName: 'すし丸ローカル' },
+    { id: 3, name: 'ローカルチェーン本店', desc: '【上級】ライバルがニーズを的確に狙い、判定補正も厳しめ。', rivalMult: 1.3, diceBonus: 1, rivalName: '本家さかな丸' },
+    { id: 4, name: '全国チェーン', desc: '【超上級】強大な資本力を持つ大手チェーン。高得点を連発。', rivalMult: 1.7, diceBonus: 0, rivalName: 'メガ寿司帝国' },
+    { id: 5, name: '老舗の寿司チェーン', desc: '【極高難易度】秘伝の技を駆使する絶対王者。完全ノーミス推奨。', rivalMult: 2.2, diceBonus: -1, rivalName: '銀座 鮨神閣' }
+  ];
+
+  const state = {
+    phase: 0,
+    difficulty: DIFFICULTIES[0],
+    playerScore: 0,
+    rivalScore: 0,
+    turn: 1,
+    maxTurns: 3,
+    inventory: [],
+    deck: [],
+    customerDemand: { flavor: 'fatty', name: '脂乗り系 (マグロ・サーモン等)' }
+  };
+
+  const CUSTOMER_DEMANDS = [
+    { flavor: 'fatty', name: '脂乗り系 (マグロ・サーモン)' },
+    { flavor: 'refreshing', name: 'さっぱり系 (イカ・白身)' },
+    { flavor: 'kids', name: 'キッズ向け (玉子・ツナマヨ)' }
+  ];
+
+  function log(msg) {
+    const area = document.getElementById('log-area');
+    area.innerHTML += `<div>> ${msg}</div>`;
+    area.scrollTop = area.scrollHeight;
+  }
+
+  function triggerCutin(text) {
+    const overlay = document.getElementById('cutin-overlay');
+    const textEl = document.getElementById('cutin-text');
+    const app = document.getElementById('game-app');
+    textEl.innerText = text;
+    overlay.style.display = 'flex';
+    app.classList.add('shake');
+
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      app.classList.remove('shake');
+    }, 1200);
+  }
+
+  // --- Phase 0: 難易度選択 ---
+  function renderDifficultySelect() {
+    const panel = document.getElementById('main-panel');
+    let buttonsHtml = DIFFICULTIES.map(d => `
+      <button class="btn btn-diff" onclick="selectDifficulty(${d.id})">
+        <strong>${d.id}. ${d.name}</strong> （対戦相手: ${d.rivalName}）<br>
+        <small style="color:#ccc;">${d.desc}</small>
+      </button>
+    `).join('');
+
+    panel.innerHTML = `
+      <h2>🏬 対戦相手（難易度）の選択</h2>
+      <p>挑むライバルチェーンのレベルを選択してください：</p>
+      <div>${buttonsHtml}</div>
+    `;
+  }
+
+  function selectDifficulty(diffId) {
+    state.difficulty = DIFFICULTIES.find(d => d.id === diffId);
+    document.getElementById('diff-disp').innerText = state.difficulty.name;
+    log(`難易度【${state.difficulty.name}】を選択。（対戦相手: ${state.difficulty.rivalName}）`);
+    state.phase = 1;
+    renderTRPGPhase();
+  }
+
+  // --- Phase 1: TRPG仕込み ---
+  function renderTRPGPhase() {
+    const panel = document.getElementById('main-panel');
+    panel.innerHTML = `
+      <h2>🎲 【Phase 1】仕入れ＆仕込み（TRPGフェーズ）</h2>
+      <p>仕入れ市場でダイスを振り、寿司ネタと技を獲得しましょう！（補正: +${state.difficulty.diceBonus}）</p>
+      <div class="dice-box">
+        <div id="dice-result" class="dice-val">?</div>
+      </div>
+      <div style="text-align:center;">
+        <button class="btn btn-gold" onclick="rollTRPGDice()">ダイスを振る (1d20 + 補正)</button>
+      </div>
+    `;
+  }
+
+  function rollTRPGDice() {
+    const raw = Math.floor(Math.random() * 20) + 1;
+    const total = raw + state.difficulty.diceBonus;
+    document.getElementById('dice-result').innerText = total;
+
+    let item = { name: 'サーモン', flavor: 'fatty', base: 300, quality: 'NORMAL' };
+    if (total >= 18) {
+      item = { name: '✨ 伝説の大トロ', flavor: 'fatty', base: 600, quality: 'PRIME', isLegend: true };
+      triggerCutin('✨ 伝説の職人「ゲン」遭遇！ ✨');
+      log('【大成功】伝説の職人から『伝説の大トロ』を託された！');
+    } else if (total >= 12) {
+      item = { name: '極上極厚サーモン', flavor: 'fatty', base: 450, quality: 'PRIME' };
+      log('【成功】脂の乗った『極上極厚サーモン』を仕入れた！');
+    } else if (total >= 7) {
+      item = { name: '新鮮イカ', flavor: 'refreshing', base: 250, quality: 'NORMAL' };
+      log('【普通】標準的な『新鮮イカ』を入手。');
+    } else {
+      item = { name: '自家製玉子焼き', flavor: 'kids', base: 200, quality: 'NORMAL' };
+      log('【控えめ】親しみやすい『自家製玉子焼き』を準備。');
+    }
+
+    state.inventory.push(item);
+
+    if (state.inventory.length < 3) {
+      log(`現在 ${state.inventory.length}/3 種のネタを仕込み完了。`);
+    } else {
+      log('全3種のネタ仕込みが完了しました！品書き編成へ進みます。');
+      setTimeout(() => {
+        state.phase = 2;
+        renderDeckPhase();
+      }, 1000);
+    }
+  }
+
+  // --- Phase 2: デッキ構築 ---
+  function renderDeckPhase() {
+    const panel = document.getElementById('main-panel');
+    let itemsHtml = state.inventory.map(item => `
+      <div class="card-item selected">
+        <h4>${item.name}</h4>
+        <p>属性: ${item.flavor}</p>
+        <p>基本価格: ${item.base}円</p>
+      </div>
+    `).join('');
+
+    panel.innerHTML = `
+      <h2>📋 【Phase 2】本日の品書き編成（デッキ構築）</h2>
+      <p>仕込んだネタを元に、営業で戦うメニューを確定しました！</p>
+      <div class="card-list">${itemsHtml}</div>
+      <div style="text-align:center; margin-top:20px;">
+        <button class="btn btn-gold" onclick="startBattlePhase()">営業バトル開始！ 🍣</button>
+      </div>
+    `;
+  }
+
+  function startBattlePhase() {
+    state.phase = 3;
+    state.turn = 1;
+    state.deck = [...state.inventory];
+    renderBattlePhase();
+  }
+
+  // --- Phase 3: カードバトル ---
+  function renderBattlePhase() {
+    const panel = document.getElementById('main-panel');
+    const demand = CUSTOMER_DEMANDS[(state.turn - 1) % CUSTOMER_DEMANDS.length];
+    state.customerDemand = demand;
+
+    let cardsHtml = state.deck.map((card, idx) => `
+      <div class="card-item" onclick="playBattleCard(${idx})">
+        <h4>${card.name}</h4>
+        <p>属性: ${card.flavor}</p>
+        <p>${card.base}円</p>
+      </div>
+    `).join('');
+
+    panel.innerHTML = `
+      <h2>🍣 【Phase 3】営業売上バトル vs ${state.difficulty.rivalName} (ターン ${state.turn}/${state.maxTurns})</h2>
+      <p>今期来店客のリクエスト: <strong style="color:var(--gold);">${demand.name}</strong></p>
+      
+      <div class="belt-container">
+        <div id="player-lane" class="lane-slot slot-player">自店: 待機中</div>
+        <div style="font-size:28px;">➡️ 🍣 ➡️</div>
+        <div id="rival-lane" class="lane-slot slot-rival">${state.difficulty.rivalName}: 待機中</div>
+      </div>
+
+      <p>流す寿司カードを選択してください：</p>
+      <div class="card-list">${cardsHtml}</div>
+    `;
+  }
+
+  function playBattleCard(cardIdx) {
+    const card = state.deck[cardIdx];
+    let mult = 1.0;
+
+    if (card.flavor === state.customerDemand.flavor) {
+      mult *= 1.5;
+    }
+
+    if (card.isLegend) {
+      mult *= 2.5;
+      triggerCutin('🔥 秘伝・極上技爆誕！！ 🔥');
+    } else if (mult > 1.0) {
+      triggerCutin('✨ ニーズ的中コンボ！ ✨');
+    }
+
+    const playerEarned = Math.round(card.base * mult);
+    state.playerScore += playerEarned;
+
+    // ライバルAI計算（難易度補正適用）
+    const rivalBase = (250 + Math.floor(Math.random() * 200)) * state.difficulty.rivalMult;
+    const rivalMult = Math.random() > (0.6 - state.difficulty.id * 0.1) ? 1.5 : 1.0;
+    const rivalEarned = Math.round(rivalBase * rivalMult);
+    state.rivalScore += rivalEarned;
+
+    document.getElementById('player-score').innerText = state.playerScore;
+    document.getElementById('rival-score').innerText = state.rivalScore;
+
+    log(`ターン${state.turn}: 【${card.name}】を出品！ 自店 +${playerEarned}円 vs ${state.difficulty.rivalName} +${rivalEarned}円`);
+
+    state.turn++;
+    if (state.turn > state.maxTurns) {
+      setTimeout(renderResultPhase, 1200);
+    } else {
+      setTimeout(renderBattlePhase, 1200);
+    }
+  }
+
+  // --- Phase 4: リザルト ---
+  function renderResultPhase() {
+    const panel = document.getElementById('main-panel');
+    const isWin = state.playerScore >= state.rivalScore;
+
+    if (isWin) {
+      triggerCutin('🏆 営業バトル勝利！！ 🏆');
+    }
+
+    panel.innerHTML = `
+      <h2>🏁 バトル結果発表 (難易度: ${state.difficulty.name})</h2>
+      <h1 style="color: ${isWin ? 'var(--gold)' : 'var(--red)'}; font-size: 32px;">
+        ${isWin ? `【勝利】${state.difficulty.rivalName} に勝利しました！` : `【敗北】${state.difficulty.rivalName} に敗北...`}
+      </h1>
+      <p>最終成績：自店 ${state.playerScore} 円 VS ${state.difficulty.rivalName} ${state.rivalScore} 円</p>
+      <div style="text-align:center; margin-top:20px;">
+        <button class="btn btn-gold" onclick="resetGame()">タイトル画面（難易度選択）へ戻る 🔄</button>
+      </div>
+    `;
+  }
+
+  function resetGame() {
+    state.phase = 0;
+    state.playerScore = 0;
+    state.rivalScore = 0;
+    state.turn = 1;
+    state.inventory = [];
+    state.deck = [];
+    document.getElementById('player-score').innerText = 0;
+    document.getElementById('rival-score').innerText = 0;
+    document.getElementById('diff-disp').innerText = '未選択';
+    renderDifficultySelect();
+    log('難易度選択画面へ戻りました。');
+  }
+
+  // 初期開始
+  renderDifficultySelect();
+</script>
+</body>
+</html>
