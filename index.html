@@ -304,8 +304,8 @@
   // ------------------------------------------------------------
   // title : カードに表示するタイトル
   // file  : ゲームのHTMLファイルへのパス
-  //         例) "games/shooting.html"
-  //         例) "games/shooting/index.html"
+  //         例) "shooting.html"
+  //         例) "shooting/index.html"
   //         空("")のままなら自動で「COMING SOON」表示になります
   // desc  : 一言紹介(省略可。空のままでOK)
   // icon  : カードに出す絵文字(省略可。空なら🎮になります)
@@ -314,29 +314,29 @@
   // 保存すると、そのカードは自動で「遊べるカード」に変わります。
   // ============================================================
   const GAMES = [
-    { title: "No.01", file: "games/bee_honey.html", desc: "雀蜂の蜂蜜漬けは美味", icon: "🍯" },
-    { title: "No.02", file: "games/bee_hunter.html", desc: "危険なので真似しないでね", icon: "8️⃣" },
-    { title: "No.03", file: "games/Bio-Forge.html", desc: "クッキークリッカー系", icon: "" },
-    { title: "No.04", file: "games/bunbun_hoihoi.html", desc: "養蜂場でよくみます", icon: "🅱️" },
-    { title: "No.05", file: "games/CHEST.html", desc: "素数って可愛いですね", icon: "🔢" },
-    { title: "No.06", file: "games/dice.html", desc: "文明を発展させましょう", icon: "🎲" },
-    { title: "No.07", file: "games/emergency_survival.html", desc: "役立つこと間違いなし", icon: "⚠️" },
-    { title: "No.08", file: "games/fish-king.html", desc: "魚界最強を目指す", icon: "🐟" },
-    { title: "No.09", file: "games/goen-pinballer-takashi.html", desc: "誤嚥には気をつけましょう", icon: "👄" },
-    { title: "No.10", file: "games/hachi-hachi-hachi.html", desc: "蜂に刺されて閃いたシリーズ", icon: "🐝" },
-    { title: "No.11", file: "games/ireba_de_go.html", desc: "危うくデジポスがこれになりそうだった", icon: "🦷" },
-    { title: "No.12", file: "games/ji-ba-eats.html", desc: "3秒で思いついた", icon: "🐢" },
-    { title: "No.13", file: "games/Logic_and_Bite.html", desc: "数独とクロスワード的", icon: "🎣" },
-    { title: "No.14", file: "games/mugicha-man-run.html", desc: "お茶飲みましょう", icon: "🍵" },
-    { title: "No.15", file: "games/mushiba-soon.html", desc: "歯は塗れません", icon: "🍬" },
-    { title: "No.16", file: "games/oekaki_dinner.html", desc: "ザルな判定", icon: "🍖" },
-    { title: "No.17", file: "games/peak-and-wash.html", desc: "洗濯大事です", icon: "🧺" },
-    { title: "No.18", file: "games/Publish or Perish.html", desc: "研究不正ダメ絶対", icon: "🔬" },
-    { title: "No.19", file: "games/rush-diner.html", desc: "飲食系ゲーム", icon: "🍚" },
-    { title: "No.20", file: "games/suika_mine.html", desc: "スイカ割りマインスイーパー", icon: "🍉" },
-    { title: "No.21", file: "games/sushi_comp.html", desc: "最強の寿司職人", icon: "🍣" },
-    { title: "No.22", file: "games/thunder-oyaji.html", desc: "飽きるクソゲー", icon: "⚡️" },
-    { title: "No.23", file: "games/kabuto-musou-3d.html", desc: "やり込みゲームの簡易版", icon: "🪲" },
+    { title: "No.01", file: "bee_honey.html", desc: "雀蜂の蜂蜜漬けは美味", icon: "🍯" },
+    { title: "No.02", file: "bee_hunter.html", desc: "危険なので真似しないでね", icon: "8️⃣" },
+    { title: "No.03", file: "Bio-Forge.html", desc: "クッキークリッカー系", icon: "" },
+    { title: "No.04", file: "bunbun_hoihoi.html", desc: "養蜂場でよくみます", icon: "🅱️" },
+    { title: "No.05", file: "CHEST.html", desc: "素数って可愛いですね", icon: "🔢" },
+    { title: "No.06", file: "dice.html", desc: "文明を発展させましょう", icon: "🎲" },
+    { title: "No.07", file: "emergency_survival.html", desc: "役立つこと間違いなし", icon: "⚠️" },
+    { title: "No.08", file: "fish-king.html", desc: "魚界最強を目指す", icon: "🐟" },
+    { title: "No.09", file: "goen-pinballer-takashi.html", desc: "誤嚥には気をつけましょう", icon: "👄" },
+    { title: "No.10", file: "hachi-hachi-hachi.html", desc: "蜂に刺されて閃いたシリーズ", icon: "🐝" },
+    { title: "No.11", file: "ireba_de_go.html", desc: "危うくデジポスがこれになりそうだった", icon: "🦷" },
+    { title: "No.12", file: "ji-ba-eats.html", desc: "3秒で思いついた", icon: "🐢" },
+    { title: "No.13", file: "Logic_and_Bite.html", desc: "数独とクロスワード的", icon: "🎣" },
+    { title: "No.14", file: "mugicha-man-run.html", desc: "お茶飲みましょう", icon: "🍵" },
+    { title: "No.15", file: "mushiba-soon.html", desc: "歯は塗れません", icon: "🍬" },
+    { title: "No.16", file: "oekaki_dinner.html", desc: "ザルな判定", icon: "🍖" },
+    { title: "No.17", file: "peak-and-wash.html", desc: "洗濯大事です", icon: "🧺" },
+    { title: "No.18", file: "Publish or Perish.html", desc: "研究不正ダメ絶対", icon: "🔬" },
+    { title: "No.19", file: "rush-diner.html", desc: "飲食系ゲーム", icon: "🍚" },
+    { title: "No.20", file: "suika_mine.html", desc: "スイカ割りマインスイーパー", icon: "🍉" },
+    { title: "No.21", file: "sushi_comp.html", desc: "最強の寿司職人", icon: "🍣" },
+    { title: "No.22", file: "thunder-oyaji.html", desc: "飽きるクソゲー", icon: "⚡️" },
+    { title: "No.23", file: "kabuto-musou-3d.html", desc: "やり込みゲームの簡易版", icon: "🪲" },
     { title: "No.24", file: "", desc: "", icon: "" },
     { title: "No.25", file: "", desc: "", icon: "" },
     { title: "No.26", file: "", desc: "", icon: "" },
