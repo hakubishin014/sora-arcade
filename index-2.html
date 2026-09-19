@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0a1a">
+<title>Sora Arcade | クソゲーの祭典</title>
+<meta name="description" content="自作HTMLゲームが集まる、ネオン輝くクソゲーの祭典 ― Sora Arcade。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20x%3D%225%22%20y%3D%2280%22%20font-size%3D%2280%22%3E%F0%9F%91%BE%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-night: #0a0a1a;
+    --card-bg: #14142c;
+    --neon-cyan: #2fe8f0;
+    --neon-pink: #ff2e9a;
+    --neon-lime: #d4ff4d;
+    --neon-purple: #b36bff;
+    --neon-orange: #ff9f3d;
+    --text-main: #f5f5fa;
+    --text-dim: #a6a6c9;
+    --cursor-invader: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2236%22%20height%3D%2236%22%20viewBox%3D%220%200%2036%2036%22%3E%3Ctext%20x%3D%220%22%20y%3D%2227%22%20font-size%3D%2228%22%3E%F0%9F%91%BE%3C%2Ftext%3E%3C%2Fsvg%3E") 4 4, auto;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg-night);
+    color: var(--text-main);
+    font-family: 'BIZ UDPGothic', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    cursor: var(--cursor-invader);
+    overflow-x: hidden;
+    line-height: 1.7;
+  }
+
+  a, .game-card, .press-start { cursor: var(--cursor-invader); }
+
+  h1, h2, .logo-text { font-family: 'Mochiy Pop One', 'BIZ UDPGothic', sans-serif; }
+
+  .skip-link {
+    position: absolute;
+    left: 8px;
+    top: -60px;
+    background: var(--neon-cyan);
+    color: #05050f;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-weight: bold;
+    z-index: 200;
+    text-decoration: none;
+    transition: top .2s ease;
+  }
+  .skip-link:focus { top: 8px; }
+
+  /* ---------- starfield (decorative) ---------- */
+  .stars {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+  }
+  .star {
+    position: absolute;
+    background: #fff;
+    border-radius: 50%;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: .15; }
+    50% { opacity: 1; }
+  }
+
+  /* ---------- CRT scanline texture (static, not animated) ---------- */
+  .scanlines {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.04) 0px,
+      rgba(255, 255, 255, 0.04) 1px,
+      transparent 2px,
+      transparent 4px
+    );
+  }
+
+  header {
+    display: flex;
+    justify-content: center;
+    padding: 1.5rem 1rem 0;
+    text-align: center;
+  }
+  .logo-text {
+    font-size: clamp(1.1rem, 4vw, 1.4rem);
+    letter-spacing: .04em;
+    text-shadow: 0 0 10px var(--neon-cyan);
+  }
+
+  .hero {
+    position: relative;
+    padding: 1.5rem 1rem 3.5rem;
+    text-align: center;
+  }
+
+  .invader-strip {
+    overflow: hidden;
+    height: 2.6rem;
+    margin-bottom: 1.5rem;
+  }
+  .invader-row {
+    display: inline-flex;
+    gap: 2.2rem;
+    font-size: 1.7rem;
+    white-space: nowrap;
+    animation: invade-move 9s ease-in-out infinite;
+  }
+  @keyframes invade-move {
+    0%   { transform: translate(-10%, 0); }
+    45%  { transform: translate(70%, 0); }
+    50%  { transform: translate(70%, 14px); }
+    95%  { transform: translate(-10%, 14px); }
+    100% { transform: translate(-10%, 0); }
+  }
+
+  .hero h1 {
+    margin: 0;
+    font-size: clamp(2.2rem, 9vw, 4.5rem);
+    letter-spacing: .03em;
+    text-shadow:
+      0 0 6px var(--neon-cyan),
+      0 0 22px var(--neon-purple),
+      0 0 46px var(--neon-purple);
+  }
+  .hero .tagline {
+    margin: .9rem auto 0;
+    max-width: 32em;
+    font-size: clamp(1rem, 3vw, 1.25rem);
+  }
+  .hero .sub-tagline {
+    margin: .4rem auto 0;
+    color: var(--text-dim);
+    font-size: .95rem;
+  }
+  .press-start {
+    display: inline-block;
+    margin-top: 2rem;
+    color: var(--neon-lime);
+    text-decoration: none;
+    border: 2px solid var(--neon-lime);
+    padding: .6rem 1.4rem;
+    border-radius: 999px;
+    font-weight: bold;
+    letter-spacing: .05em;
+    animation: pulse-btn 1.6s ease-in-out infinite;
+  }
+  .press-start:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 3px;
+  }
+  @keyframes pulse-btn {
+    0%, 100% { box-shadow: 0 0 6px var(--neon-lime); }
+    50% { box-shadow: 0 0 20px var(--neon-lime); }
+  }
+
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1rem 4rem;
+  }
+
+  .section-heading {
+    text-align: center;
+    margin: 0 0 .3rem;
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    text-shadow: 0 0 10px var(--neon-pink);
+  }
+  .section-sub {
+    text-align: center;
+    color: var(--text-dim);
+    margin: 0 0 2rem;
+    font-size: .95rem;
+  }
+
+  .game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1.1rem;
+  }
+
+  .game-card {
+    --accent: var(--neon-cyan);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: .5rem;
+    padding: 1.2rem .7rem 1rem;
+    background: var(--card-bg);
+    border: 2px solid var(--accent);
+    color: var(--text-main);
+    text-decoration: none;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  a.game-card:hover, a.game-card:focus-visible {
+    transform: translateY(-5px);
+    box-shadow: 0 0 18px var(--accent), 0 0 3px var(--accent) inset;
+  }
+  a.game-card:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 3px;
+  }
+  .game-card.coming-soon { opacity: .82; }
+  .card-screen { font-size: 2rem; line-height: 1; }
+  .card-title { font-weight: bold; font-size: .95rem; }
+  .card-desc { font-size: .8rem; color: var(--text-dim); }
+  .card-badge {
+    font-size: .7rem;
+    letter-spacing: .06em;
+    color: var(--accent);
+    font-weight: bold;
+  }
+  .card-badge small {
+    display: block;
+    color: var(--text-dim);
+    font-weight: normal;
+    letter-spacing: 0;
+    margin-top: 2px;
+  }
+
+  footer {
+    text-align: center;
+    padding: 2.5rem 1rem 3rem;
+    color: var(--text-dim);
+    font-size: .85rem;
+  }
+  footer a { color: var(--neon-cyan); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .star, .invader-row, .press-start { animation: none !important; }
+    .game-card { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">メインコンテンツへスキップ</a>
+
+<div class="stars" aria-hidden="true" id="stars"></div>
+<div class="scanlines" aria-hidden="true"></div>
+
+<header>
+  <span class="logo-text">🕹️ SORA ARCADE</span>
+</header>
+
+<section class="hero">
+  <div class="invader-strip" aria-hidden="true">
+    <div class="invader-row">
+      <span>👾</span><span>👾</span><span>👾</span><span>👾</span><span>👾</span><span>👾</span><span>👾</span><span>👾</span>
+    </div>
+  </div>
+  <h1>SORA ARCADE</h1>
+  <p class="tagline">クソゲーの祭典、開幕。</p>
+  <p class="sub-tagline">遊べば遊ぶほど、味が出る。自作ゲーム、集めました。</p>
+  <a href="#main-content" class="press-start">▼ PRESS START ▼</a>
+</section>
+
+<main id="main-content">
+  <section class="games-section" aria-labelledby="games-heading">
+    <h2 class="section-heading" id="games-heading">GAMES</h2>
+    <p class="section-sub">全30タイトル、随時公開中！</p>
+    <div class="game-grid" id="game-grid"></div>
+  </section>
+</main>
+
+<footer>
+  <p>SORA ARCADE ― 個人制作ゲームのお祭り会場</p>
+  <p><a href="https://github.com/あなたのユーザー名/リポジトリ名" target="_blank" rel="noopener noreferrer">GitHubリポジトリを見る</a></p>
+  
+  <!-- 追加部分 -->
+  <p class="footer-note">
+    ※当サイトおよび収録ゲームは個人制作物であり、実在する企業・商品・ゲームタイトル等とは一切関係ありません。
+  </p>
+  <p class="footer-license">
+    Content &amp; Code: <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ja" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a>
+  </p>
+</footer>
+
+<noscript>
+  <p style="text-align:center;padding:2rem;">このサイトの表示にはJavaScriptが必要です。ブラウザの設定でJavaScriptを有効にしてください。</p>
+</noscript>
+
+<script>
+  // ============================================================
+  // 🎮 ゲームリスト ― ここを編集してゲームを追加・差し替えできます
+  // ------------------------------------------------------------
+  // title : カードに表示するタイトル
+  // file  : ゲームのHTMLファイルへのパス
+  //         例) "games/shooting.html"
+  //         例) "games/shooting/index.html"
+  //         空("")のままなら自動で「COMING SOON」表示になります
+  // desc  : 一言紹介(省略可。空のままでOK)
+  // icon  : カードに出す絵文字(省略可。空なら🎮になります)
+  //
+  // 差し替え方: file に自分のゲームのパスを入れるだけでOK。
+  // 保存すると、そのカードは自動で「遊べるカード」に変わります。
+  // ============================================================
+  const GAMES = [
+    { title: "No.01", file: "", desc: "", icon: "" },
+    { title: "No.02", file: "", desc: "", icon: "" },
+    { title: "No.03", file: "", desc: "", icon: "" },
+    { title: "No.04", file: "", desc: "", icon: "" },
+    { title: "No.05", file: "", desc: "", icon: "" },
+    { title: "No.06", file: "", desc: "", icon: "" },
+    { title: "No.07", file: "", desc: "", icon: "" },
+    { title: "No.08", file: "", desc: "", icon: "" },
+    { title: "No.09", file: "", desc: "", icon: "" },
+    { title: "No.10", file: "", desc: "", icon: "" },
+    { title: "No.11", file: "", desc: "", icon: "" },
+    { title: "No.12", file: "", desc: "", icon: "" },
+    { title: "No.13", file: "", desc: "", icon: "" },
+    { title: "No.14", file: "", desc: "", icon: "" },
+    { title: "No.15", file: "", desc: "", icon: "" },
+    { title: "No.16", file: "", desc: "", icon: "" },
+    { title: "No.17", file: "", desc: "", icon: "" },
+    { title: "No.18", file: "", desc: "", icon: "" },
+    { title: "No.19", file: "", desc: "", icon: "" },
+    { title: "No.20", file: "", desc: "", icon: "" },
+    { title: "No.21", file: "", desc: "", icon: "" },
+    { title: "No.22", file: "", desc: "", icon: "" },
+    { title: "No.23", file: "", desc: "", icon: "" },
+    { title: "No.24", file: "", desc: "", icon: "" },
+    { title: "No.25", file: "", desc: "", icon: "" },
+    { title: "No.26", file: "", desc: "", icon: "" },
+    { title: "No.27", file: "", desc: "", icon: "" },
+    { title: "No.28", file: "", desc: "", icon: "" },
+    { title: "No.29", file: "", desc: "", icon: "" },
+    { title: "No.30", file: "", desc: "", icon: "" }
+  ];
+
+  const ACCENTS = ['var(--neon-cyan)', 'var(--neon-pink)', 'var(--neon-lime)', 'var(--neon-purple)', 'var(--neon-orange)'];
+
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;');
+  }
+
+  function buildCard(game, index) {
+    const isReady = !!(game.file && game.file.trim() !== '');
+    const accent = ACCENTS[index % ACCENTS.length];
+    const el = document.createElement(isReady ? 'a' : 'div');
+    el.className = 'game-card' + (isReady ? '' : ' coming-soon');
+    el.style.setProperty('--accent', accent);
+    if (isReady) el.href = game.file;
+
+    const rawIcon = isReady ? (game.icon && game.icon.trim() !== '' ? game.icon : '🎮') : '❓';
+    const icon = escapeHtml(rawIcon);
+    const title = escapeHtml(game.title && game.title.trim() !== '' ? game.title : ('No.' + String(index + 1).padStart(2, '0')));
+
+    let bodyHtml = '<div class="card-screen" aria-hidden="true">' + icon + '</div>' +
+                   '<div class="card-title">' + title + '</div>';
+
+    if (isReady) {
+      if (game.desc && game.desc.trim() !== '') {
+        bodyHtml += '<div class="card-desc">' + escapeHtml(game.desc) + '</div>';
+      }
+    } else {
+      bodyHtml += '<div class="card-badge">COMING SOON<small>準備中</small></div>';
+    }
+
+    el.innerHTML = bodyHtml;
+    return el;
+  }
+
+  const grid = document.getElementById('game-grid');
+  GAMES.forEach(function (game, i) {
+    grid.appendChild(buildCard(game, i));
+  });
+
+  // starfield (purely decorative, respects reduced-motion via CSS above)
+  const starsContainer = document.getElementById('stars');
+  const STAR_COUNT = 60;
+  for (let i = 0; i < STAR_COUNT; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    const size = Math.random() * 2 + 1;
+    star.style.width = size + 'px';
+    star.style.height = size + 'px';
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.animation = 'twinkle ' + (2 + Math.random() * 3) + 's ease-in-out ' + (Math.random() * 3) + 's infinite';
+    starsContainer.appendChild(star);
+  }
+</script>
+
+</body>
+</html>
